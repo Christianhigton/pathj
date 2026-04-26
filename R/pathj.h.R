@@ -36,6 +36,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             pcurve_palette = "default",
             pcurve_ribbons = TRUE,
             diag_paths = "est",
+            diag_sigstars = FALSE,
             diag_resid = FALSE,
             diag_offset_labs = FALSE,
             diag_labsize = "medium",
@@ -53,6 +54,11 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             cumscoretest = FALSE,
             estimator = "ML",
             likelihood = "normal",
+            missing = "fiml",
+            miN = 5,
+            miSeed = 12345,
+            miStrategy = "include_group",
+            showMissingDiagnostics = FALSE,
             group.equal = NULL, ...) {
 
             super$initialize(
@@ -274,6 +280,10 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "name",
                     "hide"),
                 default="est")
+            private$..diag_sigstars <- jmvcore::OptionBool$new(
+                "diag_sigstars",
+                diag_sigstars,
+                default=FALSE)
             private$..diag_resid <- jmvcore::OptionBool$new(
                 "diag_resid",
                 diag_resid,
@@ -383,6 +393,37 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "normal",
                     "wishart"),
                 default="normal")
+            private$..missing <- jmvcore::OptionList$new(
+                "missing",
+                missing,
+                options=list(
+                    "fiml",
+                    "mi",
+                    "listwise",
+                    "pairwise"),
+                default="fiml")
+            private$..miN <- jmvcore::OptionNumber$new(
+                "miN",
+                miN,
+                default=5,
+                min=2,
+                max=100)
+            private$..miSeed <- jmvcore::OptionNumber$new(
+                "miSeed",
+                miSeed,
+                default=12345,
+                min=1)
+            private$..miStrategy <- jmvcore::OptionList$new(
+                "miStrategy",
+                miStrategy,
+                options=list(
+                    "include_group",
+                    "within_group"),
+                default="include_group")
+            private$..showMissingDiagnostics <- jmvcore::OptionBool$new(
+                "showMissingDiagnostics",
+                showMissingDiagnostics,
+                default=FALSE)
             private$..group.equal <- jmvcore::OptionNMXList$new(
                 "group.equal",
                 group.equal,
@@ -422,6 +463,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..pcurve_palette)
             self$.addOption(private$..pcurve_ribbons)
             self$.addOption(private$..diag_paths)
+            self$.addOption(private$..diag_sigstars)
             self$.addOption(private$..diag_resid)
             self$.addOption(private$..diag_offset_labs)
             self$.addOption(private$..diag_labsize)
@@ -439,6 +481,11 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..cumscoretest)
             self$.addOption(private$..estimator)
             self$.addOption(private$..likelihood)
+            self$.addOption(private$..missing)
+            self$.addOption(private$..miN)
+            self$.addOption(private$..miSeed)
+            self$.addOption(private$..miStrategy)
+            self$.addOption(private$..showMissingDiagnostics)
             self$.addOption(private$..group.equal)
         }),
     active = list(
@@ -471,6 +518,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         pcurve_palette = function() private$..pcurve_palette$value,
         pcurve_ribbons = function() private$..pcurve_ribbons$value,
         diag_paths = function() private$..diag_paths$value,
+        diag_sigstars = function() private$..diag_sigstars$value,
         diag_resid = function() private$..diag_resid$value,
         diag_offset_labs = function() private$..diag_offset_labs$value,
         diag_labsize = function() private$..diag_labsize$value,
@@ -488,6 +536,11 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         cumscoretest = function() private$..cumscoretest$value,
         estimator = function() private$..estimator$value,
         likelihood = function() private$..likelihood$value,
+        missing = function() private$..missing$value,
+        miN = function() private$..miN$value,
+        miSeed = function() private$..miSeed$value,
+        miStrategy = function() private$..miStrategy$value,
+        showMissingDiagnostics = function() private$..showMissingDiagnostics$value,
         group.equal = function() private$..group.equal$value),
     private = list(
         ..endogenous = NA,
@@ -519,6 +572,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         ..pcurve_palette = NA,
         ..pcurve_ribbons = NA,
         ..diag_paths = NA,
+        ..diag_sigstars = NA,
         ..diag_resid = NA,
         ..diag_offset_labs = NA,
         ..diag_labsize = NA,
@@ -536,6 +590,11 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         ..cumscoretest = NA,
         ..estimator = NA,
         ..likelihood = NA,
+        ..missing = NA,
+        ..miN = NA,
+        ..miSeed = NA,
+        ..miStrategy = NA,
+        ..showMissingDiagnostics = NA,
         ..group.equal = NA)
 )
 
@@ -589,7 +648,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     main = function() private$.items[["main"]],
                     constraints = function() private$.items[["constraints"]],
                     indices = function() private$.items[["indices"]],
-                    indices2 = function() private$.items[["indices2"]]),
+                    indices2 = function() private$.items[["indices2"]],
+                    miFit = function() private$.items[["miFit"]],
+                    miPooledFit = function() private$.items[["miPooledFit"]],
+                    miFitSummary = function() private$.items[["miFitSummary"]],
+                    miStatus = function() private$.items[["miStatus"]]),
                 private = list(),
                 public=list(
                     initialize=function(options) {
@@ -769,11 +832,249 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `name`="pgfi", 
                                     `title`="pars. GFI", 
                                     `type`="number", 
-                                    `format`="zto"))))}))$new(options=options))
+                                    `format`="zto"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="miFit",
+                            title="MI Fit by Imputation",
+                            visible="(missing:mi)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "contrasts",
+                                "cov_y",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "missing",
+                                "miN",
+                                "miSeed",
+                                "miStrategy"),
+                            columns=list(
+                                list(
+                                    `name`="imputation", 
+                                    `title`="Imputation", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="chisq", 
+                                    `title`="X\u00B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="df", 
+                                    `title`="df", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="cfi", 
+                                    `title`="CFI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="tli", 
+                                    `title`="TLI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="rmsea", 
+                                    `title`="RMSEA", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="srmr", 
+                                    `title`="SRMR", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="aic", 
+                                    `title`="AIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="bic", 
+                                    `title`="BIC", 
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="miPooledFit",
+                            title="Pooled MI Fit",
+                            visible="(missing:mi)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "contrasts",
+                                "cov_y",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "missing",
+                                "miN",
+                                "miSeed",
+                                "miStrategy"),
+                            columns=list(
+                                list(
+                                    `name`="method", 
+                                    `title`="Method", 
+                                    `type`="text"),
+                                list(
+                                    `name`="chisq", 
+                                    `title`="X\u00B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="df", 
+                                    `title`="df", 
+                                    `type`="number"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="cfi", 
+                                    `title`="CFI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="tli", 
+                                    `title`="TLI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="rmsea", 
+                                    `title`="RMSEA", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="srmr", 
+                                    `title`="SRMR", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="aic", 
+                                    `title`="AIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="bic", 
+                                    `title`="BIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="note", 
+                                    `title`="Note", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="miFitSummary",
+                            title="MI Fit Summary",
+                            visible="(missing:mi)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "contrasts",
+                                "cov_y",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "missing",
+                                "miN",
+                                "miSeed",
+                                "miStrategy"),
+                            columns=list(
+                                list(
+                                    `name`="statistic", 
+                                    `title`="Statistic", 
+                                    `type`="text"),
+                                list(
+                                    `name`="chisq", 
+                                    `title`="X\u00B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="df", 
+                                    `title`="df", 
+                                    `type`="number"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="cfi", 
+                                    `title`="CFI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="tli", 
+                                    `title`="TLI", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="rmsea", 
+                                    `title`="RMSEA", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="srmr", 
+                                    `title`="SRMR", 
+                                    `type`="number", 
+                                    `format`="zto"),
+                                list(
+                                    `name`="aic", 
+                                    `title`="AIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="bic", 
+                                    `title`="BIC", 
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="miStatus",
+                            title="MI Imputation Status",
+                            visible="(missing:mi)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "contrasts",
+                                "cov_y",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "missing",
+                                "miN",
+                                "miSeed",
+                                "miStrategy"),
+                            columns=list(
+                                list(
+                                    `name`="imputation", 
+                                    `title`="Imputation", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="status", 
+                                    `title`="Status", 
+                                    `type`="text"),
+                                list(
+                                    `name`="converged", 
+                                    `title`="Converged", 
+                                    `type`="text"),
+                                list(
+                                    `name`="warning", 
+                                    `title`="Warning", 
+                                    `type`="text"),
+                                list(
+                                    `name`="error", 
+                                    `title`="Error", 
+                                    `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
-                    modindices = function() private$.items[["modindices"]]),
+                    modindices = function() private$.items[["modindices"]],
+                    missingSummary = function() private$.items[["missingSummary"]],
+                    missingPatterns = function() private$.items[["missingPatterns"]],
+                    mcar = function() private$.items[["mcar"]]),
                 private = list(),
                 public=list(
                     initialize=function(options) {
@@ -827,7 +1128,96 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="sepc.all", 
                                     `title`="SEPC", 
-                                    `type`="number"))))}))$new(options=options))
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="missingSummary",
+                            title="Missing Data Summary",
+                            visible="(showMissingDiagnostics)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "multigroup",
+                                "data",
+                                "missing",
+                                "showMissingDiagnostics"),
+                            columns=list(
+                                list(
+                                    `name`="variable", 
+                                    `title`="Variable", 
+                                    `type`="text"),
+                                list(
+                                    `name`="missing", 
+                                    `title`="Missing", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="percent", 
+                                    `title`="Missing %", 
+                                    `type`="number", 
+                                    `format`="zto"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="missingPatterns",
+                            title="Missing Data Patterns",
+                            visible="(showMissingDiagnostics)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "multigroup",
+                                "data",
+                                "missing",
+                                "showMissingDiagnostics"),
+                            columns=list(
+                                list(
+                                    `name`="pattern", 
+                                    `title`="Pattern", 
+                                    `type`="text"),
+                                list(
+                                    `name`="n", 
+                                    `title`="N", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="percent", 
+                                    `title`="%", 
+                                    `type`="number", 
+                                    `format`="zto"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="mcar",
+                            title="MCAR Diagnostic",
+                            visible="(showMissingDiagnostics)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "multigroup",
+                                "data",
+                                "missing",
+                                "showMissingDiagnostics"),
+                            columns=list(
+                                list(
+                                    `name`="test", 
+                                    `title`="Test", 
+                                    `type`="text"),
+                                list(
+                                    `name`="statistic", 
+                                    `title`="Statistic", 
+                                    `type`="number"),
+                                list(
+                                    `name`="df", 
+                                    `title`="df", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="note", 
+                                    `title`="Note", 
+                                    `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
@@ -836,6 +1226,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     correlations = function() private$.items[["correlations"]],
                     intercepts = function() private$.items[["intercepts"]],
                     defined = function() private$.items[["defined"]],
+                    effects = function() private$.items[["effects"]],
                     contrastCodeTable = function() private$.items[["contrastCodeTable"]]),
                 private = list(),
                 public=list(
@@ -1172,6 +1563,83 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
+                            name="effects",
+                            title="Direct, Indirect, and Total Effects",
+                            visible="(indirect)",
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "ciType",
+                                "contrasts",
+                                "cov_y",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "indirect",
+                                "missing",
+                                "miN",
+                                "miSeed"),
+                            columns=list(
+                                list(
+                                    `name`="lgroup", 
+                                    `title`="Group", 
+                                    `type`="text", 
+                                    `visible`="(multigroup)", 
+                                    `combineBelow`=TRUE),
+                                list(
+                                    `name`="effect", 
+                                    `title`="Effect", 
+                                    `type`="text"),
+                                list(
+                                    `name`="predictor", 
+                                    `title`="Predictor", 
+                                    `type`="text"),
+                                list(
+                                    `name`="outcome", 
+                                    `title`="Outcome", 
+                                    `type`="text"),
+                                list(
+                                    `name`="pathway", 
+                                    `title`="Pathway", 
+                                    `type`="text"),
+                                list(
+                                    `name`="est", 
+                                    `title`="Estimate", 
+                                    `type`="number"),
+                                list(
+                                    `name`="se", 
+                                    `title`="SE", 
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.lower", 
+                                    `type`="number", 
+                                    `title`="Lower", 
+                                    `visible`="(ci)"),
+                                list(
+                                    `name`="ci.upper", 
+                                    `type`="number", 
+                                    `title`="Upper", 
+                                    `visible`="(ci)"),
+                                list(
+                                    `name`="std.all", 
+                                    `type`="number", 
+                                    `title`="\u03B2"),
+                                list(
+                                    `name`="z", 
+                                    `title`="z", 
+                                    `type`="number"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="stars", 
+                                    `title`="Sig.", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
                             name="contrastCodeTable",
                             title="Contrasts Definition",
                             visible=FALSE,
@@ -1217,6 +1685,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 clearWith=list(
                                     "diag_resid",
                                     "diag_paths",
+                                    "diag_sigstars",
                                     "diag_labsize",
                                     "diag_rotate",
                                     "diag_type",

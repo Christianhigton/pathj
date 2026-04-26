@@ -9,9 +9,18 @@ Estimate <- R6::R6Class("Estimate",
                           model=NULL,
                           tab_fit=NULL,
                           tab_fitindices=NULL,
+                          tab_mi_fit=NULL,
+                          tab_mi_fit_summary=NULL,
+                          tab_mi_pooled_fit=NULL,
+                          tab_mi_status=NULL,
                           ciwidth=NULL,
                           tab_constfit=NULL,
                           tab_mi=NULL,
+                          tab_effects=NULL,
+                          tab_missing_summary=NULL,
+                          tab_missing_patterns=NULL,
+                          tab_mcar=NULL,
+                          missing_info=NULL,
                           initialize=function(options,datamatic) {
                             super$initialize(
                               options=options,
@@ -20,22 +29,113 @@ Estimate <- R6::R6Class("Estimate",
                           },
                           estimate=function(data) {
                             ## prepare the options based on Syntax definitions
+                            group_var<-NULL
                             lavoptions<-list(model = private$.lav_structure, 
                                              data = data,
                                              se=self$options$se,
-                                             bootstrap=self$options$bootN,
-                                             estimator=self$options$estimator
+                                             estimator=self$options$estimator,
+                                             ncpus=1
                             )
+                            if (self$options$se == "boot")
+                              lavoptions[["bootstrap"]]<-self$options$bootN
                             if (is.something(self$multigroup)) {
                               lavoptions[["group"]]<-self$multigroup$var64
                               lavoptions[["group.label"]]<-self$multigroup$levels
+                              group_var<-self$multigroup$var64
                             }
                             if (self$options$estimator=="ML") {
                               lavoptions[["likelihood"]]<-self$options$likelihood
                             }
+
+                            model_vars<-model_variable_names(private$.lav_structure, group_var)
+                            display_vars<-fromb64(model_vars,self$vars)
+                            self$tab_missing_summary<-missing_data_summary(data, model_vars, display_vars)
+                            if (isTRUE(self$options$showMissingDiagnostics)) {
+                              self$tab_missing_patterns<-missing_pattern_summary(data, model_vars)
+                              self$tab_mcar<-mcar_diagnostic(data, model_vars)
+                            }
+
+                            missing<-try_hard({
+                              handle_missing_data(data, model_vars, self$options, group_var)
+                            })
+                            if (!isFALSE(missing$error)) {
+                              self$errors<-missing$error
+                              return(self$errors)
+                            }
+                            missing<-missing$obj
+                            self$missing_info<-missing$info
+                            if (is.something(missing$warnings)) {
+                              for (w in missing$warnings)
+                                self$warnings<-list(topic="main",message=w)
+                            }
+                            data<-missing$data
+                            lavoptions[["data"]]<-data
+                            if (is.something(missing$lav_missing))
+                              lavoptions[["missing"]]<-missing$lav_missing
+
                             ginfo("estimating the model...")
                             ## estimate the models
-                            results<-try_hard({do.call(lavaan::lavaan,lavoptions)  })
+                            mi_models<-NULL
+                            mi_params<-NULL
+                            if (self$missing_info$method == "mi") {
+                              mi_results<-lapply(seq_along(missing$imputed_data), function(i) {
+                                d<-missing$imputed_data[[i]]
+                                opts<-lavoptions
+                                opts[["data"]]<-d
+                                run_sem_model(opts)
+                              })
+
+                              mi_status<-do.call(rbind, lapply(seq_along(mi_results), function(i) {
+                                res<-mi_results[[i]]
+                                ok<-isFALSE(res$error) && is.something(res$obj)
+                                conv<-FALSE
+                                if (ok)
+                                  conv<-isTRUE(tryCatch(res$obj@Fit@converged, error=function(e) FALSE))
+                                data.frame(
+                                  imputation=i,
+                                  status=if (ok) "Used" else "Failed",
+                                  converged=if (ok) ifelse(conv, "TRUE", "FALSE") else "",
+                                  warning=if (!isFALSE(res$warning)) paste(res$warning, collapse="; ") else "",
+                                  error=if (!isFALSE(res$error)) paste(res$error, collapse="; ") else "",
+                                  stringsAsFactors=FALSE
+                                )
+                              }))
+                              self$tab_mi_status<-mi_status
+
+                              successful<-mi_status$imputation[mi_status$status == "Used"]
+                              failed<-mi_status$imputation[mi_status$status == "Failed"]
+                              not_converged<-mi_status$imputation[mi_status$status == "Used" & mi_status$converged != "TRUE"]
+
+                              mi_warnings<-unique(mi_status$warning[nchar(mi_status$warning) > 0])
+                              if (is.something(mi_warnings)) {
+                                for (w in mi_warnings)
+                                  self$warnings<-list(topic="main",message=w)
+                              }
+
+                              if (length(successful) == 0) {
+                                self$errors<-mi_status$error[nchar(mi_status$error) > 0]
+                                if (!is.something(self$errors))
+                                  self$errors<-"All imputed SEM models failed."
+                                return(self$errors)
+                              }
+                              if (length(failed) > 0)
+                                self$warnings<-list(topic="main",message=paste0("MI pooling used ", length(successful), " of ", length(mi_results), " imputations because ", length(failed), " imputed model(s) failed. See MI Imputation Status."))
+                              if (length(not_converged) > 0)
+                                self$warnings<-list(topic="main",message=paste0("Some imputed SEM models did not converge: ", paste(not_converged, collapse=", "), "."))
+
+                              self$missing_info$successful_imputations<-length(successful)
+                              mi_models<-lapply(successful, function(i) mi_results[[i]]$obj)
+                              mi_data<-lapply(successful, function(i) missing$imputed_data[[i]])
+                              self$tab_mi_fit<-fit_measures_table(mi_models, imputation=successful)
+                              self$tab_mi_fit_summary<-fit_measures_summary(self$tab_mi_fit)
+                              pooled_fit<-pooled_mi_fit_table(mi_data, lavoptions)
+                              self$tab_mi_pooled_fit<-pooled_fit$table
+                              if (is.something(pooled_fit$warning))
+                                self$warnings<-list(topic="main",message=pooled_fit$warning)
+                              results<-mi_results[[successful[[1]]]]
+                            } else {
+                              results<-run_sem_model(lavoptions)
+                            }
                             ginfo("done")
                             
                             
@@ -48,13 +148,26 @@ Estimate <- R6::R6Class("Estimate",
                             
                             ## ask for the paramters estimates
                             self$model<-results$obj
-                            .lav_params<-lavaan::parameterestimates(
-                              self$model,
-                              ci=self$options$ci,
-                              standardized = T,
-                              level = self$ciwidth,
-                              boot.ci.type = self$options$bootci
-                            )
+                            if (self$missing_info$method == "mi") {
+                              mi_params<-lapply(mi_models, function(model) {
+                                lavaan::parameterestimates(
+                                  model,
+                                  ci=self$options$ci,
+                                  standardized = T,
+                                  level = self$ciwidth,
+                                  boot.ci.type = self$options$bootci
+                                )
+                              })
+                              .lav_params<-pool_results_if_needed(mi_params, ci=self$options$ci, level=self$ciwidth)
+                            } else {
+                              .lav_params<-lavaan::parameterestimates(
+                                self$model,
+                                ci=self$options$ci,
+                                standardized = T,
+                                level = self$ciwidth,
+                                boot.ci.type = self$options$bootci
+                              )
+                            }
 
                                                       
                             ## we need some info initialized by Syntax regarding the parameters properties
@@ -66,11 +179,18 @@ Estimate <- R6::R6Class("Estimate",
                             .lav_params$rhs<-fromb64(.lav_params$rhs,self$vars)
                             .lav_params$lhs<-fromb64(.lav_params$lhs,self$vars)
                             .lav_params$free<-(.lav_structure$free>0)
+                            if (is.something(self$multigroup) && "group" %in% names(.lav_params)) {
+                              .lav_params$lgroup<-"All"
+                              valid_group<-!is.na(.lav_params$group) & .lav_params$group > 0 & .lav_params$group <= length(self$multigroup$levels)
+                              .lav_params$lgroup[valid_group]<-self$multigroup$levels[.lav_params$group[valid_group]]
+                            } else
+                              .lav_params$lgroup<-"1"
                             
                             .lav_params$endo<-FALSE
                             .lav_params$endo[.lav_params$lhs %in% self$options$endogenous | .lav_params$rhs %in% self$options$endogenous]<-TRUE
                             ## collect regression coefficient table
                             self$tab_coefficients<-.lav_params[.lav_params$op=="~",]
+                            self$tab_effects<-self$effectsTable(.lav_params)
 
                             ## collect variances and covariances table
                             self$tab_covariances<-.lav_params[.lav_params$op=="~~",]
@@ -152,7 +272,21 @@ Estimate <- R6::R6Class("Estimate",
                             # fit indices
                             alist<-list()
                             alist[[length(alist)+1]]<-c(info="Estimation Method",value=self$model@Options$estimator)
-                            alist[[length(alist)+1]]<-c(info="Number of observations",value=lavaan::lavInspect(self$model,"ntotal")) 
+                            alist[[length(alist)+1]]<-c(info="Missing data method",value=self$missing_info$method_label)
+                            alist[[length(alist)+1]]<-c(info="Missing data note",value=ifelse(isTRUE(self$missing_info$all_available), "All available data were used", ""))
+                            if (self$missing_info$method == "mi") {
+                              alist[[length(alist)+1]]<-c(info="Imputations",value=self$missing_info$imputations)
+                              alist[[length(alist)+1]]<-c(info="Successful imputations",value=self$missing_info$successful_imputations)
+                              alist[[length(alist)+1]]<-c(info="MI group strategy",value=self$missing_info$mi_strategy_label)
+                              alist[[length(alist)+1]]<-c(info="MI estimates note",value="Parameter estimates are pooled with Rubin's rules")
+                              alist[[length(alist)+1]]<-c(info="MI fit note",value=ifelse(is.something(self$tab_mi_pooled_fit), "Formal pooled fit is computed with lavaan.mi; per-imputation fit is also shown", "Fit indices are shown by imputation and summarized descriptively"))
+                            } else {
+                              alist[[length(alist)+1]]<-c(info="Imputations",value="")
+                            }
+                            alist[[length(alist)+1]]<-c(info="Original observations",value=self$missing_info$n_original)
+                            alist[[length(alist)+1]]<-c(info="Number of observations",value=self$missing_info$n_used)
+                            alist[[length(alist)+1]]<-c(info="Missing values",value=self$missing_info$total_missing)
+                            alist[[length(alist)+1]]<-c(info="Cases removed",value=self$missing_info$n_removed)
                             alist[[length(alist)+1]]<-c(info="Free parameters",value=self$model@Fit@npar)
                             alist[[length(alist)+1]]<-c(info="Converged",value=self$model@Fit@converged) 
                             alist[[length(alist)+1]]<-c(info="",value="")
@@ -233,6 +367,39 @@ Estimate <- R6::R6Class("Estimate",
 
                             ginfo("Estimation is done...")
                           }, # end of private function estimate
+                          effectsTable=function(params) {
+                            direct<-params[params$op=="~",,drop=FALSE]
+                            if (nrow(direct)>0) {
+                              direct$lgroup<-if ("lgroup" %in% names(direct)) direct$lgroup else "1"
+                              direct$effect<-"Direct"
+                              direct$predictor<-direct$rhs
+                              direct$outcome<-direct$lhs
+                              direct$pathway<-paste(direct$rhs,direct$lhs,sep=" \U21d2 ")
+                            }
+                            defs<-params[params$op==":=",,drop=FALSE]
+                            meta<-self$effect_decomp_structure
+                            if (is.something(meta) && nrow(defs)>0) {
+                              defs<-merge(meta,defs,by.x="label",by.y="lhs",all=FALSE,sort=FALSE)
+                              defs$lgroup<-defs$lgroup.x
+                            } else {
+                              defs<-NULL
+                            }
+                            keep<-c("lgroup","effect","predictor","outcome","pathway","est","se","ci.lower","ci.upper","std.all","z","pvalue","stars")
+                            rows<-list()
+                            if (nrow(direct)>0)
+                              rows[[length(rows)+1]]<-direct
+                            if (is.something(defs) && nrow(defs)>0)
+                              rows[[length(rows)+1]]<-defs
+                            if (!is.something(rows))
+                              return(NULL)
+                            out<-do.call(rbind,lapply(rows,function(x) {
+                              for (nm in keep)
+                                if (!nm %in% names(x)) x[[nm]]<-NA
+                              x$stars<-effect_stars(x$pvalue)
+                              x[,keep,drop=FALSE]
+                            }))
+                            out
+                          },
                           
                           multitest=function() {
                             
@@ -348,4 +515,3 @@ Estimate <- R6::R6Class("Estimate",
 
               ) # end of private
 )  # end of class
-

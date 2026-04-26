@@ -36,6 +36,8 @@
 #' @param diagram \code{TRUE} or \code{FALSE} (default), produce a path
 #'   diagram
 #' @param diag_paths Choose the diagram labels
+#' @param diag_sigstars \code{TRUE} or \code{FALSE} (default), append
+#'   significance stars to regression-path labels in path diagrams.
 #' @param diag_resid \code{TRUE} or \code{FALSE} (default), produce a path
 #'   diagram
 #' @param diag_labsize Choose the diagram labels
@@ -54,6 +56,19 @@
 #' @param cumscoretest .
 #' @param estimator Choose the diagram labels
 #' @param likelihood Choose the diagram labels
+#' @param missing Missing-data handling method. \code{"fiml"} uses full
+#'   information maximum likelihood, \code{"mi"} uses multiple imputation,
+#'   \code{"listwise"} removes incomplete cases, and \code{"pairwise"} uses
+#'   pairwise deletion with a warning.
+#' @param miN number of imputed datasets when \code{missing = "mi"}.
+#' @param miSeed random seed used by \code{mice} when \code{missing = "mi"}.
+#' @param miStrategy multigroup imputation strategy when \code{missing = "mi"}.
+#'   \code{"include_group"} keeps the group variable in one imputation model;
+#'   \code{"within_group"} imputes separately within each group.
+#'   When the optional \code{lavaan.mi} package is available, formal pooled MI
+#'   fit measures are also reported.
+#' @param showMissingDiagnostics \code{TRUE} or \code{FALSE} (default), show
+#'   missing-data summaries, patterns, and an MCAR diagnostic when available.
 #' @param formula (optional) the formula to use, see the examples
 #' @return A results object containing:
 #' \tabular{llllll}{
@@ -104,6 +119,7 @@ pathj <- function(
     list()),
   diagram = FALSE,
   diag_paths = "est",
+  diag_sigstars = FALSE,
   diag_resid = FALSE,
   diag_labsize = "medium",
   diag_rotate = "2",
@@ -120,6 +136,11 @@ pathj <- function(
   cumscoretest = FALSE,
   estimator = "ML",
   likelihood = "normal",
+  missing = "fiml",
+  miN = 5,
+  miSeed = 12345,
+  miStrategy = "include_group",
+  showMissingDiagnostics = FALSE,
   formula) {
   
   if ( ! requireNamespace("jmvcore", quietly=TRUE))
@@ -192,6 +213,7 @@ pathj <- function(
     endogenousTerms = endogenousTerms,
     diagram = diagram,
     diag_paths = diag_paths,
+    diag_sigstars = diag_sigstars,
     diag_resid = diag_resid,
     diag_labsize = diag_labsize,
     diag_rotate = diag_rotate,
@@ -207,7 +229,12 @@ pathj <- function(
     scoretest = scoretest,
     cumscoretest = cumscoretest,
     estimator = estimator,
-    likelihood = likelihood)
+    likelihood = likelihood,
+    missing = missing,
+    miN = miN,
+    miSeed = miSeed,
+    miStrategy = miStrategy,
+    showMissingDiagnostics = showMissingDiagnostics)
   
   analysis <- pathjClass$new(
     options = options,
@@ -217,4 +244,3 @@ pathj <- function(
   
   analysis$results
 }
-

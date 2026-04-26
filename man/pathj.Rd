@@ -27,6 +27,7 @@ pathj(
   endogenousTerms = list(list()),
   diagram = FALSE,
   diag_paths = "est",
+  diag_sigstars = FALSE,
   diag_resid = FALSE,
   diag_labsize = "medium",
   diag_rotate = "2",
@@ -43,6 +44,11 @@ pathj(
   cumscoretest = FALSE,
   estimator = "ML",
   likelihood = "normal",
+  missing = "fiml",
+  miN = 5,
+  miSeed = 12345,
+  miStrategy = "include_group",
+  showMissingDiagnostics = FALSE,
   formula
 )
 }
@@ -104,6 +110,9 @@ diagram}
 
 \item{diag_paths}{Choose the diagram labels}
 
+\item{diag_sigstars}{\code{TRUE} or \code{FALSE} (default), append
+significance stars to regression-path labels in path diagrams.}
+
 \item{diag_resid}{\code{TRUE} or \code{FALSE} (default), produce a path
 diagram}
 
@@ -137,6 +146,24 @@ estimated}
 \item{estimator}{Choose the diagram labels}
 
 \item{likelihood}{Choose the diagram labels}
+
+\item{missing}{Missing-data handling method. \code{"fiml"} uses full
+information maximum likelihood, \code{"mi"} uses multiple imputation,
+\code{"listwise"} removes incomplete cases, and \code{"pairwise"} uses
+pairwise deletion with a warning.}
+
+\item{miN}{number of imputed datasets when \code{missing = "mi"}.}
+
+\item{miSeed}{random seed used by \code{mice} when \code{missing = "mi"}.}
+
+\item{miStrategy}{multigroup imputation strategy when \code{missing = "mi"}.
+\code{"include_group"} keeps the group variable in one imputation model;
+\code{"within_group"} imputes separately within each group. When the optional
+\code{lavaan.mi} package is available, formal pooled MI fit measures are also
+reported.}
+
+\item{showMissingDiagnostics}{\code{TRUE} or \code{FALSE} (default), show
+missing-data summaries, patterns, and an MCAR diagnostic when available.}
 
 \item{formula}{(optional) the formula to use, see the examples}
 }

@@ -45,6 +45,10 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             #### parameter fit indices tables ####
             j.init_table(self$results$fit$indices,"",ci=T,ciroot="rmsea.",ciformat='RMSEA {}% CI',ciwidth=self$options$ciWidth)
             j.init_table(self$results$fit$indices2,"",ci=F)
+            j.init_table(self$results$fit$miFit, lav_machine$tab_mi_fit, ci=F)
+            j.init_table(self$results$fit$miPooledFit, lav_machine$tab_mi_pooled_fit, ci=F)
+            j.init_table(self$results$fit$miFitSummary, lav_machine$tab_mi_fit_summary, ci=F)
+            j.init_table(self$results$fit$miStatus, lav_machine$tab_mi_status, ci=F)
             
             ### prepare r2 table
             j.init_table(self$results$models$r2,
@@ -74,6 +78,11 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                          ci=T,
                          ciwidth=self$options$ciWidth,
                          spaceby="group")
+            j.init_table(self$results$models$effects,
+                         lav_machine$tab_effects,
+                         ci=T,
+                         ciwidth=self$options$ciWidth,
+                         spaceby="lgroup")
 
             ### prepare intercepts ###
             if (self$options$showintercepts)
@@ -89,6 +98,15 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                          lav_machine$tab_mi,
                          ci=F,
                          spaceby="lgroup")
+            j.init_table(self$results$diagnostics$missingSummary,
+                         lav_machine$tab_missing_summary,
+                         ci=F)
+            j.init_table(self$results$diagnostics$missingPatterns,
+                         lav_machine$tab_missing_patterns,
+                         ci=F)
+            j.init_table(self$results$diagnostics$mcar,
+                         lav_machine$tab_mcar,
+                         ci=F)
             
             # #### contrast tables ####
              if (length(self$options$factors)>0) {
@@ -170,6 +188,10 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              
              self$results$fit$indices2$setRow(rowNo=1,lav_machine$tab_fitindices)
              j.add_warnings(self$results$fit$indices2,lav_machine,"tab_fitindices")
+             j.fill_table(self$results$fit$miFit, lav_machine$tab_mi_fit, append=TRUE)
+             j.fill_table(self$results$fit$miPooledFit, lav_machine$tab_mi_pooled_fit, append=TRUE)
+             j.fill_table(self$results$fit$miFitSummary, lav_machine$tab_mi_fit_summary, append=TRUE)
+             j.fill_table(self$results$fit$miStatus, lav_machine$tab_mi_status, append=TRUE)
              
              ## constraints fit test
              
@@ -182,6 +204,9 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              ## diagnostics: modification indices
              j.fill_table(self$results$diagnostics$modindices, lav_machine$tab_mi, append=TRUE)
              j.add_warnings(self$results$diagnostics$modindices, lav_machine, "modindices")
+             j.fill_table(self$results$diagnostics$missingSummary, lav_machine$tab_missing_summary, append=TRUE)
+             j.fill_table(self$results$diagnostics$missingPatterns, lav_machine$tab_missing_patterns, append=TRUE)
+             j.fill_table(self$results$diagnostics$mcar, lav_machine$tab_mcar, append=TRUE)
 
              
             ### parameters estimates ####
@@ -194,6 +219,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             
             j.fill_table(self$results$models$defined,lav_machine$tab_defined)
             j.add_warnings(self$results$models$defined,lav_machine,"defined")
+            j.fill_table(self$results$models$effects,lav_machine$tab_effects, append=TRUE)
             
             if (self$options$showintercepts)
                    j.fill_table(self$results$models$intercepts,lav_machine$tab_intercepts)
@@ -235,6 +261,26 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             
             if (self$options$diag_offset_labs)
                 sp$graphAttributes$Edges$edge.label.position<-rep(.60,length(sp$graphAttributes$Edges$edge.label.position))
+
+            if (isTRUE(self$options$diag_sigstars) && self$options$diag_paths != "hide") {
+                pars <- image$state$semModel@Pars
+                ptab <- lavaan::parameterestimates(private$.lav_machine$model)
+                ptab <- ptab[ptab$op == "~" & !is.na(ptab$label) & ptab$label != "", , drop=FALSE]
+                stars <- vapply(ptab$pvalue, function(p) {
+                    if (is.na(p)) return("")
+                    if (p < .001) return("***")
+                    if (p < .01) return("**")
+                    if (p < .05) return("*")
+                    ""
+                }, FUN.VALUE = character(1))
+                names(stars) <- ptab$label
+                n <- min(nrow(pars), length(sp$graphAttributes$Edges$labels))
+                for (i in seq_len(n)) {
+                    label <- pars$label[[i]]
+                    if (pars$edge[[i]] == "~>" && label %in% names(stars) && nzchar(stars[[label]]))
+                        sp$graphAttributes$Edges$labels[[i]] <- paste0(sp$graphAttributes$Edges$labels[[i]], stars[[label]])
+                }
+            }
             
             sp$graphAttributes$Edges$lty[sp$Edgelist$bidirectional]<-2
             sp$graphAttributes$Edges$curve[sp$Edgelist$bidirectional]<-.6
@@ -739,4 +785,3 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
         
         )
 )
-

@@ -372,6 +372,16 @@ options:
           R: >
              Choose the diagram labels
 
+    - name: diag_sigstars
+      title: Significance stars
+      type: Bool
+      default: false
+      description:
+          R: >
+            TRUE or FALSE (default). When TRUE, append significance stars to
+            path diagram labels for regression paths: * p < .05, ** p < .01,
+            *** p < .001.
+
     - name: diag_resid
       title: Residuals
       type: Bool
@@ -579,6 +589,83 @@ options:
           R: >
              Choose the diagram labels
 
+    - name: missing
+      title: Missing Data
+      type: List
+      options:
+        - name: fiml
+          title: Full Information Maximum Likelihood (FIML)
+        - name: mi
+          title: Multiple Imputation (MI)
+        - name: listwise
+          title: Listwise Deletion
+        - name: pairwise
+          title: Pairwise Deletion
+      default: fiml
+      description:
+          R: >
+             Missing-data handling method. FIML uses all available data under
+             ML estimation, MI pools estimates across imputed datasets,
+             listwise deletion removes incomplete cases, and pairwise deletion
+             uses pairwise covariance information with a cautionary warning.
+          ui: >
+             FIML is the recommended default for ML models under MAR.
+             Multiple imputation uses mice and pools estimates. Listwise
+             deletion removes incomplete rows. Pairwise deletion is available
+             for teaching and should be used cautiously.
+
+    - name: miN
+      title: Imputations
+      type: Number
+      default: 5
+      min: 2
+      max: 100
+      description:
+          R: >
+             Number of imputed datasets to generate when Multiple Imputation is
+             selected.
+
+    - name: miSeed
+      title: MI seed
+      type: Number
+      default: 12345
+      min: 1
+      description:
+          R: >
+             Random seed used by mice so multiple-imputation results are
+             reproducible.
+
+    - name: miStrategy
+      title: MI group strategy
+      type: List
+      options:
+        - name: include_group
+          title: Include group as predictor
+        - name: within_group
+          title: Impute within groups
+      default: include_group
+      description:
+          R: >
+             Strategy for multigroup multiple imputation. Include group as
+             predictor runs one imputation model with the grouping variable
+             retained as a predictor but not imputed. Impute within groups runs
+             separate imputations within each group and recombines the completed
+             datasets.
+          ui: >
+             For multigroup MI, include the group as a predictor for a single
+             imputation model, or impute separately within each group when group
+             distributions should be preserved.
+
+    - name: showMissingDiagnostics
+      title: Show missing data diagnostics
+      type: Bool
+      default: false
+      description:
+          R: >
+             TRUE or FALSE (default). When TRUE, display missing-data patterns
+             and a simple MCAR diagnostic when an optional helper package is
+             available.
+
 
     - name: group.equal
       type: NMXList
@@ -596,4 +683,3 @@ options:
 
 
 ...
-

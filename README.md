@@ -44,4 +44,33 @@ devtools::install_github("pathj/pathj")
 
 ```
 
+## Missing data example
 
+PATHj 1.1.6.9000 supports explicit missing-data handling in the SEM workflow. FIML is the default for ML models.
+
+```r
+results <- pathj(
+  data = mydata,
+  endogenous = c("y1", "y2"),
+  covs = c("x1", "x2", "x3"),
+  endogenousTerms = list(
+    list("x1", "x2", "x3"),
+    list("x2", "x3")
+  ),
+  missing = "fiml",
+  showMissingDiagnostics = TRUE
+)
+
+results_mi <- pathj(
+  data = mydata,
+  endogenous = c("y1", "y2"),
+  covs = c("x1", "x2", "x3"),
+  endogenousTerms = list(
+    list("x1", "x2", "x3"),
+    list("x2", "x3")
+  ),
+  missing = "mi",
+  miN = 5,
+  miSeed = 12345
+)
+```

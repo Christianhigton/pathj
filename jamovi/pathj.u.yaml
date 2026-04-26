@@ -173,6 +173,31 @@ children:
                 type: CheckBox
                 optionPart: Satterthwaite
                 optionName: tests
+      - type: LayoutBox
+        margin: large
+        style: inline
+        children:
+          - type: Label
+            label: Missing Data
+            margin: large
+            style: list
+            stretchFactor: 1
+            children:
+              - type: ComboBox
+                name: missing
+              - type: TextBox
+                name: miN
+                format: number
+                enable: (missing:mi)
+              - type: TextBox
+                name: miSeed
+                format: number
+                enable: (missing:mi)
+              - type: ComboBox
+                name: miStrategy
+                enable: (missing:mi)
+              - type: CheckBox
+                name: showMissingDiagnostics
   - type: CollapseBox
     label: Parameters Options
     collapsed: true
@@ -328,6 +353,9 @@ children:
                 optionName: diag_paths
                 optionPart: hide
                 enable: (diagram)
+              - type: CheckBox
+                name: diag_sigstars
+                enable: (diagram && !(diag_paths:hide))
           - type: Label
             label: Show
             margin: large

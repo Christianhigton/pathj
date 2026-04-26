@@ -27,7 +27,7 @@ Datamatic <- R6::R6Class(
     },
     cleandata=function(data,interactions=NULL) {
       
-      data64 <- jmvcore::naOmit(data)
+      data64 <- data
       names(data64)<-tob64(names(data))
       for (cont in self$continuous) {
         cont64<-tob64(cont)
@@ -40,8 +40,7 @@ Datamatic <- R6::R6Class(
         ### we need this for Rinterface ####
         nlevels<-length(self$factors_levels[[factor]])
         stats::contrasts(data64[[factor64]]) <- self$contrasts_values[[factor]]
-        dummies<-model.matrix(as.formula(paste0("~",factor64)),data=data64)
-        dummies<-dummies[,-1]
+        dummies<-private$.factor_dummies(data64[[factor64]], self$contrasts_values[[factor]])
         dummies<-data.frame(dummies)
         onames<-names(data64)
         data64<-cbind(data64,dummies)
@@ -251,6 +250,19 @@ Datamatic <- R6::R6Class(
 
        as.numeric(var)
        
+     }
+ ,
+
+ .factor_dummies=function(var,contrasts) {
+       ncols<-ncol(contrasts)
+       out<-matrix(NA_real_, nrow=length(var), ncol=ncols)
+       levels<-levels(var)
+       idx<-match(as.character(var), levels)
+       ok<-!is.na(idx)
+       if (any(ok))
+         out[ok,]<-contrasts[idx[ok],,drop=FALSE]
+       colnames(out)<-seq_len(ncols)
+       out
      }
      
      

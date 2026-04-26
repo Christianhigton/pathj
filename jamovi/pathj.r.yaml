@@ -197,11 +197,210 @@ items:
                       type: number
                       format: zto
 
+          - name: miFit
+            title: MI Fit by Imputation
+            type: Table
+            visible: (missing:mi)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - missing
+                  - miN
+                  - miSeed
+                  - miStrategy
+            columns:
+                    - name: imputation
+                      title: Imputation
+                      type: integer
+                    - name: chisq
+                      title: X²
+                      type: number
+                    - name: df
+                      title: df
+                      type: integer
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: cfi
+                      title: CFI
+                      type: number
+                      format: zto
+                    - name: tli
+                      title: TLI
+                      type: number
+                      format: zto
+                    - name: rmsea
+                      title: RMSEA
+                      type: number
+                      format: zto
+                    - name: srmr
+                      title: SRMR
+                      type: number
+                      format: zto
+                    - name: aic
+                      title: AIC
+                      type: number
+                    - name: bic
+                      title: BIC
+                      type: number
+
+          - name: miPooledFit
+            title: Pooled MI Fit
+            type: Table
+            visible: (missing:mi)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - missing
+                  - miN
+                  - miSeed
+                  - miStrategy
+            columns:
+                    - name: method
+                      title: Method
+                      type: text
+                    - name: chisq
+                      title: X²
+                      type: number
+                    - name: df
+                      title: df
+                      type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: cfi
+                      title: CFI
+                      type: number
+                      format: zto
+                    - name: tli
+                      title: TLI
+                      type: number
+                      format: zto
+                    - name: rmsea
+                      title: RMSEA
+                      type: number
+                      format: zto
+                    - name: srmr
+                      title: SRMR
+                      type: number
+                      format: zto
+                    - name: aic
+                      title: AIC
+                      type: number
+                    - name: bic
+                      title: BIC
+                      type: number
+                    - name: note
+                      title: Note
+                      type: text
+
+          - name: miFitSummary
+            title: MI Fit Summary
+            type: Table
+            visible: (missing:mi)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - missing
+                  - miN
+                  - miSeed
+                  - miStrategy
+            columns:
+                    - name: statistic
+                      title: Statistic
+                      type: text
+                    - name: chisq
+                      title: X²
+                      type: number
+                    - name: df
+                      title: df
+                      type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: cfi
+                      title: CFI
+                      type: number
+                      format: zto
+                    - name: tli
+                      title: TLI
+                      type: number
+                      format: zto
+                    - name: rmsea
+                      title: RMSEA
+                      type: number
+                      format: zto
+                    - name: srmr
+                      title: SRMR
+                      type: number
+                      format: zto
+                    - name: aic
+                      title: AIC
+                      type: number
+                    - name: bic
+                      title: BIC
+                      type: number
+
+          - name: miStatus
+            title: MI Imputation Status
+            type: Table
+            visible: (missing:mi)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - missing
+                  - miN
+                  - miSeed
+                  - miStrategy
+            columns:
+                    - name: imputation
+                      title: Imputation
+                      type: integer
+                    - name: status
+                      title: Status
+                      type: text
+                    - name: converged
+                      title: Converged
+                      type: text
+                    - name: warning
+                      title: Warning
+                      type: text
+                    - name: error
+                      title: Error
+                      type: text
+
 
   - name: diagnostics
     title: "Model Diagnostics"
     type: Group
-    visible: (modindices)
+    visible: (modindices || showMissingDiagnostics)
     clearWith:
                   - endogenousTerms
     items:
@@ -242,6 +441,84 @@ items:
                     - name: sepc.all
                       title: "SEPC"
                       type: number
+
+          - name: missingSummary
+            title: Missing Data Summary
+            type: Table
+            visible: (showMissingDiagnostics)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - multigroup
+                  - data
+                  - missing
+                  - showMissingDiagnostics
+            columns:
+                    - name: variable
+                      title: Variable
+                      type: text
+                    - name: missing
+                      title: Missing
+                      type: integer
+                    - name: percent
+                      title: Missing %
+                      type: number
+                      format: zto
+
+          - name: missingPatterns
+            title: Missing Data Patterns
+            type: Table
+            visible: (showMissingDiagnostics)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - multigroup
+                  - data
+                  - missing
+                  - showMissingDiagnostics
+            columns:
+                    - name: pattern
+                      title: Pattern
+                      type: text
+                    - name: n
+                      title: N
+                      type: integer
+                    - name: percent
+                      title: "%"
+                      type: number
+                      format: zto
+
+          - name: mcar
+            title: MCAR Diagnostic
+            type: Table
+            visible: (showMissingDiagnostics)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - multigroup
+                  - data
+                  - missing
+                  - showMissingDiagnostics
+            columns:
+                    - name: test
+                      title: Test
+                      type: text
+                    - name: statistic
+                      title: Statistic
+                      type: number
+                    - name: df
+                      title: df
+                      type: integer
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: note
+                      title: Note
+                      type: text
 
 
   - name: models
@@ -551,6 +828,70 @@ items:
                       type: number
                       format: zto,pvalue
 
+          - name: effects
+            title: Direct, Indirect, and Total Effects
+            type: Table
+            visible: (indirect)
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - ciType
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - indirect
+                  - missing
+                  - miN
+                  - miSeed
+            columns:
+                    - name: lgroup
+                      title: Group
+                      type: text
+                      visible: (multigroup)
+                      combineBelow: true
+                    - name: effect
+                      title: Effect
+                      type: text
+                    - name: predictor
+                      title: Predictor
+                      type: text
+                    - name: outcome
+                      title: Outcome
+                      type: text
+                    - name: pathway
+                      title: Pathway
+                      type: text
+                    - name: est
+                      title: Estimate
+                      type: number
+                    - name: se
+                      title: SE
+                      type: number
+                    - name: ci.lower
+                      type: number
+                      title: Lower
+                      visible: (ci)
+                    - name: ci.upper
+                      type: number
+                      title: Upper
+                      visible: (ci)
+                    - name: std.all
+                      type: number
+                      title: β
+                    - name: z
+                      title: z
+                      type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: stars
+                      title: Sig.
+                      type: text
+
 
           - name: contrastCodeTable
             title: Contrasts Definition
@@ -593,6 +934,7 @@ items:
                    clearWith:
                       - diag_resid
                       - diag_paths
+                      - diag_sigstars
                       - diag_labsize
                       - diag_rotate
                       - diag_type

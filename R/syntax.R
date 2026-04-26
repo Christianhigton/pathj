@@ -39,6 +39,7 @@ Syntax <- R6::R6Class(
               contrasts_names=NULL,
               multigroup=NULL,
               ieffects=NULL,
+              effect_decomp_structure=NULL,
               indirect_names=NULL,
               initialize=function(options,datamatic) {
                 super$initialize(options=options,vars=unlist(c(options$endogenous,options$factors,options$covs)))
@@ -220,7 +221,13 @@ Syntax <- R6::R6Class(
               ### info contains the info table, with some loose information about the model
               alist<-list()
               alist[[length(alist)+1]]<-c(info="Estimation Method",value=self$options$estimator)
+              alist[[length(alist)+1]]<-c(info="Missing data method",value="")
+              alist[[length(alist)+1]]<-c(info="Missing data note",value="")
+              alist[[length(alist)+1]]<-c(info="Imputations",value="")
+              alist[[length(alist)+1]]<-c(info="Original observations",value="")
               alist[[length(alist)+1]]<-c(info="Number of observations",value="") 
+              alist[[length(alist)+1]]<-c(info="Missing values",value="")
+              alist[[length(alist)+1]]<-c(info="Cases removed",value="")
               alist[[length(alist)+1]]<-c(info="Free parameters",value=max(.lav_structure$free))
               alist[[length(alist)+1]]<-c(info="Converged","") 
               alist[[length(alist)+1]]<-c(info="",value="")
@@ -508,9 +515,54 @@ Syntax <- R6::R6Class(
               
               labs<-sapply(termslist,paste,collapse=" \U21d2 ")
               plabs<-paste0("IE",1:length(pars))
-              synt<-paste(plabs,pars,sep=":=",collapse = " ; ")
-              private$.lav_indirect<-synt
-              self$indirect_names<-as.list(fromb64(labs,self$vars))
+              indirect_synt<-paste(plabs,pars,sep=":=")
+              paths_plain<-fromb64(labs,self$vars)
+              preds<-fromb64(sapply(termslist, function(x) x[[1]]),self$vars)
+              outs<-fromb64(sapply(termslist, function(x) x[[length(x)]]),self$vars)
+              lgroups<-rep("1", length(plabs))
+              if (is.something(self$options$multigroup))
+                lgroups<-self$multigroup$levels[unlist(groupslist)]
+              indirect_meta<-data.frame(
+                label=plabs,
+                effect="Indirect",
+                predictor=preds,
+                outcome=outs,
+                pathway=paths_plain,
+                group=unlist(groupslist),
+                lgroup=lgroups,
+                stringsAsFactors=FALSE
+              )
+
+              total_meta<-data.frame()
+              total_synt<-character()
+              pairs<-unique(indirect_meta[,c("predictor","outcome","group","lgroup"),drop=FALSE])
+              for (i in seq_len(nrow(pairs))) {
+                pair<-pairs[i,,drop=FALSE]
+                indirect_labels<-indirect_meta$label[indirect_meta$predictor==pair$predictor &
+                                                       indirect_meta$outcome==pair$outcome &
+                                                       indirect_meta$group==pair$group]
+                rhs64<-tob64(pair$predictor,self$vars)
+                lhs64<-tob64(pair$outcome,self$vars)
+                direct<-tab[tab$rhs==rhs64 & tab$lhs==lhs64 & tab$group==pair$group,]
+                parts<-indirect_labels
+                if (nrow(direct)>0 && nzchar(direct$label[[1]]))
+                  parts<-c(direct$label[[1]], parts)
+                te_label<-paste0("TE",i)
+                total_synt[[length(total_synt)+1]]<-paste(te_label,paste(parts,collapse="+"),sep=":=")
+                total_meta<-rbind(total_meta,data.frame(
+                  label=te_label,
+                  effect="Total",
+                  predictor=pair$predictor,
+                  outcome=pair$outcome,
+                  pathway=paste(pair$predictor,pair$outcome,sep=" \U21d2 "),
+                  group=pair$group,
+                  lgroup=pair$lgroup,
+                  stringsAsFactors=FALSE
+                ))
+              }
+              private$.lav_indirect<-paste(c(indirect_synt,total_synt),collapse = " ; ")
+              self$effect_decomp_structure<-rbind(indirect_meta,total_meta)
+              self$indirect_names<-as.list(paths_plain)
               if (is.something(self$options$multigroup))
                 self$indirect_names<-paste0("(",self$indirect_names,")",SUB[unlist(groupslist)])
               names(self$indirect_names)<-pars
@@ -520,4 +572,3 @@ Syntax <- R6::R6Class(
             
           ) # end of private
 ) # End Rclass
-
