@@ -54,11 +54,34 @@ const events = {
      onChange_nothing: function(ui) {
       console.log("I did not do anything");
     },
-    onChange_varcovSupplier: function(ui) {
+     onChange_varcovSupplier: function(ui) {
       console.log("varcovsup change");
        let values = this.itemsToValues(ui.varcovSupplier.value());
         this.checkPairsValue(ui.varcov, values);
       
+    },
+    onChange_syntaxApply: function(ui) {
+      syncSyntaxEditorToOption(ui);
+      populateGuiFromSyntax(ui, this);
+    },
+    onChange_syntaxSource: function(ui) {
+      updateSyntaxEditor(ui);
+    },
+    onCreate_syntaxEditor: function(ui) {
+      createSyntaxEditor(ui, this);
+    },
+    onUpdate_syntaxEditor: function(ui) {
+      createSyntaxEditor(ui, this);
+      updateSyntaxEditor(ui);
+    },
+    onChange_syntaxExampleCopy: function(ui) {
+      copySelectedSyntaxExample(ui);
+    },
+    onChange_syntaxExampleInsert: function(ui) {
+      insertSelectedSyntaxExample(ui);
+    },
+    onChange_syntaxExampleChoice: function(ui) {
+      updateSyntaxEditor(ui);
     },
     onUpdate_varcovSupplier: function(ui) {
       console.log("varcovsup update");
@@ -219,6 +242,252 @@ var updateContrasts = function(ui, context) {
     }
 
     ui.contrasts.setValue(list3);
+};
+
+var createSyntaxEditor = function(ui, context) {
+    var control = ui.syntaxEditor;
+    if (control === undefined || control.$el === undefined)
+        return;
+
+    var root = control.$el[0];
+    if (root === undefined || root.querySelector(".pathj-syntax-editor") !== null)
+        return;
+
+    root.innerHTML = "";
+    var wrap = document.createElement("div");
+    wrap.className = "pathj-syntax-editor";
+    wrap.style.width = "360px";
+    wrap.style.maxWidth = "100%";
+    wrap.style.boxSizing = "border-box";
+
+    var textarea = document.createElement("textarea");
+    textarea.className = "pathj-syntax-textarea";
+    textarea.placeholder = "Paste lavaan or Mermaid syntax here";
+    textarea.value = getOptionValue(ui, "syntaxText", "");
+    textarea.style.width = "100%";
+    textarea.style.minHeight = "70px";
+    textarea.style.resize = "vertical";
+    textarea.style.boxSizing = "border-box";
+    textarea.style.fontFamily = "Menlo, Consolas, monospace";
+    textarea.style.fontSize = "12px";
+    textarea.style.lineHeight = "1.35";
+    textarea.style.border = "1px solid #aaa";
+    textarea.style.borderRadius = "3px";
+    textarea.style.padding = "8px";
+
+    textarea.addEventListener("input", function() {
+        setOptionValue(ui, "syntaxText", textarea.value);
+    });
+
+    var sample = document.createElement("textarea");
+    sample.className = "pathj-syntax-sample";
+    sample.readOnly = true;
+    sample.style.width = "100%";
+    sample.style.minHeight = "70px";
+    sample.style.marginTop = "8px";
+    sample.style.resize = "vertical";
+    sample.style.boxSizing = "border-box";
+    sample.style.fontFamily = "Menlo, Consolas, monospace";
+    sample.style.fontSize = "12px";
+    sample.style.lineHeight = "1.35";
+    sample.style.border = "1px solid #c7c7c7";
+    sample.style.borderRadius = "3px";
+    sample.style.padding = "8px";
+    sample.style.backgroundColor = "#f7f7f7";
+
+    wrap.appendChild(textarea);
+    wrap.appendChild(sample);
+    root.appendChild(wrap);
+    updateSyntaxEditor(ui);
+};
+
+var updateSyntaxEditor = function(ui) {
+    var control = ui.syntaxEditor;
+    if (control === undefined || control.$el === undefined)
+        return;
+    var root = control.$el[0];
+    var textarea = root.querySelector(".pathj-syntax-textarea");
+    var sample = root.querySelector(".pathj-syntax-sample");
+    var wrap = root.querySelector(".pathj-syntax-editor");
+    if (wrap !== null)
+        wrap.style.display = getOptionValue(ui, "syntaxSource", "gui") === "gui" ? "none" : "block";
+    if (textarea !== null && document.activeElement !== textarea)
+        textarea.value = getOptionValue(ui, "syntaxText", "");
+    if (sample !== null)
+        sample.value = getSelectedSyntaxExample(ui);
+};
+
+var syncSyntaxEditorToOption = function(ui) {
+    var control = ui.syntaxEditor;
+    if (control === undefined || control.$el === undefined)
+        return;
+    var textarea = control.$el[0].querySelector(".pathj-syntax-textarea");
+    if (textarea !== null)
+        setOptionValue(ui, "syntaxText", textarea.value);
+};
+
+var getSelectedSyntaxExample = function(ui) {
+    var choice = getOptionValue(ui, "syntaxExampleChoice", "lavaan");
+    var example = choice === "mermaid" ? getOptionValue(ui, "syntaxExampleMermaid", "") : getOptionValue(ui, "syntaxExampleLavaan", "");
+    return example.replace(/\\n/g, "\n");
+};
+
+var insertSelectedSyntaxExample = function(ui) {
+    var example = getSelectedSyntaxExample(ui);
+    setOptionValue(ui, "syntaxText", example);
+    var control = ui.syntaxEditor;
+    if (control !== undefined && control.$el !== undefined) {
+        var textarea = control.$el[0].querySelector(".pathj-syntax-textarea");
+        if (textarea !== null)
+            textarea.value = example;
+    }
+};
+
+var copySelectedSyntaxExample = function(ui) {
+    var example = getSelectedSyntaxExample(ui);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(example).catch(function() {
+            fallbackCopyText(example);
+        });
+    } else {
+        fallbackCopyText(example);
+    }
+};
+
+var fallbackCopyText = function(text) {
+    var node = document.createElement("textarea");
+    node.value = text;
+    node.style.position = "fixed";
+    node.style.left = "-9999px";
+    document.body.appendChild(node);
+    node.focus();
+    node.select();
+    try {
+        document.execCommand("copy");
+    } catch (e) {
+        console.log(e);
+    }
+    document.body.removeChild(node);
+};
+
+var getOptionValue = function(ui, name, fallback) {
+    if (ui[name] === undefined || ui[name].value === undefined)
+        return fallback;
+    var value = ui[name].value();
+    if (value === null || value === undefined)
+        return fallback;
+    return value;
+};
+
+var setOptionValue = function(ui, name, value) {
+    if (ui[name] !== undefined && ui[name].setValue !== undefined)
+        ui[name].setValue(value);
+};
+
+var populateGuiFromSyntax = function(ui, context) {
+    syncSyntaxEditorToOption(ui);
+    var source = ui.syntaxSource.value();
+    if (source === "gui")
+        return;
+
+    var syntax = ui.syntaxText.value();
+    if (syntax === null || syntax === undefined)
+        return;
+
+    var paths = source === "mermaid" ? parseMermaidPaths(syntax) : parseLavaanPaths(syntax);
+    if (paths.length === 0)
+        return;
+
+    var endogenous = [];
+    var predictors = [];
+    var allVars = [];
+
+    for (var i = 0; i < paths.length; i++) {
+        addUnique(endogenous, paths[i].lhs);
+        addUnique(allVars, paths[i].lhs);
+        for (var j = 0; j < paths[i].rhs.length; j++) {
+            addUnique(predictors, paths[i].rhs[j]);
+            addUnique(allVars, paths[i].rhs[j]);
+        }
+    }
+
+    var covs = [];
+    for (var k = 0; k < predictors.length; k++) {
+        if (endogenous.indexOf(predictors[k]) === -1)
+            covs.push(predictors[k]);
+    }
+
+    ui.endogenous.setValue(endogenous);
+    ui.covs.setValue(covs);
+    ui.syntaxVars.setValue(allVars);
+
+    var terms = [];
+    for (var e = 0; e < endogenous.length; e++) {
+        var rhs = [];
+        for (var p = 0; p < paths.length; p++) {
+            if (paths[p].lhs === endogenous[e]) {
+                for (var r = 0; r < paths[p].rhs.length; r++)
+                    addUnique(rhs, paths[p].rhs[r]);
+            }
+        }
+        terms.push(rhs);
+    }
+    ui.endogenousTerms.setValue(terms);
+    updateSuppliers(ui, context);
+};
+
+var parseLavaanPaths = function(syntax) {
+    var lines = syntax.replace(/;/g, "\n").split(/\n/);
+    var paths = [];
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.length === 0 || line.indexOf("#") === 0)
+            continue;
+        var match = line.match(/^([^~]+)~([^~].*)$/);
+        if (match === null)
+            continue;
+        var lhs = cleanVarName(match[1]);
+        var rhs = match[2].split("+").map(cleanVarName).filter(function(x) { return x.length > 0; });
+        if (lhs.length > 0 && rhs.length > 0)
+            paths.push({ lhs: lhs, rhs: rhs });
+    }
+    return paths;
+};
+
+var parseMermaidPaths = function(syntax) {
+    var text = syntax.replace(/;/g, " ");
+    text = text.replace(/^\s*(graph|flowchart)\s+[A-Za-z]+\s*/i, "");
+    var node = "[A-Za-z0-9_.]+(?:\\[[^\\]]+\\]|\\([^\\)]*\\)|\\{[^\\}]*\\})?";
+    var regex = new RegExp("(" + node + ")\\s*-->\\s*(?:\\|[^|]*\\|\\s*)?(" + node + ")", "g");
+    var paths = [];
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+        var rhs = cleanMermaidNode(match[1]);
+        var lhs = cleanMermaidNode(match[2]);
+        if (lhs.length > 0 && rhs.length > 0)
+            paths.push({ lhs: lhs, rhs: [ rhs ] });
+    }
+    return paths;
+};
+
+var cleanMermaidNode = function(value) {
+    value = value.trim();
+    value = value.replace(/\[.*$/, "");
+    value = value.replace(/\(.*$/, "");
+    value = value.replace(/\{.*$/, "");
+    return cleanVarName(value);
+};
+
+var cleanVarName = function(value) {
+    value = value.trim();
+    value = value.replace(/^`|`$/g, "");
+    value = value.replace(/^["']|["']$/g, "");
+    return value.trim();
+};
+
+var addUnique = function(list, value) {
+    if (value.length > 0 && list.indexOf(value) === -1)
+        list.push(value);
 };
 
 
@@ -502,4 +771,3 @@ var   cleanInteractions= function(quantum,cosmos,context){
 
 
 module.exports = events;
-

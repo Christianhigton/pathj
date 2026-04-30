@@ -49,6 +49,17 @@ pathj(
   miSeed = 12345,
   miStrategy = "include_group",
   showMissingDiagnostics = FALSE,
+  intelligentReport = TRUE,
+  reportLevel = "apa",
+  autoOrdinal = TRUE,
+  reportParagraph = TRUE,
+  showSyntax = TRUE,
+  showMermaidDiagramSyntax = FALSE,
+  showPathLegend = TRUE,
+  syntaxSource = "gui",
+  syntaxVars = NULL,
+  syntaxText = "",
+  syntaxApply = FALSE,
   formula
 )
 }
@@ -164,6 +175,43 @@ reported.}
 
 \item{showMissingDiagnostics}{\code{TRUE} or \code{FALSE} (default), show
 missing-data summaries, patterns, and an MCAR diagnostic when available.}
+
+\item{intelligentReport}{\code{TRUE} or \code{FALSE} (default TRUE), show
+automatic APA reporting, assumption checks, recommendations, insights,
+multigroup comparisons, and model-selection guidance.}
+
+\item{reportLevel}{reporting detail level: \code{"basic"}, \code{"apa"}, or
+\code{"advanced"}.}
+
+\item{autoOrdinal}{\code{TRUE} or \code{FALSE} (default TRUE), automatically
+detect ordinal or binary model variables and use ordered-variable estimation
+where appropriate.}
+
+\item{reportParagraph}{\code{TRUE} or \code{FALSE} (default TRUE), show a
+single copyable paragraph version of the automatic report with a caution to
+review the text before manuscript use.}
+
+\item{showSyntax}{\code{TRUE} or \code{FALSE} (default TRUE), show generated
+lavaan and Mermaid syntax tables.}
+
+\item{showMermaidDiagramSyntax}{\code{TRUE} or \code{FALSE} (default FALSE),
+show generated Mermaid syntax below the path diagram output.}
+
+\item{showPathLegend}{\code{TRUE} or \code{FALSE} (default TRUE), show a
+non-overlapping table legend explaining path labels and significance stars
+below the path diagram.}
+
+\item{syntaxSource}{model input source: \code{"gui"}, \code{"lavaan"}, or
+\code{"mermaid"}. When not \code{"gui"}, \code{syntaxText} is used as the
+model syntax.}
+
+\item{syntaxVars}{variables referenced by imported syntax. When omitted in R
+calls with \code{data}, all columns in \code{data} are made available.}
+
+\item{syntaxText}{full lavaan or Mermaid syntax pasted as one string.}
+
+\item{syntaxApply}{\code{TRUE} or \code{FALSE} (default FALSE), confirm that
+imported syntax should be used for estimation.}
 
 \item{formula}{(optional) the formula to use, see the examples}
 }

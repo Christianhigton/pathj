@@ -21,6 +21,20 @@ Estimate <- R6::R6Class("Estimate",
                           tab_missing_patterns=NULL,
                           tab_mcar=NULL,
                           missing_info=NULL,
+                          tab_report_text=NULL,
+                          tab_assumptions=NULL,
+                          tab_recommendations=NULL,
+                          tab_group_comparison=NULL,
+                          tab_mediation_decomp=NULL,
+                          tab_insights=NULL,
+                          tab_pcurve=NULL,
+                          tab_variable_types=NULL,
+                          tab_model_comparison=NULL,
+                          tab_report_paragraph=NULL,
+                          tab_report_html=NULL,
+                          tab_lavaan_syntax=NULL,
+                          tab_mermaid_syntax=NULL,
+                          tab_path_legend=NULL,
                           initialize=function(options,datamatic) {
                             super$initialize(
                               options=options,
@@ -49,6 +63,33 @@ Estimate <- R6::R6Class("Estimate",
 
                             model_vars<-model_variable_names(private$.lav_structure, group_var)
                             display_vars<-fromb64(model_vars,self$vars)
+                            type_vars<-intersect(tob64(unique(c(self$options$endogenous, self$options$covs, self$options$syntaxVars)), self$vars), names(data))
+                            data_types<-detect_variable_types(data[, type_vars, drop=FALSE])
+                            if (nrow(data_types)>0)
+                              data_types$variable<-fromb64(data_types$variable,self$vars)
+                            self$tab_variable_types<-data_types
+
+                            ordered_vars<-character(0)
+                            if (isTRUE(self$options$autoOrdinal)) {
+                              raw_types<-detect_variable_types(data[, type_vars, drop=FALSE])
+                              ordered_vars<-raw_types$variable[raw_types$type %in% c("ordinal", "binary")]
+                              ordered_vars<-setdiff(ordered_vars, group_var)
+                              if (length(ordered_vars)>0) {
+                                lavoptions[["ordered"]]<-ordered_vars
+                                if (!self$options$estimator %in% c("WLSMV", "DWLS", "WLS")) {
+                                  lavoptions[["estimator"]]<-"WLSMV"
+                                  lavoptions[["missing"]]<-NULL
+                                  self$warnings<-list(topic="main",message="Ordinal or binary variables were detected; WLSMV estimation with ordered variables was used for this model.")
+                                }
+                              }
+                            } else if (self$options$estimator=="WLSMV") {
+                              raw_types<-detect_variable_types(data[, type_vars, drop=FALSE])
+                              ordered_vars<-raw_types$variable[raw_types$type %in% c("ordinal", "binary")]
+                              ordered_vars<-setdiff(ordered_vars, group_var)
+                              if (length(ordered_vars)>0)
+                                lavoptions[["ordered"]]<-ordered_vars
+                            }
+
                             self$tab_missing_summary<-missing_data_summary(data, model_vars, display_vars)
                             if (isTRUE(self$options$showMissingDiagnostics)) {
                               self$tab_missing_patterns<-missing_pattern_summary(data, model_vars)
@@ -72,6 +113,8 @@ Estimate <- R6::R6Class("Estimate",
                             lavoptions[["data"]]<-data
                             if (is.something(missing$lav_missing))
                               lavoptions[["missing"]]<-missing$lav_missing
+                            if (!lavoptions[["estimator"]] %in% c("ML", "MLR", "MLM", "MLMV", "MLF"))
+                              lavoptions[["missing"]]<-NULL
 
                             ginfo("estimating the model...")
                             ## estimate the models
@@ -365,8 +408,222 @@ Estimate <- R6::R6Class("Estimate",
                               }
                             }
 
+                            self$buildSyntaxTables()
+                            self$buildPathLegend()
+                            self$buildIntelligentReport(data, ordered_vars, lavoptions[["estimator"]])
+
                             ginfo("Estimation is done...")
                           }, # end of private function estimate
+                          buildPathLegend=function() {
+                            self$tab_path_legend<-data.frame(
+                              item=c("Path label: est", "Path label: beta", "*", "**", "***"),
+                              meaning=c("Unstandardized coefficient is shown on each path.",
+                                        "Standardized coefficient is shown on each path.",
+                                        "p < .05",
+                                        "p < .01",
+                                        "p < .001"),
+                              stringsAsFactors=FALSE
+                            )
+                          },
+                          buildSyntaxTables=function() {
+                            coefs<-self$tab_coefficients
+                            covs<-self$tab_covariances
+                            defs<-self$tab_defined
+
+                            lines<-character(0)
+                            if (is.something(coefs) && nrow(coefs)>0) {
+                              rows<-lapply(split(coefs, coefs$lhs), function(x) {
+                                paste0(x$lhs[[1]], " ~ ", paste(unique(x$rhs), collapse=" + "))
+                              })
+                              lines<-c(lines, unlist(rows, use.names=FALSE))
+                            }
+                            if (is.something(covs) && nrow(covs)>0) {
+                              cov_rows<-covs[covs$lhs != covs$rhs, , drop=FALSE]
+                              if (nrow(cov_rows)>0)
+                                lines<-c(lines, paste0(cov_rows$lhs, " ~~ ", cov_rows$rhs))
+                            }
+                            if (is.something(defs) && nrow(defs)>0)
+                              lines<-c(lines, paste0(defs$lhs, " := ", defs$rhs))
+                            if (length(lines)==0)
+                              lines<-""
+                            self$tab_lavaan_syntax<-data.frame(
+                              line=seq_along(lines),
+                              code=lines,
+                              stringsAsFactors=FALSE
+                            )
+
+                            mermaid<-c("flowchart LR")
+                            if (is.something(coefs) && nrow(coefs)>0) {
+                              mermaid<-c(mermaid, vapply(seq_len(nrow(coefs)), function(i) {
+                                r<-coefs[i,]
+                                beta<-if ("std.all" %in% names(r)) r$std.all else r$est
+                                label<-paste0("beta=", apa_num(beta))
+                                if ("pvalue" %in% names(r))
+                                  label<-paste0(label, " ", effect_stars(r$pvalue))
+                                paste0("  ", mermaid_id(r$rhs), "[\"", mermaid_escape(r$rhs), "\"] -->|\"", label, "\"| ", mermaid_id(r$lhs), "[\"", mermaid_escape(r$lhs), "\"]")
+                              }, FUN.VALUE=character(1)))
+                            }
+                            self$tab_mermaid_syntax<-data.frame(
+                              line=seq_along(mermaid),
+                              code=mermaid,
+                              stringsAsFactors=FALSE
+                            )
+                          },
+                          buildIntelligentReport=function(data, ordered_vars=NULL, estimator_used=NULL) {
+                            if (!isTRUE(self$options$intelligentReport))
+                              return()
+
+                            report_data <- data
+                            names(report_data) <- fromb64(names(report_data), self$vars)
+                            report<-try_hard({
+                              generate_report(
+                                self$model,
+                                data=report_data,
+                                teaching_mode=self$options$reportLevel,
+                                cluster=self$options$clusterVariable,
+                                within=self$options$withinVariables,
+                                between=self$options$betweenVariables)
+                            })
+                            if (!isFALSE(report$error)) {
+                              self$warnings<-list(topic="main",message=paste("Intelligent report could not be generated:", report$error))
+                              return()
+                            }
+                            report<-report$obj
+
+                            report_rows<-list(
+                              data.frame(section="Model Fit", text=report$fit$text, stringsAsFactors=FALSE),
+                              data.frame(section="Direct Effects", text=report$paths$text, stringsAsFactors=FALSE),
+                              data.frame(section="Mediation", text=report$mediation$text, stringsAsFactors=FALSE),
+                              data.frame(section="Moderation", text=report$moderation$text, stringsAsFactors=FALSE),
+                              data.frame(section="Multigroup", text=report$multigroup$text, stringsAsFactors=FALSE),
+                              data.frame(section="Multilevel", text=report$multilevel$text, stringsAsFactors=FALSE),
+                              data.frame(section="Missing Data and Estimator", text=paste0(
+                                "Estimator used: ", estimator_used,
+                                if (length(ordered_vars)>0) paste0("; ordered variables: ", paste(fromb64(ordered_vars,self$vars), collapse=", ")) else "",
+                                ". Missing data method: ", self$missing_info$method_label, "."
+                              ), stringsAsFactors=FALSE),
+                              data.frame(section="Model Insights", text=report$insights$text, stringsAsFactors=FALSE),
+                              data.frame(section="Modification Indices", text=report$modification_indices$text, stringsAsFactors=FALSE),
+                              data.frame(section="P-Curve", text=report$p_curve$text, stringsAsFactors=FALSE)
+                            )
+                            self$tab_report_text<-self$decodeReportTable(do.call(rbind, report_rows))
+                            self$tab_report_paragraph<-data.frame(
+                              warning="AI-assisted statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
+                              paragraph=paste(self$tab_report_text$text, collapse=" "),
+                              stringsAsFactors=FALSE
+                            )
+                            self$tab_report_html<-self$reportParagraphHtml(self$tab_report_paragraph$warning[[1]], self$tab_report_paragraph$paragraph[[1]])
+
+                            self$tab_assumptions<-self$decodeReportTable(report$diagnostics)
+                            if (is.something(self$tab_assumptions)) {
+                              self$tab_assumptions$status_icon<-ifelse(self$tab_assumptions$status=="Met", "OK",
+                                                                       ifelse(self$tab_assumptions$status=="Violated", "Violated", "Warning"))
+                              self$tab_assumptions<-self$tab_assumptions[,c("check","status_icon","status","explanation","recommendation"),drop=FALSE]
+                            }
+
+                            recs<-report$recommendations
+                            self$tab_recommendations<-data.frame(
+                              recommendation=recs,
+                              stringsAsFactors=FALSE
+                            )
+
+                            self$tab_group_comparison<-self$decodeReportTable(report$multigroup$table)
+                            self$tab_mediation_decomp<-self$mediationDecompositionTable()
+                            self$tab_insights<-self$decodeReportTable(self$insightsTable(report$insights))
+                            self$tab_pcurve<-report$p_curve$summary
+
+                            cmp<-compare_models(Current=self$model)
+                            self$tab_model_comparison<-cmp$table
+                            self$tab_report_text<-rbind(
+                              self$tab_report_text,
+                              self$decodeReportTable(data.frame(section="Model Selection", text=cmp$text, stringsAsFactors=FALSE))
+                            )
+                          },
+                          decodeReportTable=function(tab) {
+                            if (!is.something(tab) || nrow(tab)==0)
+                              return(tab)
+                            for (nm in names(tab)) {
+                              if (is.character(tab[[nm]]))
+                                tab[[nm]]<-fromb64(tab[[nm]], self$vars)
+                            }
+                            tab
+                          },
+                          reportParagraphHtml=function(warning, paragraph) {
+                            escape_html<-function(x) {
+                              x<-gsub("&", "&amp;", x, fixed=TRUE)
+                              x<-gsub("<", "&lt;", x, fixed=TRUE)
+                              x<-gsub(">", "&gt;", x, fixed=TRUE)
+                              x<-gsub("\"", "&quot;", x, fixed=TRUE)
+                              x
+                            }
+                            warning<-escape_html(warning)
+                            paragraph<-escape_html(paragraph)
+                            paste0(
+                              "<div style='border-left: 4px solid #2d6cdf; background: #f4f8ff; padding: 12px 14px; margin: 4px 0 12px 0; border-radius: 4px;'>",
+                              "<div style='font-weight: 700; margin-bottom: 6px;'>APA reporting draft</div>",
+                              "<div style='color: #6b4e00; background: #fff7d6; border: 1px solid #ead27a; padding: 8px; border-radius: 3px; margin-bottom: 10px;'>",
+                              warning,
+                              "</div>",
+                              "<div style='white-space: pre-wrap; line-height: 1.45;'>",
+                              paragraph,
+                              "</div>",
+                              "</div>"
+                            )
+                          },
+                          mediationDecompositionTable=function() {
+                            effects<-self$tab_effects
+                            if (!is.something(effects) || nrow(effects)==0)
+                              return(NULL)
+                            indirect<-effects[effects$effect=="Indirect",,drop=FALSE]
+                            if (nrow(indirect)==0)
+                              return(NULL)
+                            direct<-effects[effects$effect=="Direct",,drop=FALSE]
+                            total<-effects[effects$effect=="Total",,drop=FALSE]
+                            rows<-lapply(seq_len(nrow(indirect)), function(i) {
+                              r<-indirect[i,,drop=FALSE]
+                              d<-direct[direct$predictor==r$predictor & direct$outcome==r$outcome & direct$lgroup==r$lgroup,,drop=FALSE]
+                              t<-total[total$predictor==r$predictor & total$outcome==r$outcome & total$lgroup==r$lgroup,,drop=FALSE]
+                              total_est<-if (nrow(t)>0) t$est[[1]] else if (nrow(d)>0) d$est[[1]] + r$est[[1]] else NA_real_
+                              data.frame(
+                                lgroup=r$lgroup,
+                                predictor=r$predictor,
+                                mediator=ifelse(grepl("\U21d2", r$pathway), paste(strsplit(r$pathway, " \U21d2 ")[[1]][-c(1,length(strsplit(r$pathway, " \U21d2 ")[[1]]))], collapse=" \U21d2 "), ""),
+                                outcome=r$outcome,
+                                direct=if (nrow(d)>0) d$est[[1]] else NA_real_,
+                                indirect=r$est[[1]],
+                                total=total_est,
+                                percent_mediated=if (!is.na(total_est) && total_est != 0) 100 * r$est[[1]] / total_est else NA_real_,
+                                stringsAsFactors=FALSE
+                              )
+                            })
+                            do.call(rbind, rows)
+                          },
+                          insightsTable=function(insights) {
+                            rows<-list()
+                            add_rows<-function(tab, label) {
+                              if (!is.something(tab) || nrow(tab)==0)
+                                return(NULL)
+                              tab<-tab[,intersect(c("lhs","rhs","beta","effect_size","pvalue"),names(tab)),drop=FALSE]
+                              for (nm in c("lhs","rhs","beta","effect_size","pvalue"))
+                                if (!nm %in% names(tab)) tab[[nm]]<-NA
+                              data.frame(
+                                insight=label,
+                                outcome=tab$lhs,
+                                predictor=tab$rhs,
+                                beta=tab$beta,
+                                effect_size=tab$effect_size,
+                                pvalue=tab$pvalue,
+                                stringsAsFactors=FALSE
+                              )
+                            }
+                            rows[[length(rows)+1]]<-add_rows(insights$strongest_predictors,"Strongest predictor")
+                            rows[[length(rows)+1]]<-add_rows(insights$risk_factors,"Risk/amplifying factor")
+                            rows[[length(rows)+1]]<-add_rows(insights$protective_factors,"Protective/buffering factor")
+                            rows<-rows[!vapply(rows,is.null,logical(1))]
+                            if (!is.something(rows))
+                              return(NULL)
+                            do.call(rbind,rows)
+                          },
                           effectsTable=function(params) {
                             direct<-params[params$op=="~",,drop=FALSE]
                             if (nrow(direct)>0) {

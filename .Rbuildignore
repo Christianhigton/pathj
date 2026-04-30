@@ -5,3 +5,7 @@ extdata$
 ^.*jmo
 jamovi$
 local$
+^.*Rcheck$
+^\\.DS_Store$
+^Rplots\\.pdf$
+^SMaple ouput\\.pdf$

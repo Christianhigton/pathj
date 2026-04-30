@@ -1,7 +1,7 @@
 Package: pathj
 Type: Package
 Title: Path Analysis
-Version: 1.1.6.9000
+Version: 1.1.7.9006
 Author: Marcello Gallucci
 Maintainer: Marcello Gallucci <mcfanda@gmail.com>
 Description: Path analysis based on lavaan, with jamovi output style and functions. Provides access to lavaan
@@ -10,8 +10,8 @@ Description: Path analysis based on lavaan, with jamovi output style and functio
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Imports: jmvcore (>= 0.8.0),  lavaan, glue, semPlot, ggplot2
-Suggests: mice, naniar, lavaan.mi
+Imports: jmvcore (>= 0.8.0),  lavaan, glue, semPlot, ggplot2, stringr
+Suggests: mice, naniar, lavaan.mi, testthat, covr
 Depends: R (>= 3.5.0)
 Exports: pathj
 RoxygenNote: 7.3.3

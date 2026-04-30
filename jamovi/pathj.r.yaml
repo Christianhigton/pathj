@@ -521,6 +521,261 @@ items:
                       type: text
 
 
+  - name: intelligent
+    title: "Intelligent Report"
+    type: Group
+    visible: (intelligentReport)
+    clearWith:
+                  - endogenous
+                  - endogenousTerms
+                  - covs
+                  - factors
+                  - contrasts
+                  - cov_y
+                  - constraints
+                  - data
+                  - multigroup
+                  - missing
+                  - miN
+                  - miSeed
+                  - miStrategy
+                  - estimator
+                  - autoOrdinal
+                  - reportLevel
+                  - reportParagraph
+                  - showSyntax
+    items:
+          - name: apaText
+            title: Automatic APA Narrative
+            type: Table
+            columns:
+                    - name: section
+                      title: Section
+                      type: text
+                      combineBelow: true
+                    - name: text
+                      title: Interpretation
+                      type: text
+
+          - name: reportParagraph
+            title: Copyable Report Paragraph
+            type: Html
+            visible: (reportParagraph)
+
+          - name: assumptions
+            title: Assumption Checks and Recommendations
+            type: Table
+            columns:
+                    - name: check
+                      title: Check
+                      type: text
+                    - name: status_icon
+                      title: Status
+                      type: text
+                    - name: status
+                      title: Result
+                      type: text
+                    - name: explanation
+                      title: Explanation
+                      type: text
+                    - name: recommendation
+                      title: Recommendation
+                      type: text
+
+          - name: recommendations
+            title: Recommended Next Steps
+            type: Table
+            columns:
+                    - name: recommendation
+                      title: Recommendation
+                      type: text
+
+          - name: variableTypes
+            title: Variable Type Detection
+            type: Table
+            columns:
+                    - name: variable
+                      title: Variable
+                      type: text
+                    - name: type
+                      title: Type
+                      type: text
+                    - name: n_unique
+                      title: Unique
+                      type: integer
+                    - name: ordered
+                      title: Ordered
+                      type: text
+
+          - name: mediationDecomp
+            title: Mediation Decomposition
+            type: Table
+            columns:
+                    - name: lgroup
+                      title: Group
+                      type: text
+                      visible: (multigroup)
+                    - name: predictor
+                      title: Predictor
+                      type: text
+                    - name: mediator
+                      title: Mediator
+                      type: text
+                    - name: outcome
+                      title: Outcome
+                      type: text
+                    - name: direct
+                      title: Direct
+                      type: number
+                    - name: indirect
+                      title: Indirect
+                      type: number
+                    - name: total
+                      title: Total
+                      type: number
+                    - name: percent_mediated
+                      title: "% Mediated"
+                      type: number
+
+          - name: groupComparison
+            title: Multigroup Path Comparison
+            type: Table
+            visible: (multigroup)
+            columns:
+                    - name: path
+                      title: Path
+                      type: text
+                    - name: group_1
+                      title: Group 1
+                      type: text
+                    - name: group_2
+                      title: Group 2
+                      type: text
+                    - name: group_1_beta
+                      title: Group 1 β
+                      type: number
+                    - name: group_2_beta
+                      title: Group 2 β
+                      type: number
+                    - name: difference
+                      title: Difference
+                      type: number
+                    - name: z
+                      title: z
+                      type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: significant
+                      title: Significant
+                      type: text
+                    - name: interpretation
+                      title: Interpretation
+                      type: text
+
+          - name: insights
+            title: Model Insights
+            type: Table
+            columns:
+                    - name: insight
+                      title: Insight
+                      type: text
+                    - name: outcome
+                      title: Outcome
+                      type: text
+                    - name: predictor
+                      title: Predictor
+                      type: text
+                    - name: beta
+                      title: β
+                      type: number
+                    - name: effect_size
+                      title: Effect Size
+                      type: text
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+
+          - name: modelComparison
+            title: Model Comparison and Selection
+            type: Table
+            columns:
+                    - name: model
+                      title: Model
+                      type: text
+                    - name: chisq
+                      title: X²
+                      type: number
+                    - name: df
+                      title: df
+                      type: integer
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+                    - name: cfi
+                      title: CFI
+                      type: number
+                    - name: tli
+                      title: TLI
+                      type: number
+                    - name: rmsea
+                      title: RMSEA
+                      type: number
+                    - name: srmr
+                      title: SRMR
+                      type: number
+                    - name: aic
+                      title: AIC
+                      type: number
+                    - name: bic
+                      title: BIC
+                      type: number
+                    - name: best_fit
+                      title: Best Fit
+                      type: text
+
+          - name: pcurve
+            title: P-Curve Screen
+            type: Table
+            columns:
+                    - name: n_tests
+                      title: Tests
+                      type: integer
+                    - name: n_significant
+                      title: Significant
+                      type: integer
+                    - name: prop_p_lt_025
+                      title: "p < .025"
+                      type: number
+
+          - name: lavaanSyntax
+            title: lavaan Syntax
+            type: Table
+            visible: (showSyntax)
+            columns:
+                    - name: line
+                      title: Line
+                      type: integer
+                    - name: code
+                      title: lavaan syntax
+                      type: text
+
+          - name: mermaidSyntax
+            title: Mermaid Syntax
+            type: Table
+            visible: (showSyntax)
+            columns:
+                    - name: line
+                      title: Line
+                      type: integer
+                    - name: code
+                      title: Mermaid syntax
+                      type: text
+
+
   - name: models
     title: "Estimates"
     type: Group
@@ -941,6 +1196,8 @@ items:
                       - diag_shape
                       - diag_abbrev
                       - diag_offset_labs
+                      - showPathLegend
+                      - showMermaidDiagramSyntax
 
                       - contrasts
                       - endogenousTerms
@@ -952,6 +1209,18 @@ items:
 
              refs: semplot
              
+           - name: legend
+             type: Table
+             title: Path Diagram Legend
+             visible: (diagram && showPathLegend)
+             columns:
+                   - name: item
+                     type: text
+                     title: Item
+                   - name: meaning
+                     type: text
+                     title: Meaning
+
            - name: notes
              type: Table
              title: ""
@@ -960,6 +1229,18 @@ items:
                    - name: message
                      type: text
                      title: "Model diagram notes"
+
+           - name: mermaidSyntax
+             type: Table
+             title: Mermaid Syntax for Path Diagram
+             visible: (diagram && showMermaidDiagramSyntax)
+             columns:
+                   - name: line
+                     type: integer
+                     title: Line
+                   - name: code
+                     type: text
+                     title: Mermaid syntax
 
   # P-value graphs
   - name: pgraphs

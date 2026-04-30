@@ -76,6 +76,50 @@ options:
       description:
           R: factor defining groups for multigroup analysis
 
+    - name: clusterVariable
+      title: Cluster / ID variable
+      type: Variable
+      suggested:
+        - nominal
+        - ordinal
+      permitted:
+        - factor
+        - numeric
+      default:
+      description:
+          R: >
+             Optional cluster or participant identifier for multilevel
+             diagnostics, ICC screening, and within-/between-person
+             interpretation.
+
+    - name: withinVariables
+      title: Within-person variables
+      type: Variables
+      suggested:
+        - continuous
+        - ordinal
+      permitted:
+        - numeric
+      default:
+      description:
+          R: >
+             Variables interpreted at the within-person or level-1 occasion
+             level when a cluster variable is supplied.
+
+    - name: betweenVariables
+      title: Between-person variables
+      type: Variables
+      suggested:
+        - continuous
+        - ordinal
+      permitted:
+        - numeric
+      default:
+      description:
+          R: >
+             Variables interpreted at the between-person or level-2 cluster
+             level when a cluster variable is supplied.
+
 
     - name: tests
       type: NMXList
@@ -567,6 +611,8 @@ options:
           title: Weighted LS
         - name: DWLS
           title: Diagonally weighted LS
+        - name: WLSMV
+          title: Robust weighted LS (WLSMV)
         - name: ULS
           title: Unweighted LS
           
@@ -666,6 +712,186 @@ options:
              and a simple MCAR diagnostic when an optional helper package is
              available.
 
+    - name: intelligentReport
+      title: Intelligent report
+      type: Bool
+      default: true
+      description:
+          R: >
+             TRUE or FALSE (default TRUE). When TRUE, produce automatic APA
+             reporting, assumption checks, recommendations, model insights,
+             mediation/moderation summaries, multigroup comparison tables, and
+             model-selection guidance.
+
+    - name: reportLevel
+      title: Report level
+      type: List
+      options:
+        - name: basic
+          title: Basic
+        - name: apa
+          title: Standard APA
+        - name: advanced
+          title: Advanced
+      default: apa
+      description:
+          R: >
+             Teaching/reporting mode used for automatic narrative output.
+             Advanced mode includes more non-significant paths and more
+             diagnostic context.
+
+    - name: autoOrdinal
+      title: Auto-detect ordinal/binary variables
+      type: Bool
+      default: true
+      description:
+          R: >
+             TRUE or FALSE (default TRUE). When TRUE, numeric ordinal-like or
+             binary model variables are declared as ordered for lavaan and WLSMV
+             is used automatically when an ML-family estimator was selected.
+
+    - name: reportParagraph
+      title: Copyable report paragraph
+      type: Bool
+      default: true
+      description:
+          R: >
+             TRUE or FALSE (default TRUE). When TRUE, show a single copyable
+             paragraph version of the automatic report with a caution to review
+             the text before using it in a manuscript.
+
+    - name: showSyntax
+      title: Show lavaan and Mermaid syntax
+      type: Bool
+      default: true
+      description:
+          R: >
+             TRUE or FALSE (default TRUE). When TRUE, show copyable lavaan
+             model syntax and Mermaid flowchart syntax generated from the
+             fitted model.
+
+    - name: showMermaidDiagramSyntax
+      title: Mermaid syntax under path diagram
+      type: Bool
+      default: false
+      description:
+          R: >
+             TRUE or FALSE (default FALSE). When TRUE, show the generated
+             Mermaid syntax directly below the path diagram output.
+
+    - name: showPathLegend
+      title: Path diagram legend
+      type: Bool
+      default: true
+      description:
+          R: >
+             TRUE or FALSE (default TRUE). When TRUE, show a compact legend
+             below the path diagram explaining coefficient labels and
+             significance stars. The legend is outside the image so it does not
+             overlap the diagram.
+
+    - name: syntaxSource
+      title: Model input
+      type: List
+      options:
+        - name: gui
+          title: GUI builder
+        - name: lavaan
+          title: lavaan syntax
+        - name: mermaid
+          title: Mermaid syntax
+      default: gui
+      description:
+          R: >
+             Choose whether the model is built from the standard jamovi GUI
+             controls, pasted lavaan syntax, or pasted Mermaid syntax.
+
+    - name: syntaxVars
+      title: Variables used in imported syntax
+      type: Variables
+      suggested:
+        - continuous
+        - ordinal
+        - nominal
+      permitted:
+        - numeric
+        - factor
+      default: null
+      description:
+          R: >
+             Dataset variables referenced by imported lavaan or Mermaid syntax.
+             Select these when Model input is lavaan syntax or Mermaid syntax
+             so jamovi keeps the required columns for estimation.
+
+    - name: syntaxText
+      title: Paste model syntax
+      type: String
+      hidden: true
+      default: ''
+      description:
+          R: >
+             Full lavaan or Mermaid model syntax pasted as one block. This is
+             used when Model input is lavaan syntax or Mermaid syntax.
+
+    - name: syntaxApply
+      title: Import syntax
+      type: Action
+      default: false
+      description:
+          R: >
+             TRUE or FALSE (default FALSE). Press this after pasting imported
+             lavaan or Mermaid syntax to confirm that the pasted syntax should
+             be used for estimation.
+
+    - name: syntaxExampleChoice
+      title: Sample syntax
+      type: List
+      options:
+        - name: lavaan
+          title: lavaan example
+        - name: mermaid
+          title: Mermaid example
+      default: lavaan
+      description:
+          R: >
+             Choose a sample syntax block to copy or insert into the model
+             syntax editor.
+
+    - name: syntaxExampleLavaan
+      title: Example lavaan syntax
+      type: String
+      hidden: true
+      default: 'Stress ~ Sleep + Support\nAnxiety ~ Stress + Support\nDepression ~ Stress + Support + Anxiety'
+      description:
+          R: >
+             Copyable example lavaan syntax shown in the options panel.
+
+    - name: syntaxExampleMermaid
+      title: Example Mermaid syntax
+      type: String
+      hidden: true
+      default: 'graph LR\nSleep[Sleep Quality] --> Stress[Stress]\nStress --> Anxiety[Anxiety]\nStress --> Depression[Depression]\nSupport[Social Support] --> Anxiety[Anxiety]\nSupport --> Depression[Depression]\nAnxiety --> Depression[Depression]'
+      description:
+          R: >
+             Copyable example Mermaid syntax shown in the options panel.
+
+    - name: syntaxExampleCopy
+      title: Copy sample syntax
+      type: Action
+      default: false
+      description:
+          R: >
+             Copy the selected sample syntax block to the clipboard when
+             supported by jamovi.
+
+    - name: syntaxExampleInsert
+      title: Insert sample syntax
+      type: Action
+      default: false
+      description:
+          R: >
+             Insert the selected sample syntax block into the model syntax
+             editor.
 
     - name: group.equal
       type: NMXList

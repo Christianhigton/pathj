@@ -42,6 +42,23 @@ children:
             maxItemCount: 1
             isTarget: true
             itemDropBehaviour: overwrite
+      - type: TargetLayoutBox
+        children:
+          - type: VariablesListBox
+            name: clusterVariable
+            maxItemCount: 1
+            isTarget: true
+            itemDropBehaviour: overwrite
+      - type: TargetLayoutBox
+        children:
+          - type: VariablesListBox
+            name: withinVariables
+            isTarget: true
+      - type: TargetLayoutBox
+        children:
+          - type: VariablesListBox
+            name: betweenVariables
+            isTarget: true
   - type: CollapseBox
     label: Endogenous Models
     collapsed: true
@@ -142,7 +159,6 @@ children:
     children:
       - type: LayoutBox
         margin: large
-        style: inline
         children:
           - type: Label
             label: Estimation
@@ -154,6 +170,9 @@ children:
               - type: ComboBox
                 name: likelihood
                 enable: (estimator:ML)
+      - type: LayoutBox
+        margin: large
+        children:
           - type: Label
             label: Inferential Tests
             margin: large
@@ -175,7 +194,6 @@ children:
                 optionName: tests
       - type: LayoutBox
         margin: large
-        style: inline
         children:
           - type: Label
             label: Missing Data
@@ -198,6 +216,27 @@ children:
                 enable: (missing:mi)
               - type: CheckBox
                 name: showMissingDiagnostics
+      - type: LayoutBox
+        margin: large
+        children:
+          - type: Label
+            label: Intelligent Reporting
+            margin: large
+            style: list
+            stretchFactor: 1
+            children:
+              - type: CheckBox
+                name: intelligentReport
+              - type: ComboBox
+                name: reportLevel
+                enable: (intelligentReport)
+              - type: CheckBox
+                name: autoOrdinal
+              - type: CheckBox
+                name: reportParagraph
+                enable: (intelligentReport)
+              - type: CheckBox
+                name: showSyntax
   - type: CollapseBox
     label: Parameters Options
     collapsed: true
@@ -367,6 +406,12 @@ children:
               - type: CheckBox
                 name: diag_offset_labs
                 enable: (diagram)
+              - type: CheckBox
+                name: showPathLegend
+                enable: (diagram)
+              - type: CheckBox
+                name: showMermaidDiagramSyntax
+                enable: (diagram)
       - type: LayoutBox
         margin: large
         stretchFactor: 1
@@ -402,6 +447,55 @@ children:
     collapsed: true
     stretchFactor: 1
     children:
+      - type: LayoutBox
+        margin: large
+        stretchFactor: 1
+        children:
+          - type: Label
+            label: Model Import
+            margin: large
+            style: list
+            children:
+              - type: ComboBox
+                name: syntaxSource
+                events:
+                  change: ./pathj.events::onChange_syntaxSource
+              - type: Label
+                label: Paste the full lavaan or Mermaid model syntax below
+                enable: (!(syntaxSource:gui))
+              - type: CustomControl
+                name: syntaxEditor
+                minWidth: 360
+                minHeight: 150
+                stretchFactor: 1
+                events:
+                  creating: ./pathj.events::onCreate_syntaxEditor
+                  updated: ./pathj.events::onUpdate_syntaxEditor
+              - type: ActionButton
+                name: syntaxApply
+                events:
+                  change: ./pathj.events::onChange_syntaxApply
+                enable: (!(syntaxSource:gui))
+              - type: VariablesListBox
+                name: syntaxVars
+                isTarget: true
+                height: small
+                enable: (!(syntaxSource:gui))
+              - type: ComboBox
+                name: syntaxExampleChoice
+                events:
+                  change: ./pathj.events::onChange_syntaxExampleChoice
+                enable: (!(syntaxSource:gui))
+              - type: ActionButton
+                name: syntaxExampleCopy
+                events:
+                  change: ./pathj.events::onChange_syntaxExampleCopy
+                enable: (!(syntaxSource:gui))
+              - type: ActionButton
+                name: syntaxExampleInsert
+                events:
+                  change: ./pathj.events::onChange_syntaxExampleInsert
+                enable: (!(syntaxSource:gui))
       - type: LayoutBox
         margin: large
         stretchFactor: 1
@@ -567,4 +661,3 @@ children:
             name: pcurve_ribbons
             label: Show 95% CI ribbons
             enable: (pgraphs)
-  

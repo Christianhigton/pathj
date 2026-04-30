@@ -42,39 +42,64 @@ Syntax <- R6::R6Class(
               effect_decomp_structure=NULL,
               indirect_names=NULL,
               initialize=function(options,datamatic) {
-                super$initialize(options=options,vars=unlist(c(options$endogenous,options$factors,options$covs)))
+                syntax_source <- options$syntaxSource
+                if (is.null(syntax_source))
+                  syntax_source <- "gui"
+                selected_vars <- unlist(c(options$endogenous, options$factors, options$covs, options$syntaxVars))
+                if (!identical(syntax_source, "gui") && is.something(datamatic$all_vars))
+                  selected_vars <- unique(c(selected_vars, datamatic$all_vars))
+                super$initialize(options=options,vars=selected_vars)
                 
 
                 self$contrasts_names<-datamatic$contrasts_names
                 self$multigroup=datamatic$multigroup
                 
-                # here we prepare the variables. Factors are expanded to dummies and all variables are B64 named
-                # this produce two lists of terms, in plain names self$lav_terms and in B64 private$.lav_terms
+                if (!identical(syntax_source, "gui")) {
+                  private$.check_imported_syntax(datamatic$all_vars)
+                  self$lav_terms <- list()
+                  private$.lav_terms <- list()
+                  private$.lav_constraints <- character(0)
+                  private$.lav_defined <- character(0)
+                  private$.lav_indirect <- character(0)
+                } else {
+                  # here we prepare the variables. Factors are expanded to dummies and all variables are B64 named
+                  # this produce two lists of terms, in plain names self$lav_terms and in B64 private$.lav_terms
 
-                factorinfo<-sapply(self$options$factors,function(f) length(datamatic$factors_levels[[f]])-1 )
-                self$factorinfo<-factorinfo
-                self$lav_terms<-lapply(self$options$endogenousTerms, function(alist) private$.factorlist(alist,factorinfo))
-                names(factorinfo)<-tob64(names(factorinfo))
-                private$.lav_terms<-lapply(tob64(self$options$endogenousTerms), function(alist) private$.factorlist(alist,factorinfo))
-                
-                # check_* check the input options and produces tables and list with names
-                ### prepare list of models for lavaan
-                private$.check_models()
-                ### check if there are interactions and warn if variables are not centered
-                private$.check_interactions()
-                ### check and build constraints and defined parameter lavaan directives
-                private$.check_constraints()
-                ### check and build lavaan directives to free covariances
-                private$.check_varcov()
+                  factorinfo<-sapply(self$options$factors,function(f) length(datamatic$factors_levels[[f]])-1 )
+                  self$factorinfo<-factorinfo
+                  self$lav_terms<-lapply(self$options$endogenousTerms, function(alist) private$.factorlist(alist,factorinfo))
+                  names(factorinfo)<-tob64(names(factorinfo))
+                  private$.lav_terms<-lapply(tob64(self$options$endogenousTerms), function(alist) private$.factorlist(alist,factorinfo))
+                  
+                  # check_* check the input options and produces tables and list with names
+                  ### prepare list of models for lavaan
+                  private$.check_models()
+                  ### check if there are interactions and warn if variables are not centered
+                  private$.check_interactions()
+                  ### check and build constraints and defined parameter lavaan directives
+                  private$.check_constraints()
+                  ### check and build lavaan directives to free covariances
+                  private$.check_varcov()
 
-                ## check and build indirect effect (if requires)
-                private$.indirect()
+                  ## check and build indirect effect (if requires)
+                  private$.indirect()
+                }
                 
                 ### here we update to build a lavaanify structure
                 private$.update()  
                 
                 }, # here initialize ends
-               models=function() {
+              models=function() {
+                  syntax_source <- self$options$syntaxSource
+                  if (is.null(syntax_source))
+                    syntax_source <- "gui"
+                  if (!identical(syntax_source, "gui")) {
+                    syntax_lines <- self$options$syntaxText
+                    syntax_lines <- trimws(syntax_lines)
+                    syntax_lines <- syntax_lines[nzchar(syntax_lines)]
+                    return(list(list(info="Model input", value=paste0(syntax_source, " syntax import")),
+                                list(info="Imported lines", value=length(syntax_lines))))
+                  }
                   lapply(seq_along(self$options$endogenousTerms), 
                        function(i) list(info="Model",
                                         value=as.character(jmvcore::constructFormula(dep=self$options$endogenous[i],
@@ -134,6 +159,81 @@ Syntax <- R6::R6Class(
                       f<-paste(f,private$.lav_indirect,collapse = " ; ")
                       }
                   f
+            },
+            .syntax_lines=function() {
+              syntax_lines <- self$options$syntaxText
+              syntax_lines <- trimws(syntax_lines)
+              syntax_lines <- unlist(strsplit(syntax_lines, "\n", fixed=TRUE), use.names=FALSE)
+              syntax_lines <- trimws(syntax_lines)
+              syntax_lines[nzchar(syntax_lines)]
+            },
+            .node_label=function(x) {
+              x <- trimws(x)
+              # Mermaid node IDs are the stable variable names; bracket text is
+              # only the diagram label, e.g. Sleep[Sleep Quality].
+              x <- sub("\\[.*$", "", x)
+              x <- sub("\\(.*$", "", x)
+              x <- sub("\\{.*$", "", x)
+              trimws(x)
+            },
+            .mermaid_to_lavaan=function(lines) {
+              lines <- gsub(";", "\n", lines, fixed=TRUE)
+              lines <- unlist(strsplit(lines, "\n", fixed=TRUE), use.names=FALSE)
+              lines <- trimws(lines)
+              lines <- lines[nzchar(lines)]
+              out <- character(0)
+              node_pattern <- "[A-Za-z0-9_.]+(?:\\[[^\\]]+\\]|\\([^\\)]*\\)|\\{[^\\}]*\\})?"
+              cov_pattern <- paste0("(", node_pattern, ")\\s*<-->\\s*(?:\\|[^|]*\\|\\s*)?(", node_pattern, ")")
+              reg_pattern <- paste0("(", node_pattern, ")\\s*-->\\s*(?:\\|[^|]*\\|\\s*)?(", node_pattern, ")")
+              for (line in lines) {
+                line <- sub("^graph\\s+[A-Za-z]+\\s*", "", line)
+                line <- sub("^flowchart\\s+[A-Za-z]+\\s*", "", line)
+                line <- trimws(line)
+                if (!nzchar(line) || grepl("^%%", line))
+                  next
+
+                cov_matches <- gregexpr(cov_pattern, line, perl=TRUE)
+                cov_hits <- regmatches(line, cov_matches)[[1]]
+                if (length(cov_hits) > 0 && cov_hits[[1]] != "-1") {
+                  for (hit in cov_hits) {
+                    parts <- regmatches(hit, regexec(cov_pattern, hit, perl=TRUE))[[1]]
+                    if (length(parts) >= 3) {
+                      lhs <- private$.node_label(parts[[2]])
+                      rhs <- private$.node_label(parts[[3]])
+                      if (nzchar(lhs) && nzchar(rhs))
+                        out <- c(out, paste(lhs, "~~", rhs))
+                    }
+                  }
+                }
+
+                reg_matches <- gregexpr(reg_pattern, line, perl=TRUE)
+                reg_hits <- regmatches(line, reg_matches)[[1]]
+                if (length(reg_hits) > 0 && reg_hits[[1]] != "-1") {
+                  for (hit in reg_hits) {
+                    parts <- regmatches(hit, regexec(reg_pattern, hit, perl=TRUE))[[1]]
+                    if (length(parts) >= 3) {
+                      rhs <- private$.node_label(parts[[2]])
+                      lhs <- private$.node_label(parts[[3]])
+                      if (nzchar(lhs) && nzchar(rhs))
+                        out <- c(out, paste(lhs, "~", rhs))
+                    }
+                  }
+                }
+              }
+              unique(out)
+            },
+            .check_imported_syntax=function(all_vars) {
+              syntax_source <- self$options$syntaxSource
+              lines <- private$.syntax_lines()
+              if (length(lines) == 0)
+                stop("No model syntax was provided.")
+              if (identical(syntax_source, "mermaid"))
+                lines <- private$.mermaid_to_lavaan(lines)
+              if (length(lines) == 0)
+                stop("No usable lavaan paths could be parsed from the imported syntax.")
+              if (is.null(all_vars))
+                all_vars <- self$vars
+              private$.lav_models <- list(tob64(paste(lines, collapse=" ; "), all_vars))
             },
             ## lavaanify the information available to obtain a raw (B64) table representing the parameters structure
             ## parameter structure means their names, labels, 

@@ -13,8 +13,18 @@ Datamatic <- R6::R6Class(
     continuous=NULL,
     continuous_scale=NULL,
     multigroup=NULL,
+    all_vars=NULL,
     initialize=function(options,data) {
-      super$initialize(options=options,vars=unlist(c(options$endogenous,options$factors,options$covs)))
+      self$all_vars <- names(data)
+      selected_vars <- unlist(c(options$endogenous, options$factors, options$covs,
+                                options$syntaxVars, options$clusterVariable,
+                                options$withinVariables, options$betweenVariables))
+      syntax_source <- options$syntaxSource
+      if (is.null(syntax_source))
+        syntax_source <- "gui"
+      if (!identical(syntax_source, "gui"))
+        selected_vars <- unique(c(selected_vars, self$all_vars))
+      super$initialize(options=options,vars=selected_vars)
       self$factors<-options$factors
       self$factors_scale<-sapply(options$contrasts, function(a) a$type)
       names(self$factors_scale)<-sapply(options$contrasts, function(a) a$var)

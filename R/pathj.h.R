@@ -10,6 +10,9 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             factors = NULL,
             covs = NULL,
             multigroup = NULL,
+            clusterVariable = NULL,
+            withinVariables = NULL,
+            betweenVariables = NULL,
             tests = NULL,
             modindices = FALSE,
             miMin = 4,
@@ -59,6 +62,22 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             miSeed = 12345,
             miStrategy = "include_group",
             showMissingDiagnostics = FALSE,
+            intelligentReport = TRUE,
+            reportLevel = "apa",
+            autoOrdinal = TRUE,
+            reportParagraph = TRUE,
+            showSyntax = TRUE,
+            showMermaidDiagramSyntax = FALSE,
+            showPathLegend = TRUE,
+            syntaxSource = "gui",
+            syntaxVars = NULL,
+            syntaxText = "",
+            syntaxApply = FALSE,
+            syntaxExampleChoice = "lavaan",
+            syntaxExampleLavaan = "Stress ~ Sleep + Support\\nAnxiety ~ Stress + Support\\nDepression ~ Stress + Support + Anxiety",
+            syntaxExampleMermaid = "graph LR\\nSleep[Sleep Quality] --> Stress[Stress]\\nStress --> Anxiety[Anxiety]\\nStress --> Depression[Depression]\\nSupport[Social Support] --> Anxiety[Anxiety]\\nSupport --> Depression[Depression]\\nAnxiety --> Depression[Depression]",
+            syntaxExampleCopy = FALSE,
+            syntaxExampleInsert = FALSE,
             group.equal = NULL, ...) {
 
             super$initialize(
@@ -102,6 +121,34 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "ordinal"),
                 permitted=list(
                     "factor"),
+                default=NULL)
+            private$..clusterVariable <- jmvcore::OptionVariable$new(
+                "clusterVariable",
+                clusterVariable,
+                suggested=list(
+                    "nominal",
+                    "ordinal"),
+                permitted=list(
+                    "factor",
+                    "numeric"),
+                default=NULL)
+            private$..withinVariables <- jmvcore::OptionVariables$new(
+                "withinVariables",
+                withinVariables,
+                suggested=list(
+                    "continuous",
+                    "ordinal"),
+                permitted=list(
+                    "numeric"),
+                default=NULL)
+            private$..betweenVariables <- jmvcore::OptionVariables$new(
+                "betweenVariables",
+                betweenVariables,
+                suggested=list(
+                    "continuous",
+                    "ordinal"),
+                permitted=list(
+                    "numeric"),
                 default=NULL)
             private$..tests <- jmvcore::OptionNMXList$new(
                 "tests",
@@ -384,6 +431,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "GLS",
                     "WLS",
                     "DWLS",
+                    "WLSMV",
                     "ULS"),
                 default="ML")
             private$..likelihood <- jmvcore::OptionList$new(
@@ -424,6 +472,91 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 "showMissingDiagnostics",
                 showMissingDiagnostics,
                 default=FALSE)
+            private$..intelligentReport <- jmvcore::OptionBool$new(
+                "intelligentReport",
+                intelligentReport,
+                default=TRUE)
+            private$..reportLevel <- jmvcore::OptionList$new(
+                "reportLevel",
+                reportLevel,
+                options=list(
+                    "basic",
+                    "apa",
+                    "advanced"),
+                default="apa")
+            private$..autoOrdinal <- jmvcore::OptionBool$new(
+                "autoOrdinal",
+                autoOrdinal,
+                default=TRUE)
+            private$..reportParagraph <- jmvcore::OptionBool$new(
+                "reportParagraph",
+                reportParagraph,
+                default=TRUE)
+            private$..showSyntax <- jmvcore::OptionBool$new(
+                "showSyntax",
+                showSyntax,
+                default=TRUE)
+            private$..showMermaidDiagramSyntax <- jmvcore::OptionBool$new(
+                "showMermaidDiagramSyntax",
+                showMermaidDiagramSyntax,
+                default=FALSE)
+            private$..showPathLegend <- jmvcore::OptionBool$new(
+                "showPathLegend",
+                showPathLegend,
+                default=TRUE)
+            private$..syntaxSource <- jmvcore::OptionList$new(
+                "syntaxSource",
+                syntaxSource,
+                options=list(
+                    "gui",
+                    "lavaan",
+                    "mermaid"),
+                default="gui")
+            private$..syntaxVars <- jmvcore::OptionVariables$new(
+                "syntaxVars",
+                syntaxVars,
+                suggested=list(
+                    "continuous",
+                    "ordinal",
+                    "nominal"),
+                permitted=list(
+                    "numeric",
+                    "factor"),
+                default=NULL)
+            private$..syntaxText <- jmvcore::OptionString$new(
+                "syntaxText",
+                syntaxText,
+                hidden=TRUE,
+                default="")
+            private$..syntaxApply <- jmvcore::OptionAction$new(
+                "syntaxApply",
+                syntaxApply,
+                default=FALSE)
+            private$..syntaxExampleChoice <- jmvcore::OptionList$new(
+                "syntaxExampleChoice",
+                syntaxExampleChoice,
+                options=list(
+                    "lavaan",
+                    "mermaid"),
+                default="lavaan")
+            private$..syntaxExampleLavaan <- jmvcore::OptionString$new(
+                "syntaxExampleLavaan",
+                syntaxExampleLavaan,
+                hidden=TRUE,
+                default="Stress ~ Sleep + Support\\nAnxiety ~ Stress + Support\\nDepression ~ Stress + Support + Anxiety")
+            private$..syntaxExampleMermaid <- jmvcore::OptionString$new(
+                "syntaxExampleMermaid",
+                syntaxExampleMermaid,
+                hidden=TRUE,
+                default="graph LR\\nSleep[Sleep Quality] --> Stress[Stress]\\nStress --> Anxiety[Anxiety]\\nStress --> Depression[Depression]\\nSupport[Social Support] --> Anxiety[Anxiety]\\nSupport --> Depression[Depression]\\nAnxiety --> Depression[Depression]")
+            private$..syntaxExampleCopy <- jmvcore::OptionAction$new(
+                "syntaxExampleCopy",
+                syntaxExampleCopy,
+                default=FALSE)
+            private$..syntaxExampleInsert <- jmvcore::OptionAction$new(
+                "syntaxExampleInsert",
+                syntaxExampleInsert,
+                default=FALSE)
             private$..group.equal <- jmvcore::OptionNMXList$new(
                 "group.equal",
                 group.equal,
@@ -438,6 +571,9 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..factors)
             self$.addOption(private$..covs)
             self$.addOption(private$..multigroup)
+            self$.addOption(private$..clusterVariable)
+            self$.addOption(private$..withinVariables)
+            self$.addOption(private$..betweenVariables)
             self$.addOption(private$..tests)
             self$.addOption(private$..modindices)
             self$.addOption(private$..miMin)
@@ -486,6 +622,22 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..miSeed)
             self$.addOption(private$..miStrategy)
             self$.addOption(private$..showMissingDiagnostics)
+            self$.addOption(private$..intelligentReport)
+            self$.addOption(private$..reportLevel)
+            self$.addOption(private$..autoOrdinal)
+            self$.addOption(private$..reportParagraph)
+            self$.addOption(private$..showSyntax)
+            self$.addOption(private$..showMermaidDiagramSyntax)
+            self$.addOption(private$..showPathLegend)
+            self$.addOption(private$..syntaxSource)
+            self$.addOption(private$..syntaxVars)
+            self$.addOption(private$..syntaxText)
+            self$.addOption(private$..syntaxApply)
+            self$.addOption(private$..syntaxExampleChoice)
+            self$.addOption(private$..syntaxExampleLavaan)
+            self$.addOption(private$..syntaxExampleMermaid)
+            self$.addOption(private$..syntaxExampleCopy)
+            self$.addOption(private$..syntaxExampleInsert)
             self$.addOption(private$..group.equal)
         }),
     active = list(
@@ -493,6 +645,9 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         factors = function() private$..factors$value,
         covs = function() private$..covs$value,
         multigroup = function() private$..multigroup$value,
+        clusterVariable = function() private$..clusterVariable$value,
+        withinVariables = function() private$..withinVariables$value,
+        betweenVariables = function() private$..betweenVariables$value,
         tests = function() private$..tests$value,
         modindices = function() private$..modindices$value,
         miMin = function() private$..miMin$value,
@@ -541,12 +696,31 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         miSeed = function() private$..miSeed$value,
         miStrategy = function() private$..miStrategy$value,
         showMissingDiagnostics = function() private$..showMissingDiagnostics$value,
+        intelligentReport = function() private$..intelligentReport$value,
+        reportLevel = function() private$..reportLevel$value,
+        autoOrdinal = function() private$..autoOrdinal$value,
+        reportParagraph = function() private$..reportParagraph$value,
+        showSyntax = function() private$..showSyntax$value,
+        showMermaidDiagramSyntax = function() private$..showMermaidDiagramSyntax$value,
+        showPathLegend = function() private$..showPathLegend$value,
+        syntaxSource = function() private$..syntaxSource$value,
+        syntaxVars = function() private$..syntaxVars$value,
+        syntaxText = function() private$..syntaxText$value,
+        syntaxApply = function() private$..syntaxApply$value,
+        syntaxExampleChoice = function() private$..syntaxExampleChoice$value,
+        syntaxExampleLavaan = function() private$..syntaxExampleLavaan$value,
+        syntaxExampleMermaid = function() private$..syntaxExampleMermaid$value,
+        syntaxExampleCopy = function() private$..syntaxExampleCopy$value,
+        syntaxExampleInsert = function() private$..syntaxExampleInsert$value,
         group.equal = function() private$..group.equal$value),
     private = list(
         ..endogenous = NA,
         ..factors = NA,
         ..covs = NA,
         ..multigroup = NA,
+        ..clusterVariable = NA,
+        ..withinVariables = NA,
+        ..betweenVariables = NA,
         ..tests = NA,
         ..modindices = NA,
         ..miMin = NA,
@@ -595,6 +769,22 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         ..miSeed = NA,
         ..miStrategy = NA,
         ..showMissingDiagnostics = NA,
+        ..intelligentReport = NA,
+        ..reportLevel = NA,
+        ..autoOrdinal = NA,
+        ..reportParagraph = NA,
+        ..showSyntax = NA,
+        ..showMermaidDiagramSyntax = NA,
+        ..showPathLegend = NA,
+        ..syntaxSource = NA,
+        ..syntaxVars = NA,
+        ..syntaxText = NA,
+        ..syntaxApply = NA,
+        ..syntaxExampleChoice = NA,
+        ..syntaxExampleLavaan = NA,
+        ..syntaxExampleMermaid = NA,
+        ..syntaxExampleCopy = NA,
+        ..syntaxExampleInsert = NA,
         ..group.equal = NA)
 )
 
@@ -606,6 +796,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         info = function() private$.items[["info"]],
         fit = function() private$.items[["fit"]],
         diagnostics = function() private$.items[["diagnostics"]],
+        intelligent = function() private$.items[["intelligent"]],
         models = function() private$.items[["models"]],
         pathgroup = function() private$.items[["pathgroup"]],
         pgraphs = function() private$.items[["pgraphs"]],
@@ -1221,6 +1412,331 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
+                    apaText = function() private$.items[["apaText"]],
+                    reportParagraph = function() private$.items[["reportParagraph"]],
+                    assumptions = function() private$.items[["assumptions"]],
+                    recommendations = function() private$.items[["recommendations"]],
+                    variableTypes = function() private$.items[["variableTypes"]],
+                    mediationDecomp = function() private$.items[["mediationDecomp"]],
+                    groupComparison = function() private$.items[["groupComparison"]],
+                    insights = function() private$.items[["insights"]],
+                    modelComparison = function() private$.items[["modelComparison"]],
+                    pcurve = function() private$.items[["pcurve"]],
+                    lavaanSyntax = function() private$.items[["lavaanSyntax"]],
+                    mermaidSyntax = function() private$.items[["mermaidSyntax"]]),
+                private = list(),
+                public=list(
+                    initialize=function(options) {
+                        super$initialize(
+                            options=options,
+                            name="intelligent",
+                            title="Intelligent Report",
+                            clearWith=list(
+                    "endogenous",
+                    "endogenousTerms",
+                    "covs",
+                    "factors",
+                    "contrasts",
+                    "cov_y",
+                    "constraints",
+                    "data",
+                    "multigroup",
+                    "missing",
+                    "miN",
+                    "miSeed",
+                    "miStrategy",
+                    "estimator",
+                    "autoOrdinal",
+                    "reportLevel",
+                    "reportParagraph",
+                    "showSyntax"))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="apaText",
+                            title="Automatic APA Narrative",
+                            columns=list(
+                                list(
+                                    `name`="section", 
+                                    `title`="Section", 
+                                    `type`="text", 
+                                    `combineBelow`=TRUE),
+                                list(
+                                    `name`="text", 
+                                    `title`="Interpretation", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Html$new(
+                            options=options,
+                            name="reportParagraph",
+                            title="Copyable Report Paragraph",
+                            visible="(reportParagraph)"))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="assumptions",
+                            title="Assumption Checks and Recommendations",
+                            columns=list(
+                                list(
+                                    `name`="check", 
+                                    `title`="Check", 
+                                    `type`="text"),
+                                list(
+                                    `name`="status_icon", 
+                                    `title`="Status", 
+                                    `type`="text"),
+                                list(
+                                    `name`="status", 
+                                    `title`="Result", 
+                                    `type`="text"),
+                                list(
+                                    `name`="explanation", 
+                                    `title`="Explanation", 
+                                    `type`="text"),
+                                list(
+                                    `name`="recommendation", 
+                                    `title`="Recommendation", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="recommendations",
+                            title="Recommended Next Steps",
+                            columns=list(
+                                list(
+                                    `name`="recommendation", 
+                                    `title`="Recommendation", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="variableTypes",
+                            title="Variable Type Detection",
+                            columns=list(
+                                list(
+                                    `name`="variable", 
+                                    `title`="Variable", 
+                                    `type`="text"),
+                                list(
+                                    `name`="type", 
+                                    `title`="Type", 
+                                    `type`="text"),
+                                list(
+                                    `name`="n_unique", 
+                                    `title`="Unique", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="ordered", 
+                                    `title`="Ordered", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="mediationDecomp",
+                            title="Mediation Decomposition",
+                            columns=list(
+                                list(
+                                    `name`="lgroup", 
+                                    `title`="Group", 
+                                    `type`="text", 
+                                    `visible`="(multigroup)"),
+                                list(
+                                    `name`="predictor", 
+                                    `title`="Predictor", 
+                                    `type`="text"),
+                                list(
+                                    `name`="mediator", 
+                                    `title`="Mediator", 
+                                    `type`="text"),
+                                list(
+                                    `name`="outcome", 
+                                    `title`="Outcome", 
+                                    `type`="text"),
+                                list(
+                                    `name`="direct", 
+                                    `title`="Direct", 
+                                    `type`="number"),
+                                list(
+                                    `name`="indirect", 
+                                    `title`="Indirect", 
+                                    `type`="number"),
+                                list(
+                                    `name`="total", 
+                                    `title`="Total", 
+                                    `type`="number"),
+                                list(
+                                    `name`="percent_mediated", 
+                                    `title`="% Mediated", 
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="groupComparison",
+                            title="Multigroup Path Comparison",
+                            visible="(multigroup)",
+                            columns=list(
+                                list(
+                                    `name`="path", 
+                                    `title`="Path", 
+                                    `type`="text"),
+                                list(
+                                    `name`="group_1", 
+                                    `title`="Group 1", 
+                                    `type`="text"),
+                                list(
+                                    `name`="group_2", 
+                                    `title`="Group 2", 
+                                    `type`="text"),
+                                list(
+                                    `name`="group_1_beta", 
+                                    `title`="Group 1 \u03B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="group_2_beta", 
+                                    `title`="Group 2 \u03B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="difference", 
+                                    `title`="Difference", 
+                                    `type`="number"),
+                                list(
+                                    `name`="z", 
+                                    `title`="z", 
+                                    `type`="number"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="significant", 
+                                    `title`="Significant", 
+                                    `type`="text"),
+                                list(
+                                    `name`="interpretation", 
+                                    `title`="Interpretation", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="insights",
+                            title="Model Insights",
+                            columns=list(
+                                list(
+                                    `name`="insight", 
+                                    `title`="Insight", 
+                                    `type`="text"),
+                                list(
+                                    `name`="outcome", 
+                                    `title`="Outcome", 
+                                    `type`="text"),
+                                list(
+                                    `name`="predictor", 
+                                    `title`="Predictor", 
+                                    `type`="text"),
+                                list(
+                                    `name`="beta", 
+                                    `title`="\u03B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="effect_size", 
+                                    `title`="Effect Size", 
+                                    `type`="text"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="modelComparison",
+                            title="Model Comparison and Selection",
+                            columns=list(
+                                list(
+                                    `name`="model", 
+                                    `title`="Model", 
+                                    `type`="text"),
+                                list(
+                                    `name`="chisq", 
+                                    `title`="X\u00B2", 
+                                    `type`="number"),
+                                list(
+                                    `name`="df", 
+                                    `title`="df", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="pvalue", 
+                                    `title`="p", 
+                                    `type`="number", 
+                                    `format`="zto,pvalue"),
+                                list(
+                                    `name`="cfi", 
+                                    `title`="CFI", 
+                                    `type`="number"),
+                                list(
+                                    `name`="tli", 
+                                    `title`="TLI", 
+                                    `type`="number"),
+                                list(
+                                    `name`="rmsea", 
+                                    `title`="RMSEA", 
+                                    `type`="number"),
+                                list(
+                                    `name`="srmr", 
+                                    `title`="SRMR", 
+                                    `type`="number"),
+                                list(
+                                    `name`="aic", 
+                                    `title`="AIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="bic", 
+                                    `title`="BIC", 
+                                    `type`="number"),
+                                list(
+                                    `name`="best_fit", 
+                                    `title`="Best Fit", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="pcurve",
+                            title="P-Curve Screen",
+                            columns=list(
+                                list(
+                                    `name`="n_tests", 
+                                    `title`="Tests", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="n_significant", 
+                                    `title`="Significant", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="prop_p_lt_025", 
+                                    `title`="p < .025", 
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="lavaanSyntax",
+                            title="lavaan Syntax",
+                            visible="(showSyntax)",
+                            columns=list(
+                                list(
+                                    `name`="line", 
+                                    `title`="Line", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="code", 
+                                    `title`="lavaan syntax", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="mermaidSyntax",
+                            title="Mermaid Syntax",
+                            visible="(showSyntax)",
+                            columns=list(
+                                list(
+                                    `name`="line", 
+                                    `title`="Line", 
+                                    `type`="integer"),
+                                list(
+                                    `name`="code", 
+                                    `title`="Mermaid syntax", 
+                                    `type`="text"))))}))$new(options=options))
+            self$add(R6::R6Class(
+                inherit = jmvcore::Group,
+                active = list(
                     r2 = function() private$.items[["r2"]],
                     coefficients = function() private$.items[["coefficients"]],
                     correlations = function() private$.items[["correlations"]],
@@ -1656,7 +2172,9 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
                     diagrams = function() private$.items[["diagrams"]],
-                    notes = function() private$.items[["notes"]]),
+                    notes = function() private$.items[["notes"]],
+                    legend = function() private$.items[["legend"]],
+                    mermaidSyntax = function() private$.items[["mermaidSyntax"]]),
                 private = list(),
                 public=list(
                     initialize=function(options) {
@@ -1692,6 +2210,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     "diag_shape",
                                     "diag_abbrev",
                                     "diag_offset_labs",
+                                    "showPathLegend",
+                                    "showMermaidDiagramSyntax",
                                     "contrasts",
                                     "endogenousTerms",
                                     "cov_y",
@@ -1709,7 +2229,35 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="message", 
                                     `type`="text", 
-                                    `title`="Model diagram notes"))))}))$new(options=options))
+                                    `title`="Model diagram notes"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="legend",
+                            title="Path Diagram Legend",
+                            visible="(diagram && showPathLegend)",
+                            columns=list(
+                                list(
+                                    `name`="item", 
+                                    `type`="text", 
+                                    `title`="Item"),
+                                list(
+                                    `name`="meaning", 
+                                    `type`="text", 
+                                    `title`="Meaning"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="mermaidSyntax",
+                            title="Mermaid Syntax for Path Diagram",
+                            visible="(diagram && showMermaidDiagramSyntax)",
+                            columns=list(
+                                list(
+                                    `name`="line", 
+                                    `type`="integer", 
+                                    `title`="Line"),
+                                list(
+                                    `name`="code", 
+                                    `type`="text", 
+                                    `title`="Mermaid syntax"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
@@ -1795,4 +2343,3 @@ pathjBase <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 requiresMissings = FALSE,
                 weightsSupport = 'auto')
         }))
-

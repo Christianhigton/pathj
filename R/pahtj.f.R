@@ -7,6 +7,13 @@
 #'   \code{data}
 #' @param covs a vector of strings naming the covariates from \code{data}
 #' @param multigroup factor defining groups for multigroup analysis
+#' @param clusterVariable optional cluster or participant identifier used for
+#'   multilevel diagnostics, ICC screening, and within-/between-person
+#'   interpretation.
+#' @param withinVariables variables interpreted at the within-person or level-1
+#'   occasion level when \code{clusterVariable} is supplied.
+#' @param betweenVariables variables interpreted at the between-person or level-2
+#'   cluster level when \code{clusterVariable} is supplied.
 #' @param se .
 #' @param r2ci Choose the confidence interval type
 #' @param r2test .
@@ -69,6 +76,32 @@
 #'   fit measures are also reported.
 #' @param showMissingDiagnostics \code{TRUE} or \code{FALSE} (default), show
 #'   missing-data summaries, patterns, and an MCAR diagnostic when available.
+#' @param intelligentReport \code{TRUE} or \code{FALSE} (default TRUE), show
+#'   automatic APA reporting, assumption checks, recommendations, insights,
+#'   multigroup comparisons, and model-selection guidance.
+#' @param reportLevel reporting detail level: \code{"basic"}, \code{"apa"}, or
+#'   \code{"advanced"}.
+#' @param autoOrdinal \code{TRUE} or \code{FALSE} (default TRUE), automatically
+#'   detect ordinal or binary model variables and use ordered-variable estimation
+#'   where appropriate.
+#' @param reportParagraph \code{TRUE} or \code{FALSE} (default TRUE), show a
+#'   single copyable paragraph version of the automatic report with a caution to
+#'   review the text before manuscript use.
+#' @param showSyntax \code{TRUE} or \code{FALSE} (default TRUE), show generated
+#'   lavaan and Mermaid syntax tables.
+#' @param showMermaidDiagramSyntax \code{TRUE} or \code{FALSE} (default FALSE),
+#'   show generated Mermaid syntax below the path diagram output.
+#' @param showPathLegend \code{TRUE} or \code{FALSE} (default TRUE), show a
+#'   non-overlapping table legend explaining path labels and significance stars
+#'   below the path diagram.
+#' @param syntaxSource model input source: \code{"gui"}, \code{"lavaan"}, or
+#'   \code{"mermaid"}. When not \code{"gui"}, \code{syntaxText} is used as the
+#'   model syntax.
+#' @param syntaxVars variables referenced by imported syntax. When omitted in R
+#'   calls with \code{data}, all columns in \code{data} are made available.
+#' @param syntaxText full lavaan or Mermaid syntax pasted as one string.
+#' @param syntaxApply \code{TRUE} or \code{FALSE} (default FALSE), confirm that
+#'   imported syntax should be used for estimation.
 #' @param formula (optional) the formula to use, see the examples
 #' @return A results object containing:
 #' \tabular{llllll}{
@@ -101,6 +134,9 @@ pathj <- function(
   factors = NULL,
   covs = NULL,
   multigroup = NULL,
+  clusterVariable = NULL,
+  withinVariables = NULL,
+  betweenVariables = NULL,
   se = "standard",
   r2ci = "fisher",
   r2test = FALSE,
@@ -141,6 +177,17 @@ pathj <- function(
   miSeed = 12345,
   miStrategy = "include_group",
   showMissingDiagnostics = FALSE,
+  intelligentReport = TRUE,
+  reportLevel = "apa",
+  autoOrdinal = TRUE,
+  reportParagraph = TRUE,
+  showSyntax = TRUE,
+  showMermaidDiagramSyntax = FALSE,
+  showPathLegend = TRUE,
+  syntaxSource = "gui",
+  syntaxVars = NULL,
+  syntaxText = "",
+  syntaxApply = FALSE,
   formula) {
   
   if ( ! requireNamespace("jmvcore", quietly=TRUE))
@@ -173,13 +220,22 @@ pathj <- function(
   if ( ! missing(factors)) factors <- jmvcore::resolveQuo(jmvcore::enquo(factors))
   if ( ! missing(covs)) covs <- jmvcore::resolveQuo(jmvcore::enquo(covs))
   if ( ! missing(multigroup)) multigroup <- jmvcore::resolveQuo(jmvcore::enquo(multigroup))
+  if ( ! missing(clusterVariable)) clusterVariable <- jmvcore::resolveQuo(jmvcore::enquo(clusterVariable))
+  if ( ! missing(withinVariables)) withinVariables <- jmvcore::resolveQuo(jmvcore::enquo(withinVariables))
+  if ( ! missing(betweenVariables)) betweenVariables <- jmvcore::resolveQuo(jmvcore::enquo(betweenVariables))
   if (missing(data))
     data <- jmvcore::marshalData(
       parent.frame(),
       `if`( ! missing(endogenous), endogenous, NULL),
       `if`( ! missing(factors), factors, NULL),
       `if`( ! missing(covs), covs, NULL),
-      `if`( ! missing(multigroup), multigroup, NULL))
+      `if`( ! missing(multigroup), multigroup, NULL),
+      `if`( ! missing(clusterVariable), clusterVariable, NULL),
+      `if`( ! missing(withinVariables), withinVariables, NULL),
+      `if`( ! missing(betweenVariables), betweenVariables, NULL))
+
+  if (!identical(syntaxSource, "gui") && is.null(syntaxVars) && !missing(data))
+    syntaxVars <- names(data)
   
   for (v in factors) if (v %in% names(data)) data[[v]] <- as.factor(data[[v]])
   for (v in multigroup) if (v %in% names(data)) data[[v]] <- as.factor(data[[v]])
@@ -196,6 +252,9 @@ pathj <- function(
     factors = factors,
     covs = covs,
     multigroup = multigroup,
+    clusterVariable = clusterVariable,
+    withinVariables = withinVariables,
+    betweenVariables = betweenVariables,
     se = se,
     r2ci = r2ci,
     r2test = r2test,
@@ -234,7 +293,18 @@ pathj <- function(
     miN = miN,
     miSeed = miSeed,
     miStrategy = miStrategy,
-    showMissingDiagnostics = showMissingDiagnostics)
+    showMissingDiagnostics = showMissingDiagnostics,
+    intelligentReport = intelligentReport,
+    reportLevel = reportLevel,
+    autoOrdinal = autoOrdinal,
+    reportParagraph = reportParagraph,
+    showSyntax = showSyntax,
+    showMermaidDiagramSyntax = showMermaidDiagramSyntax,
+    showPathLegend = showPathLegend,
+    syntaxSource = syntaxSource,
+    syntaxVars = syntaxVars,
+    syntaxText = syntaxText,
+    syntaxApply = syntaxApply)
   
   analysis <- pathjClass$new(
     options = options,

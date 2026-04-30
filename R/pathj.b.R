@@ -107,6 +107,47 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             j.init_table(self$results$diagnostics$mcar,
                          lav_machine$tab_mcar,
                          ci=F)
+
+            j.init_table(self$results$intelligent$apaText,
+                         lav_machine$tab_report_text,
+                         ci=F)
+            j.init_table(self$results$intelligent$assumptions,
+                         lav_machine$tab_assumptions,
+                         ci=F)
+            j.init_table(self$results$intelligent$recommendations,
+                         lav_machine$tab_recommendations,
+                         ci=F)
+            j.init_table(self$results$intelligent$variableTypes,
+                         lav_machine$tab_variable_types,
+                         ci=F)
+            j.init_table(self$results$intelligent$mediationDecomp,
+                         lav_machine$tab_mediation_decomp,
+                         ci=F,
+                         spaceby="lgroup")
+            j.init_table(self$results$intelligent$groupComparison,
+                         lav_machine$tab_group_comparison,
+                         ci=F)
+            j.init_table(self$results$intelligent$insights,
+                         lav_machine$tab_insights,
+                         ci=F)
+            j.init_table(self$results$intelligent$modelComparison,
+                         lav_machine$tab_model_comparison,
+                         ci=F)
+            j.init_table(self$results$intelligent$pcurve,
+                         lav_machine$tab_pcurve,
+                         ci=F)
+            j.init_table(self$results$intelligent$lavaanSyntax,
+                         lav_machine$tab_lavaan_syntax,
+                         ci=F)
+            j.init_table(self$results$intelligent$mermaidSyntax,
+                         lav_machine$tab_mermaid_syntax,
+                         ci=F)
+            j.init_table(self$results$pathgroup$legend,
+                         lav_machine$tab_path_legend,
+                         ci=F)
+            j.init_table(self$results$pathgroup$mermaidSyntax,
+                         lav_machine$tab_mermaid_syntax,
+                         ci=F)
             
             # #### contrast tables ####
              if (length(self$options$factors)>0) {
@@ -207,6 +248,23 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              j.fill_table(self$results$diagnostics$missingSummary, lav_machine$tab_missing_summary, append=TRUE)
              j.fill_table(self$results$diagnostics$missingPatterns, lav_machine$tab_missing_patterns, append=TRUE)
              j.fill_table(self$results$diagnostics$mcar, lav_machine$tab_mcar, append=TRUE)
+
+             j.fill_table(self$results$intelligent$apaText, lav_machine$tab_report_text, append=TRUE)
+             if (isTRUE(self$options$reportParagraph) && is.something(lav_machine$tab_report_html))
+                 self$results$intelligent$reportParagraph$setContent(lav_machine$tab_report_html)
+             j.fill_table(self$results$intelligent$assumptions, lav_machine$tab_assumptions, append=TRUE)
+             j.fill_table(self$results$intelligent$recommendations, lav_machine$tab_recommendations, append=TRUE)
+             j.fill_table(self$results$intelligent$variableTypes, lav_machine$tab_variable_types, append=TRUE)
+             j.fill_table(self$results$intelligent$mediationDecomp, lav_machine$tab_mediation_decomp, append=TRUE, spaceby="lgroup")
+             j.fill_table(self$results$intelligent$groupComparison, lav_machine$tab_group_comparison, append=TRUE)
+             j.fill_table(self$results$intelligent$insights, lav_machine$tab_insights, append=TRUE)
+             j.fill_table(self$results$intelligent$modelComparison, lav_machine$tab_model_comparison, append=TRUE)
+             j.fill_table(self$results$intelligent$pcurve, lav_machine$tab_pcurve, append=TRUE)
+             j.fill_table(self$results$intelligent$lavaanSyntax, lav_machine$tab_lavaan_syntax, append=TRUE)
+             j.fill_table(self$results$intelligent$mermaidSyntax, lav_machine$tab_mermaid_syntax, append=TRUE)
+             if (isTRUE(self$options$diagram) && isTRUE(self$options$showPathLegend))
+                 j.fill_table(self$results$pathgroup$legend, lav_machine$tab_path_legend, append=TRUE)
+             j.fill_table(self$results$pathgroup$mermaidSyntax, lav_machine$tab_mermaid_syntax, append=TRUE)
 
              
             ### parameters estimates ####

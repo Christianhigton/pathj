@@ -46,7 +46,7 @@ devtools::install_github("pathj/pathj")
 
 ## Missing data example
 
-PATHj 1.1.6.9000 supports explicit missing-data handling in the SEM workflow. FIML is the default for ML models.
+PATHj 1.1.7.9006 supports explicit missing-data handling in the SEM workflow. FIML is the default for ML models.
 
 ```r
 results <- pathj(
