@@ -357,6 +357,30 @@ options:
             varying sample sizes and draws p-value vs sample-size lines for
             each predictor.
 
+    - name: pcurve_target
+      title: P-curve focus
+      type: List
+      options:
+        - name: all
+          title: All available effects
+        - name: direct
+          title: Direct paths
+        - name: mediation
+          title: Mediation / indirect effects
+        - name: moderation
+          title: Moderation / interaction paths
+        - name: multigroup
+          title: Multigroup paths
+        - name: multilevel
+          title: Multilevel variables
+      default: all
+      description:
+          R: >
+            Select which family of effects is screened in p-curve summaries
+            and p-value graphs. Mediation uses defined indirect effects when
+            available; moderation uses interaction paths; multilevel screens
+            paths involving selected within- or between-person variables.
+
     - name: pcurve_sizes
       title: Sample sizes
       type: String

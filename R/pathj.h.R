@@ -33,6 +33,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 list()),
             diagram = FALSE,
             pgraphs = FALSE,
+            pcurve_target = "all",
             pcurve_sizes = "50, 100, 200, 500",
             pcurve_linetype = "solid",
             pcurve_lwd = 1.2,
@@ -289,6 +290,17 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 "pgraphs",
                 pgraphs,
                 default=FALSE)
+            private$..pcurve_target <- jmvcore::OptionList$new(
+                "pcurve_target",
+                pcurve_target,
+                options=list(
+                    "all",
+                    "direct",
+                    "mediation",
+                    "moderation",
+                    "multigroup",
+                    "multilevel"),
+                default="all")
             private$..pcurve_sizes <- jmvcore::OptionString$new(
                 "pcurve_sizes",
                 pcurve_sizes,
@@ -593,6 +605,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..endogenousTerms)
             self$.addOption(private$..diagram)
             self$.addOption(private$..pgraphs)
+            self$.addOption(private$..pcurve_target)
             self$.addOption(private$..pcurve_sizes)
             self$.addOption(private$..pcurve_linetype)
             self$.addOption(private$..pcurve_lwd)
@@ -667,6 +680,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         endogenousTerms = function() private$..endogenousTerms$value,
         diagram = function() private$..diagram$value,
         pgraphs = function() private$..pgraphs$value,
+        pcurve_target = function() private$..pcurve_target$value,
         pcurve_sizes = function() private$..pcurve_sizes$value,
         pcurve_linetype = function() private$..pcurve_linetype$value,
         pcurve_lwd = function() private$..pcurve_lwd$value,
@@ -740,6 +754,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         ..endogenousTerms = NA,
         ..diagram = NA,
         ..pgraphs = NA,
+        ..pcurve_target = NA,
         ..pcurve_sizes = NA,
         ..pcurve_linetype = NA,
         ..pcurve_lwd = NA,
@@ -2298,6 +2313,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     "varcov",
                                     "cov_y",
                                     "pgraphs",
+                                    "pcurve_target",
                                     "pcurve_sizes",
                                     "pcurve_linetype",
                                     "pcurve_lwd",

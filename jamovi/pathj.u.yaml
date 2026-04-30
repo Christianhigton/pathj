@@ -639,6 +639,10 @@ children:
           - type: CheckBox
             name: pgraphs
             label: Show p-value graphs
+          - type: ComboBox
+            name: pcurve_target
+            label: P-curve focus
+            enable: (pgraphs)
           - type: TextBox
             name: pcurve_sizes
             label: Sample sizes

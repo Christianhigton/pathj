@@ -415,6 +415,11 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     v
                 }
                 sizes <- .parseSizes(try(self$options$pcurve_sizes, silent=TRUE))
+                ptarget <- try(as.character(self$options$pcurve_target), silent=TRUE)
+                if (!is.character(ptarget) || length(ptarget) == 0 ||
+                    !ptarget[1] %in% c("all", "direct", "mediation", "moderation", "multigroup", "multilevel"))
+                    ptarget <- "all"
+                ptarget <- ptarget[1]
                 tab <- lavm$tab_coefficients
                 if (is.something(tab)) {
                     tab$z <- suppressWarnings(as.numeric(tab$z))
@@ -424,6 +429,40 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                         tab$beta <- suppressWarnings(as.numeric(tab$std.all))
                     else
                         tab$beta <- NA_real_
+                    mod_label <- if ("label" %in% names(tab)) grepl("int|mod", tolower(tab$label)) else rep(FALSE, nrow(tab))
+                    tab$effect_type <- ifelse(grepl("__XX__XX__|:|\\*", tab$rhs) | mod_label, "Moderation", "Direct")
+                    if (ptarget == "moderation")
+                        tab <- tab[tab$effect_type == "Moderation", , drop=FALSE]
+                    else if (ptarget == "direct")
+                        tab <- tab[tab$effect_type == "Direct", , drop=FALSE]
+                    else if (ptarget == "mediation")
+                        tab <- tab[FALSE, , drop=FALSE]
+                    else if (ptarget == "multigroup")
+                        tab <- if (is.something(mg)) tab else tab[FALSE, , drop=FALSE]
+                    else if (ptarget == "multilevel") {
+                        ml_vars <- unique(c(self$options$withinVariables, self$options$betweenVariables))
+                        tab <- tab[tab$lhs %in% ml_vars | tab$rhs %in% ml_vars, , drop=FALSE]
+                    }
+                    if (ptarget %in% c("all", "mediation")) {
+                        defs <- lavm$tab_defined
+                        if (is.something(defs) && nrow(defs) > 0) {
+                            defs$z <- suppressWarnings(as.numeric(defs$z))
+                            defs <- defs[is.finite(defs$z), , drop=FALSE]
+                            if (ptarget == "mediation") {
+                                med_hit <- grepl("ind|med", tolower(defs$lhs))
+                                if (any(med_hit))
+                                    defs <- defs[med_hit, , drop=FALSE]
+                            }
+                            if (nrow(defs) > 0) {
+                                defs$rhs <- if ("rhs" %in% names(defs)) defs$rhs else "defined"
+                                defs$rhs[is.na(defs$rhs) | !nzchar(defs$rhs)] <- "defined effect"
+                                defs$beta <- if ("std.all" %in% names(defs)) suppressWarnings(as.numeric(defs$std.all)) else NA_real_
+                                defs$effect_type <- "Mediation"
+                                tab <- rbind(tab[, intersect(names(tab), names(defs)), drop=FALSE],
+                                             defs[, intersect(names(tab), names(defs)), drop=FALSE])
+                            }
+                        }
+                    }
                 }
                 # try to obtain 95% CI for standardized effects (beta) for labelling
                 ss <- try(lavaan::standardizedSolution(lavm$model, ci=TRUE), silent=TRUE)
@@ -442,7 +481,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     }
                 }
                 if (!is.something(tab) || nrow(tab)==0) {
-                    jmvcore::reject("Model has no regression coefficients to plot")
+                    jmvcore::reject("No p-curve effects matched the selected focus")
                     return()
                 }
                 # group sizes
@@ -550,10 +589,17 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 brks <- baseBreaks
 
                 # filter per-image group
-                ttl <- "Mean p-values vs Sample Size"
+                target_title <- switch(ptarget,
+                                       all = "All Effects",
+                                       direct = "Direct Paths",
+                                       mediation = "Mediation / Indirect Effects",
+                                       moderation = "Moderation / Interaction Paths",
+                                       multigroup = "Multigroup Paths",
+                                       multilevel = "Multilevel Variables")
+                ttl <- paste0(target_title, ": Mean p-values vs Sample Size")
                 if (is.something(mg) && !is.null(image$state$gkey)) {
                     d <- d[d$group == image$state$gkey, , drop=FALSE]
-                    ttl <- paste0(image$state$gkey, ": Mean p-values vs Sample Size")
+                    ttl <- paste0(image$state$gkey, ": ", target_title, " Mean p-values vs Sample Size")
                 }
                 # line style options
                 .lt <- try(as.character(self$options$pcurve_linetype), silent=TRUE)

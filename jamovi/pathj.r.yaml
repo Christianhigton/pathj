@@ -1276,6 +1276,7 @@ items:
                    - varcov
                    - cov_y
                    - pgraphs
+                   - pcurve_target
                    - pcurve_sizes
                    - pcurve_linetype
                    - pcurve_lwd

@@ -753,11 +753,41 @@ diagnose_modification_indices <- function(fit, threshold = 10) {
 #' P-curve style screening of model p-values.
 #'
 #' @param fit A lavaan object.
+#' @param target Effect family to screen: "all", "direct", "mediation",
+#'   "moderation", "multigroup", or "multilevel".
+#' @param within Optional within-person or level-1 variable names used when
+#'   \code{target = "multilevel"}.
+#' @param between Optional between-person or level-2 variable names used when
+#'   \code{target = "multilevel"}.
 #' @return A list with p-values, summary, and text.
 #' @export
-p_curve_analysis <- function(fit) {
+p_curve_analysis <- function(fit, target = c("all", "direct", "mediation", "moderation", "multigroup", "multilevel"),
+                             within = NULL, between = NULL) {
+  target <- match.arg(target)
   pe <- lavaan::parameterestimates(fit)
-  p <- pe$pvalue[pe$op %in% c("~", ":=") & !is.na(pe$pvalue)]
+  pe <- pe[!is.na(pe$pvalue), , drop = FALSE]
+  if (target == "direct") {
+    pe <- pe[pe$op == "~", , drop = FALSE]
+  } else if (target == "mediation") {
+    pe <- pe[pe$op == ":=", , drop = FALSE]
+    if ("label" %in% names(pe) && nrow(pe) > 0) {
+      label <- tolower(pe$label)
+      indirect <- grepl("ind|med", label)
+      if (any(indirect))
+        pe <- pe[indirect, , drop = FALSE]
+    }
+  } else if (target == "moderation") {
+    mod_label <- if ("label" %in% names(pe)) grepl("int|mod", tolower(pe$label)) else rep(FALSE, nrow(pe))
+    pe <- pe[pe$op == "~" & (grepl("__XX__XX__|:|\\*", pe$rhs) | mod_label), , drop = FALSE]
+  } else if (target == "multigroup") {
+    pe <- pe[pe$op == "~" & "group" %in% names(pe) & !is.na(pe$group) & pe$group > 0, , drop = FALSE]
+  } else if (target == "multilevel") {
+    vars <- unique(c(within, between))
+    pe <- pe[pe$op == "~" & (pe$lhs %in% vars | pe$rhs %in% vars), , drop = FALSE]
+  } else {
+    pe <- pe[pe$op %in% c("~", ":="), , drop = FALSE]
+  }
+  p <- pe$pvalue
   sig <- p[p < .05]
   summary <- data.frame(
     n_tests = length(p),
@@ -765,12 +795,19 @@ p_curve_analysis <- function(fit) {
     prop_p_lt_025 = if (length(sig) > 0) mean(sig < .025) else NA_real_,
     stringsAsFactors = FALSE
   )
+  label <- switch(target,
+                  all = "all available effects",
+                  direct = "direct paths",
+                  mediation = "mediation or indirect effects",
+                  moderation = "moderation or interaction paths",
+                  multigroup = "multigroup paths",
+                  multilevel = "multilevel-relevant paths")
   text <- if (length(sig) < 3) {
-    "Too few significant p-values were available for an informative p-curve screen."
+    paste0("Too few significant p-values were available for an informative p-curve screen of ", label, ".")
   } else if (summary$prop_p_lt_025 > .50) {
-    "The significant p-values show a right-skewed pattern consistent with evidential value, but this is only a descriptive screen."
+    paste0("The significant p-values for ", label, " show a right-skewed pattern consistent with evidential value, but this is only a descriptive screen.")
   } else {
-    "The significant p-values do not show a clear right-skewed pattern; interpret evidential value cautiously."
+    paste0("The significant p-values for ", label, " do not show a clear right-skewed pattern; interpret evidential value cautiously.")
   }
   list(p_values = p, summary = summary, text = text)
 }
@@ -847,11 +884,14 @@ compare_models <- function(...) {
 #' @param cluster Optional cluster variable name for multilevel diagnostics.
 #' @param within Optional within-person or level-1 variable names.
 #' @param between Optional between-person or level-2 variable names.
+#' @param pcurve_target Effect family for the p-curve screen.
 #' @return A structured report list.
 #' @export
 generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", "advanced"),
-                            cluster = NULL, within = NULL, between = NULL) {
+                            cluster = NULL, within = NULL, between = NULL,
+                            pcurve_target = c("all", "direct", "mediation", "moderation", "multigroup", "multilevel")) {
   teaching_mode <- match.arg(teaching_mode)
+  pcurve_target <- match.arg(pcurve_target)
   fit_report <- report_fit(fit)
   paths <- report_paths(fit, include_nonsignificant = teaching_mode == "advanced")
   mediation <- report_mediation(fit)
@@ -861,7 +901,7 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
   diagnostics <- check_assumptions(fit, data = data, cluster = cluster)
   insights <- generate_model_insights(fit)
   mi <- diagnose_modification_indices(fit)
-  pcurve <- p_curve_analysis(fit)
+  pcurve <- p_curve_analysis(fit, target = pcurve_target, within = within, between = between)
 
   estimator <- attr(fit, "pathj_estimator")
   if (is.null(estimator))

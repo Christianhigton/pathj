@@ -482,7 +482,8 @@ Estimate <- R6::R6Class("Estimate",
                                 teaching_mode=self$options$reportLevel,
                                 cluster=self$options$clusterVariable,
                                 within=self$options$withinVariables,
-                                between=self$options$betweenVariables)
+                                between=self$options$betweenVariables,
+                                pcurve_target=self$options$pcurve_target)
                             })
                             if (!isFALSE(report$error)) {
                               self$warnings<-list(topic="main",message=paste("Intelligent report could not be generated:", report$error))
