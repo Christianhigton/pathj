@@ -75,8 +75,8 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             syntaxText = "",
             syntaxApply = FALSE,
             syntaxExampleChoice = "lavaan",
-            syntaxExampleLavaan = "Stress ~ Sleep + Support\\nAnxiety ~ Stress + Support\\nDepression ~ Stress + Support + Anxiety",
-            syntaxExampleMermaid = "graph LR\\nSleep[Sleep Quality] --> Stress[Stress]\\nStress --> Anxiety[Anxiety]\\nStress --> Depression[Depression]\\nSupport[Social Support] --> Anxiety[Anxiety]\\nSupport --> Depression[Depression]\\nAnxiety --> Depression[Depression]",
+            syntaxExampleLavaan = "# Mediation and moderation\\nSleep ~ a*Stress\\nWellbeing ~ b*Sleep + cp*Stress + int*Stress_x_Support\\nindirect := a*b\\ntotal := cp + (a*b)\\n\\n# Multilevel template\\nlevel: 1\\n  Sleep ~ Stress\\nlevel: 2\\n  Sleep ~ Support",
+            syntaxExampleMermaid = "flowchart LR\\nStress[Within-person Stress] --> Sleep[Sleep Quality]\\nSleep --> Wellbeing[Wellbeing]\\nStress[Within-person Stress] --> Wellbeing[Wellbeing]\\nStress_x_Support[Stress x Support Interaction] --> Wellbeing[Wellbeing]\\nSupport[Between-person Support] --> Sleep[Sleep Quality]",
             syntaxExampleCopy = FALSE,
             syntaxExampleInsert = FALSE,
             group.equal = NULL, ...) {
@@ -555,12 +555,12 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 "syntaxExampleLavaan",
                 syntaxExampleLavaan,
                 hidden=TRUE,
-                default="Stress ~ Sleep + Support\\nAnxiety ~ Stress + Support\\nDepression ~ Stress + Support + Anxiety")
+                default="# Mediation and moderation\\nSleep ~ a*Stress\\nWellbeing ~ b*Sleep + cp*Stress + int*Stress_x_Support\\nindirect := a*b\\ntotal := cp + (a*b)\\n\\n# Multilevel template\\nlevel: 1\\n  Sleep ~ Stress\\nlevel: 2\\n  Sleep ~ Support")
             private$..syntaxExampleMermaid <- jmvcore::OptionString$new(
                 "syntaxExampleMermaid",
                 syntaxExampleMermaid,
                 hidden=TRUE,
-                default="graph LR\\nSleep[Sleep Quality] --> Stress[Stress]\\nStress --> Anxiety[Anxiety]\\nStress --> Depression[Depression]\\nSupport[Social Support] --> Anxiety[Anxiety]\\nSupport --> Depression[Depression]\\nAnxiety --> Depression[Depression]")
+                default="flowchart LR\\nStress[Within-person Stress] --> Sleep[Sleep Quality]\\nSleep --> Wellbeing[Wellbeing]\\nStress[Within-person Stress] --> Wellbeing[Wellbeing]\\nStress_x_Support[Stress x Support Interaction] --> Wellbeing[Wellbeing]\\nSupport[Between-person Support] --> Sleep[Sleep Quality]")
             private$..syntaxExampleCopy <- jmvcore::OptionAction$new(
                 "syntaxExampleCopy",
                 syntaxExampleCopy,

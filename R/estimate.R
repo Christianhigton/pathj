@@ -416,12 +416,13 @@ Estimate <- R6::R6Class("Estimate",
                           }, # end of private function estimate
                           buildPathLegend=function() {
                             self$tab_path_legend<-data.frame(
-                              item=c("Path label: est", "Path label: beta", "*", "**", "***"),
+                              item=c("Path label: est", "Path label: beta", "No star", "*", "**", "***"),
                               meaning=c("Unstandardized coefficient is shown on each path.",
                                         "Standardized coefficient is shown on each path.",
-                                        "p < .05",
-                                        "p < .01",
-                                        "p < .001"),
+                                        "p >= .05 or p-value unavailable.",
+                                        "p < .05.",
+                                        "p < .01.",
+                                        "p < .001."),
                               stringsAsFactors=FALSE
                             )
                           },

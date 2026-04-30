@@ -67,6 +67,8 @@ const events = {
     },
     onChange_syntaxApply: function(ui) {
       syncSyntaxEditorToOption(ui);
+      if (!validateSyntaxForSelectedSource(ui))
+        return;
       populateGuiFromSyntax(ui, this);
     },
     onChange_syntaxSource: function(ui) {
@@ -345,6 +347,53 @@ var syncSyntaxEditorToOption = function(ui) {
     var textarea = control.$el[0].querySelector(".pathj-syntax-textarea");
     if (textarea !== null)
         setOptionValue(ui, "syntaxText", textarea.value);
+};
+
+var validateSyntaxForSelectedSource = function(ui) {
+    var source = getOptionValue(ui, "syntaxSource", "gui");
+    if (source === "gui")
+        return true;
+
+    var syntax = getOptionValue(ui, "syntaxText", "");
+    if (syntax === null || syntax === undefined || syntax.trim().length === 0)
+        return true;
+
+    var looksMermaid = looksLikeMermaidSyntax(syntax);
+    var looksLavaan = looksLikeLavaanSyntax(syntax);
+    if (source === "mermaid" && looksLavaan && !looksMermaid) {
+        showSyntaxWarning("This looks like lavaan syntax, but Model input is set to Mermaid syntax. Switch Model input to lavaan syntax before importing.");
+        setOptionValue(ui, "syntaxApply", false);
+        return false;
+    }
+    if (source === "lavaan" && looksMermaid) {
+        showSyntaxWarning("This looks like Mermaid syntax, but Model input is set to lavaan syntax. Switch Model input to Mermaid syntax before importing.");
+        setOptionValue(ui, "syntaxApply", false);
+        return false;
+    }
+    return true;
+};
+
+var looksLikeMermaidSyntax = function(syntax) {
+    return /^\s*(graph|flowchart)\s+[A-Za-z]+/i.test(syntax) || /-->|---|-\.-/.test(syntax);
+};
+
+var looksLikeLavaanSyntax = function(syntax) {
+    var lines = syntax.split(/\n|;/);
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.length === 0 || line.indexOf("#") === 0)
+            continue;
+        if (/^[^~:=]+(?:=~|~~|~|:=)/.test(line))
+            return true;
+    }
+    return false;
+};
+
+var showSyntaxWarning = function(message) {
+    if (typeof window !== "undefined" && window.alert)
+        window.alert(message);
+    else
+        console.warn(message);
 };
 
 var getSelectedSyntaxExample = function(ui) {

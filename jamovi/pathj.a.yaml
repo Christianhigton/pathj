@@ -885,7 +885,7 @@ options:
       title: Example lavaan syntax
       type: String
       hidden: true
-      default: 'Stress ~ Sleep + Support\nAnxiety ~ Stress + Support\nDepression ~ Stress + Support + Anxiety'
+      default: '# Mediation and moderation\nSleep ~ a*Stress\nWellbeing ~ b*Sleep + cp*Stress + int*Stress_x_Support\nindirect := a*b\ntotal := cp + (a*b)\n\n# Multilevel template\nlevel: 1\n  Sleep ~ Stress\nlevel: 2\n  Sleep ~ Support'
       description:
           R: >
              Copyable example lavaan syntax shown in the options panel.
@@ -894,7 +894,7 @@ options:
       title: Example Mermaid syntax
       type: String
       hidden: true
-      default: 'graph LR\nSleep[Sleep Quality] --> Stress[Stress]\nStress --> Anxiety[Anxiety]\nStress --> Depression[Depression]\nSupport[Social Support] --> Anxiety[Anxiety]\nSupport --> Depression[Depression]\nAnxiety --> Depression[Depression]'
+      default: 'flowchart LR\nStress[Within-person Stress] --> Sleep[Sleep Quality]\nSleep --> Wellbeing[Wellbeing]\nStress[Within-person Stress] --> Wellbeing[Wellbeing]\nStress_x_Support[Stress x Support Interaction] --> Wellbeing[Wellbeing]\nSupport[Between-person Support] --> Sleep[Sleep Quality]'
       description:
           R: >
              Copyable example Mermaid syntax shown in the options panel.
