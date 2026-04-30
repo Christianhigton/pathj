@@ -8,11 +8,13 @@ const events = {
     },
 
     onChange_factors: function(ui) {
+         markGuiBuilderEdit(ui, this);
          updateSuppliers(ui,this);
          updateContrasts(ui,this);
     },
 
     onChange_endogenous: function(ui) {
+       markGuiBuilderEdit(ui, this);
        prepareEndogenousTerms(ui,this);
        updateSuppliers(ui,this);
        updateScaling(ui,this);
@@ -20,6 +22,7 @@ const events = {
     },
 
     onChange_covariates: function(ui) {
+        markGuiBuilderEdit(ui, this);
         updateSuppliers(ui,this);
         updateScaling(ui,this)
         
@@ -43,6 +46,7 @@ const events = {
     },
 
      onChange_endogenousTerms: function(ui) {
+      markGuiBuilderEdit(ui, this);
       cleanRecursiveTerms(ui,this);
     },
 
@@ -55,6 +59,7 @@ const events = {
       console.log("I did not do anything");
     },
      onChange_varcovSupplier: function(ui) {
+      markGuiBuilderEdit(ui, this);
       console.log("varcovsup change");
        let values = this.itemsToValues(ui.varcovSupplier.value());
         this.checkPairsValue(ui.varcov, values);
@@ -100,6 +105,15 @@ var initializeAll = function(ui, context) {
 
 };
 
+var markGuiBuilderEdit = function(ui, context) {
+    if (context.workspace !== undefined && context.workspace.importingSyntax === true)
+        return;
+    if (getOptionValue(ui, "syntaxSource", "gui") !== "gui") {
+        setOptionValue(ui, "syntaxSource", "gui");
+        setOptionValue(ui, "syntaxApply", false);
+        updateSyntaxEditor(ui);
+    }
+};
 
 
 
@@ -417,6 +431,7 @@ var populateGuiFromSyntax = function(ui, context) {
             covs.push(predictors[k]);
     }
 
+    context.workspace.importingSyntax = true;
     ui.endogenous.setValue(endogenous);
     ui.covs.setValue(covs);
     ui.syntaxVars.setValue(allVars);
@@ -434,6 +449,7 @@ var populateGuiFromSyntax = function(ui, context) {
     }
     ui.endogenousTerms.setValue(terms);
     updateSuppliers(ui, context);
+    context.workspace.importingSyntax = false;
 };
 
 var parseLavaanPaths = function(syntax) {
