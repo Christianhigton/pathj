@@ -70,6 +70,7 @@ const events = {
       populateGuiFromSyntax(ui, this);
     },
     onChange_syntaxSource: function(ui) {
+      syncSyntaxExampleChoiceToSource(ui);
       updateSyntaxEditor(ui);
     },
     onCreate_syntaxEditor: function(ui) {
@@ -329,6 +330,12 @@ var updateSyntaxEditor = function(ui) {
         textarea.value = getOptionValue(ui, "syntaxText", "");
     if (sample !== null)
         sample.value = getSelectedSyntaxExample(ui);
+};
+
+var syncSyntaxExampleChoiceToSource = function(ui) {
+    var source = getOptionValue(ui, "syntaxSource", "gui");
+    if (source === "lavaan" || source === "mermaid")
+        setOptionValue(ui, "syntaxExampleChoice", source);
 };
 
 var syncSyntaxEditorToOption = function(ui) {
