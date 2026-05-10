@@ -279,7 +279,7 @@ var createSyntaxEditor = function(ui, context) {
 
     var textarea = document.createElement("textarea");
     textarea.className = "pathj-syntax-textarea";
-    textarea.placeholder = "Paste lavaan or Mermaid syntax here";
+    textarea.placeholder = "Paste lavaan, Mermaid, Mplus-style, or OpenMx RAM syntax here";
     textarea.value = getOptionValue(ui, "syntaxText", "");
     textarea.style.width = "100%";
     textarea.style.minHeight = "70px";
@@ -294,6 +294,7 @@ var createSyntaxEditor = function(ui, context) {
 
     textarea.addEventListener("input", function() {
         setOptionValue(ui, "syntaxText", textarea.value);
+        renderSyntaxPreview(ui);
     });
 
     var sample = document.createElement("textarea");
@@ -314,6 +315,19 @@ var createSyntaxEditor = function(ui, context) {
 
     wrap.appendChild(textarea);
     wrap.appendChild(sample);
+    var preview = document.createElement("div");
+    preview.className = "pathj-syntax-preview";
+    preview.style.marginTop = "8px";
+    preview.style.fontSize = "12px";
+    preview.style.lineHeight = "1.35";
+    preview.style.color = "#333";
+    preview.style.maxHeight = "110px";
+    preview.style.overflow = "auto";
+    preview.style.border = "1px solid #d8d8d8";
+    preview.style.borderRadius = "3px";
+    preview.style.padding = "6px";
+    preview.style.backgroundColor = "#fbfbfb";
+    wrap.appendChild(preview);
     root.appendChild(wrap);
     updateSyntaxEditor(ui);
 };
@@ -332,11 +346,12 @@ var updateSyntaxEditor = function(ui) {
         textarea.value = getOptionValue(ui, "syntaxText", "");
     if (sample !== null)
         sample.value = getSelectedSyntaxExample(ui);
+    renderSyntaxPreview(ui);
 };
 
 var syncSyntaxExampleChoiceToSource = function(ui) {
     var source = getOptionValue(ui, "syntaxSource", "gui");
-    if (source === "lavaan" || source === "mermaid")
+    if (source === "lavaan" || source === "mermaid" || source === "mplus" || source === "openmx")
         setOptionValue(ui, "syntaxExampleChoice", source);
 };
 
@@ -360,6 +375,8 @@ var validateSyntaxForSelectedSource = function(ui) {
 
     var looksMermaid = looksLikeMermaidSyntax(syntax);
     var looksLavaan = looksLikeLavaanSyntax(syntax);
+    var looksMplus = looksLikeMplusSyntax(syntax);
+    var looksOpenMx = looksLikeOpenMxSyntax(syntax);
     if (source === "mermaid" && looksLavaan && !looksMermaid) {
         showSyntaxWarning("This looks like lavaan syntax, but Model input is set to Mermaid syntax. Switch Model input to lavaan syntax before importing.");
         setOptionValue(ui, "syntaxApply", false);
@@ -367,6 +384,16 @@ var validateSyntaxForSelectedSource = function(ui) {
     }
     if (source === "lavaan" && looksMermaid) {
         showSyntaxWarning("This looks like Mermaid syntax, but Model input is set to lavaan syntax. Switch Model input to Mermaid syntax before importing.");
+        setOptionValue(ui, "syntaxApply", false);
+        return false;
+    }
+    if (source === "mplus" && (looksLavaan || looksOpenMx) && !looksMplus) {
+        showSyntaxWarning("This does not look like Mplus-style syntax. Switch Model input or revise the pasted syntax before importing.");
+        setOptionValue(ui, "syntaxApply", false);
+        return false;
+    }
+    if (source === "openmx" && !looksOpenMx) {
+        showSyntaxWarning("This does not look like OpenMx RAM syntax. Switch Model input or revise the pasted syntax before importing.");
         setOptionValue(ui, "syntaxApply", false);
         return false;
     }
@@ -389,6 +416,14 @@ var looksLikeLavaanSyntax = function(syntax) {
     return false;
 };
 
+var looksLikeMplusSyntax = function(syntax) {
+    return /\bMODEL\s*:|\bON\b|\bBY\b|\bWITH\b|\bGROUPING\b|\bCATEGORICAL\b/i.test(syntax);
+};
+
+var looksLikeOpenMxSyntax = function(syntax) {
+    return /\bmxPath\s*\(|\bmxModel\s*\(/.test(syntax);
+};
+
 var showSyntaxWarning = function(message) {
     if (typeof window !== "undefined" && window.alert)
         window.alert(message);
@@ -398,7 +433,13 @@ var showSyntaxWarning = function(message) {
 
 var getSelectedSyntaxExample = function(ui) {
     var choice = getOptionValue(ui, "syntaxExampleChoice", "lavaan");
-    var example = choice === "mermaid" ? getOptionValue(ui, "syntaxExampleMermaid", "") : getOptionValue(ui, "syntaxExampleLavaan", "");
+    var example = getOptionValue(ui, "syntaxExampleLavaan", "");
+    if (choice === "mermaid")
+        example = getOptionValue(ui, "syntaxExampleMermaid", "");
+    else if (choice === "mplus")
+        example = getOptionValue(ui, "syntaxExampleMplus", "");
+    else if (choice === "openmx")
+        example = getOptionValue(ui, "syntaxExampleOpenMx", "");
     return example.replace(/\\n/g, "\n");
 };
 
@@ -411,6 +452,7 @@ var insertSelectedSyntaxExample = function(ui) {
         if (textarea !== null)
             textarea.value = example;
     }
+    renderSyntaxPreview(ui);
 };
 
 var copySelectedSyntaxExample = function(ui) {
@@ -464,7 +506,7 @@ var populateGuiFromSyntax = function(ui, context) {
     if (syntax === null || syntax === undefined)
         return;
 
-    var paths = source === "mermaid" ? parseMermaidPaths(syntax) : parseLavaanPaths(syntax);
+    var paths = parseSyntaxPaths(source, syntax);
     if (paths.length === 0)
         return;
 
@@ -508,6 +550,87 @@ var populateGuiFromSyntax = function(ui, context) {
     context.workspace.importingSyntax = false;
 };
 
+var renderSyntaxPreview = function(ui) {
+    var control = ui.syntaxEditor;
+    if (control === undefined || control.$el === undefined)
+        return;
+    var root = control.$el[0];
+    var preview = root.querySelector(".pathj-syntax-preview");
+    var textarea = root.querySelector(".pathj-syntax-textarea");
+    if (preview === null || textarea === null)
+        return;
+    var source = getOptionValue(ui, "syntaxSource", "gui");
+    if (source === "gui") {
+        preview.innerHTML = "";
+        return;
+    }
+    var paths = parseSyntaxPaths(source, textarea.value);
+    var errors = detectSyntaxPreviewErrors(source, textarea.value);
+    preview.innerHTML = "";
+    var summary = document.createElement("div");
+    summary.textContent = paths.length + " importable path" + (paths.length === 1 ? "" : "s") + " detected";
+    preview.appendChild(summary);
+    for (var i = 0; i < Math.min(paths.length, 6); i++) {
+        var row = document.createElement("div");
+        row.textContent = paths[i].rhs.join(", ") + " -> " + paths[i].lhs;
+        preview.appendChild(row);
+    }
+    for (var e = 0; e < errors.length; e++) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "Line " + errors[e].line + ": " + errors[e].message;
+        btn.style.display = "block";
+        btn.style.marginTop = "4px";
+        btn.style.border = "0";
+        btn.style.background = "transparent";
+        btn.style.color = "#9a3412";
+        btn.style.padding = "0";
+        btn.style.textAlign = "left";
+        btn.style.cursor = "pointer";
+        btn.dataset.line = errors[e].line;
+        btn.addEventListener("click", function() {
+            focusSyntaxLine(textarea, parseInt(this.dataset.line, 10));
+        });
+        preview.appendChild(btn);
+    }
+};
+
+var focusSyntaxLine = function(textarea, lineNo) {
+    var lines = textarea.value.split("\n");
+    var start = 0;
+    for (var i = 0; i < lineNo - 1 && i < lines.length; i++)
+        start += lines[i].length + 1;
+    textarea.focus();
+    textarea.setSelectionRange(start, Math.min(start + (lines[lineNo - 1] || "").length, textarea.value.length));
+};
+
+var detectSyntaxPreviewErrors = function(source, syntax) {
+    var errors = [];
+    if (syntax.trim().length === 0)
+        return errors;
+    var lines = syntax.split("\n");
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.length === 0 || /^[#!%]/.test(line) || /:\s*$/.test(line))
+            continue;
+        if (source === "openmx" && /mxPath\s*\(/.test(line) && !/from\s*=/.test(line))
+            errors.push({ line: i + 1, message: "mxPath is missing from=" });
+        if (source === "mplus" && /;?\s*$/.test(line) && !/[;:]$/.test(line) && /\b(ON|BY|WITH|GROUPING|CATEGORICAL)\b/i.test(line))
+            errors.push({ line: i + 1, message: "statement should end with semicolon" });
+    }
+    return errors;
+};
+
+var parseSyntaxPaths = function(source, syntax) {
+    if (source === "mermaid")
+        return parseMermaidPaths(syntax);
+    if (source === "mplus")
+        return parseMplusPaths(syntax);
+    if (source === "openmx")
+        return parseOpenMxPaths(syntax);
+    return parseLavaanPaths(syntax);
+};
+
 var parseLavaanPaths = function(syntax) {
     var lines = syntax.replace(/;/g, "\n").split(/\n/);
     var paths = [];
@@ -542,6 +665,79 @@ var parseMermaidPaths = function(syntax) {
     return paths;
 };
 
+var parseMplusPaths = function(syntax) {
+    var text = syntax.replace(/!.*$/gm, "");
+    var statements = text.split(";");
+    var paths = [];
+    for (var i = 0; i < statements.length; i++) {
+        var line = statements[i].replace(/^[\s\S]*:\s*/, "").trim();
+        if (line.length === 0)
+            continue;
+        var match = line.match(/^(.+?)\s+(ON|BY|WITH)\s+(.+)$/i);
+        if (match === null)
+            continue;
+        var lhs = cleanVarName(match[1]);
+        var op = match[2].toUpperCase();
+        var rhs = match[3].split(/\s+/).map(cleanVarName).filter(function(x) { return x.length > 0; });
+        if (op === "BY") {
+            for (var j = 0; j < rhs.length; j++)
+                paths.push({ lhs: rhs[j], rhs: [ lhs ] });
+        } else if (op === "ON") {
+            paths.push({ lhs: lhs, rhs: rhs });
+        }
+    }
+    return paths;
+};
+
+var parseOpenMxPaths = function(syntax) {
+    var paths = [];
+    var latentVars = parseOpenMxVars(syntax, "latentVars");
+    var calls = syntax.match(/mxPath\s*\((?:[^()"'`]|"[^"]*"|'[^']*'|c\s*\([^)]*\))*\)/g) || [];
+    for (var i = 0; i < calls.length; i++) {
+        var call = calls[i];
+        var from = parseOpenMxArg(call, "from");
+        var to = parseOpenMxArg(call, "to");
+        var arrows = parseOpenMxScalar(call, "arrows") || "1";
+        if (from.length === 0)
+            continue;
+        if (to.length === 0 && arrows === "2")
+            to = from;
+        for (var f = 0; f < from.length; f++) {
+            for (var t = 0; t < to.length; t++) {
+                if (arrows === "2")
+                    continue;
+                if (latentVars.indexOf(from[f]) !== -1)
+                    paths.push({ lhs: to[t], rhs: [ from[f] ] });
+                else
+                    paths.push({ lhs: to[t], rhs: [ from[f] ] });
+            }
+        }
+    }
+    return paths;
+};
+
+var parseOpenMxVars = function(syntax, name) {
+    var regex = new RegExp(name + "\\s*=\\s*c\\s*\\(([^)]*)\\)");
+    var match = syntax.match(regex);
+    if (match === null)
+        return [];
+    return match[1].split(",").map(cleanVarName).filter(function(x) { return x.length > 0; });
+};
+
+var parseOpenMxArg = function(call, name) {
+    var regex = new RegExp(name + "\\s*=\\s*(c\\s*\\([^)]*\\)|\"[^\"]*\"|'[^']*'|[^,)]+)");
+    var match = call.match(regex);
+    if (match === null)
+        return [];
+    var value = match[1].replace(/^c\s*\(/, "").replace(/\)$/, "");
+    return value.split(",").map(cleanVarName).filter(function(x) { return x.length > 0; });
+};
+
+var parseOpenMxScalar = function(call, name) {
+    var values = parseOpenMxArg(call, name);
+    return values.length === 0 ? null : values[0];
+};
+
 var cleanMermaidNode = function(value) {
     value = value.trim();
     value = value.replace(/\[.*$/, "");
@@ -554,6 +750,9 @@ var cleanVarName = function(value) {
     value = value.trim();
     value = value.replace(/^`|`$/g, "");
     value = value.replace(/^["']|["']$/g, "");
+    value = value.replace(/^[A-Za-z_][A-Za-z0-9_.]*\*/, "");
+    value = value.replace(/^[-+]?[0-9.]+[@*]/, "");
+    value = value.replace(/@[-+]?[0-9.]+$/, "");
     return value.trim();
 };
 

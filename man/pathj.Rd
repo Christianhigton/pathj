@@ -201,14 +201,15 @@ show generated Mermaid syntax below the path diagram output.}
 non-overlapping table legend explaining path labels and significance stars
 below the path diagram.}
 
-\item{syntaxSource}{model input source: \code{"gui"}, \code{"lavaan"}, or
-\code{"mermaid"}. When not \code{"gui"}, \code{syntaxText} is used as the
-model syntax.}
+\item{syntaxSource}{model input source: \code{"gui"}, \code{"lavaan"},
+\code{"mermaid"}, \code{"mplus"}, or \code{"openmx"}. When not \code{"gui"},
+\code{syntaxText} is used as the model syntax.}
 
 \item{syntaxVars}{variables referenced by imported syntax. When omitted in R
 calls with \code{data}, all columns in \code{data} are made available.}
 
-\item{syntaxText}{full lavaan or Mermaid syntax pasted as one string.}
+\item{syntaxText}{full lavaan, Mermaid, Mplus-style, or OpenMx RAM syntax
+pasted as one string.}
 
 \item{syntaxApply}{\code{TRUE} or \code{FALSE} (default FALSE), confirm that
 imported syntax should be used for estimation.}

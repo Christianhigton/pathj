@@ -94,9 +94,9 @@
 #' @param showPathLegend \code{TRUE} or \code{FALSE} (default TRUE), show a
 #'   non-overlapping table legend explaining path labels and significance stars
 #'   below the path diagram.
-#' @param syntaxSource model input source: \code{"gui"}, \code{"lavaan"}, or
-#'   \code{"mermaid"}. When not \code{"gui"}, \code{syntaxText} is used as the
-#'   model syntax.
+#' @param syntaxSource model input source: \code{"gui"}, \code{"lavaan"},
+#'   \code{"mermaid"}, \code{"mplus"}, or \code{"openmx"}. When not
+#'   \code{"gui"}, \code{syntaxText} is used as the model syntax.
 #' @param syntaxVars variables referenced by imported syntax. When omitted in R
 #'   calls with \code{data}, all columns in \code{data} are made available.
 #' @param syntaxText full lavaan or Mermaid syntax pasted as one string.

@@ -824,11 +824,16 @@ options:
           title: lavaan syntax
         - name: mermaid
           title: Mermaid syntax
+        - name: mplus
+          title: Mplus-style syntax
+        - name: openmx
+          title: OpenMx RAM syntax
       default: gui
       description:
           R: >
              Choose whether the model is built from the standard jamovi GUI
-             controls, pasted lavaan syntax, or pasted Mermaid syntax.
+             controls, pasted lavaan syntax, pasted Mermaid syntax,
+             Mplus-style syntax, or OpenMx RAM syntax.
 
     - name: syntaxVars
       title: Variables used in imported syntax
@@ -843,9 +848,9 @@ options:
       default: null
       description:
           R: >
-             Dataset variables referenced by imported lavaan or Mermaid syntax.
-             Select these when Model input is lavaan syntax or Mermaid syntax
-             so jamovi keeps the required columns for estimation.
+             Dataset variables referenced by imported model syntax. Select
+             these when Model input is not GUI builder so jamovi keeps the
+             required columns for estimation.
 
     - name: syntaxText
       title: Paste model syntax
@@ -854,8 +859,9 @@ options:
       default: ''
       description:
           R: >
-             Full lavaan or Mermaid model syntax pasted as one block. This is
-             used when Model input is lavaan syntax or Mermaid syntax.
+             Full lavaan, Mermaid, Mplus-style, or OpenMx RAM model syntax
+             pasted as one block. This is used when Model input is not GUI
+             builder.
 
     - name: syntaxApply
       title: Import syntax
@@ -864,8 +870,8 @@ options:
       description:
           R: >
              TRUE or FALSE (default FALSE). Press this after pasting imported
-             lavaan or Mermaid syntax to confirm that the pasted syntax should
-             be used for estimation.
+             model syntax to confirm that the pasted syntax should be used for
+             estimation.
 
     - name: syntaxExampleChoice
       title: Sample syntax
@@ -875,6 +881,10 @@ options:
           title: lavaan example
         - name: mermaid
           title: Mermaid example
+        - name: mplus
+          title: Mplus-style example
+        - name: openmx
+          title: OpenMx RAM example
       default: lavaan
       description:
           R: >
@@ -898,6 +908,24 @@ options:
       description:
           R: >
              Copyable example Mermaid syntax shown in the options panel.
+
+    - name: syntaxExampleMplus
+      title: Example Mplus-style syntax
+      type: String
+      hidden: true
+      default: 'VARIABLE:\n  CATEGORICAL ARE depression;\n  GROUPING IS gender (1=women 2=men);\nMODEL:\n  wellbeing BY wb1 wb2 wb3;\n  depression ON stress anxiety;\n  stress WITH anxiety;\nMODEL CONSTRAINT:\n  indirect = a*b;'
+      description:
+          R: >
+             Copyable example Mplus-style syntax shown in the options panel.
+
+    - name: syntaxExampleOpenMx
+      title: Example OpenMx RAM syntax
+      type: String
+      hidden: true
+      default: 'mxModel("example",\n  manifestVars=c("stress","anxiety","depression","wb1","wb2","wb3"),\n  latentVars=c("wellbeing"))\nmxPath(from="stress", to="depression", arrows=1, labels="a")\nmxPath(from="anxiety", to="depression", arrows=1)\nmxPath(from="wellbeing", to=c("wb1","wb2","wb3"), arrows=1)\nmxPath(from="stress", to="anxiety", arrows=2)'
+      description:
+          R: >
+             Copyable example OpenMx RAM syntax shown in the options panel.
 
     - name: syntaxExampleCopy
       title: Copy sample syntax

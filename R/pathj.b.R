@@ -142,6 +142,12 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             j.init_table(self$results$intelligent$mermaidSyntax,
                          lav_machine$tab_mermaid_syntax,
                          ci=F)
+            j.init_table(self$results$intelligent$mplusSyntax,
+                         lav_machine$tab_mplus_syntax,
+                         ci=F)
+            j.init_table(self$results$intelligent$openmxSyntax,
+                         lav_machine$tab_openmx_syntax,
+                         ci=F)
             j.init_table(self$results$pathgroup$legend,
                          lav_machine$tab_path_legend,
                          ci=F)
@@ -262,6 +268,8 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              j.fill_table(self$results$intelligent$pcurve, lav_machine$tab_pcurve, append=TRUE)
              j.fill_table(self$results$intelligent$lavaanSyntax, lav_machine$tab_lavaan_syntax, append=TRUE)
              j.fill_table(self$results$intelligent$mermaidSyntax, lav_machine$tab_mermaid_syntax, append=TRUE)
+             j.fill_table(self$results$intelligent$mplusSyntax, lav_machine$tab_mplus_syntax, append=TRUE)
+             j.fill_table(self$results$intelligent$openmxSyntax, lav_machine$tab_openmx_syntax, append=TRUE)
              if (isTRUE(self$options$diagram) && isTRUE(self$options$showPathLegend))
                  j.fill_table(self$results$pathgroup$legend, lav_machine$tab_path_legend, append=TRUE)
              j.fill_table(self$results$pathgroup$mermaidSyntax, lav_machine$tab_mermaid_syntax, append=TRUE)

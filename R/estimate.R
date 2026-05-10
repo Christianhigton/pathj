@@ -34,6 +34,8 @@ Estimate <- R6::R6Class("Estimate",
                           tab_report_html=NULL,
                           tab_lavaan_syntax=NULL,
                           tab_mermaid_syntax=NULL,
+                          tab_mplus_syntax=NULL,
+                          tab_openmx_syntax=NULL,
                           tab_path_legend=NULL,
                           initialize=function(options,datamatic) {
                             super$initialize(
@@ -453,20 +455,37 @@ Estimate <- R6::R6Class("Estimate",
                               stringsAsFactors=FALSE
                             )
 
-                            mermaid<-c("flowchart LR")
-                            if (is.something(coefs) && nrow(coefs)>0) {
-                              mermaid<-c(mermaid, vapply(seq_len(nrow(coefs)), function(i) {
-                                r<-coefs[i,]
-                                beta<-if ("std.all" %in% names(r)) r$std.all else r$est
-                                label<-paste0("beta=", apa_num(beta))
-                                if ("pvalue" %in% names(r))
-                                  label<-paste0(label, " ", effect_stars(r$pvalue))
-                                paste0("  ", mermaid_id(r$rhs), "[\"", mermaid_escape(r$rhs), "\"] -->|\"", label, "\"| ", mermaid_id(r$lhs), "[\"", mermaid_escape(r$lhs), "\"]")
-                              }, FUN.VALUE=character(1)))
+                            if (is.something(self$import)) {
+                              mermaid<-self$import$exports$mermaid
+                              mplus<-self$import$exports$mplus
+                              openmx<-self$import$exports$openmx
+                            } else {
+                              exported<-try_hard({
+                                sem_import_parse(paste(lines, collapse="\n"), "lavaan")
+                              })
+                              if (!isFALSE(exported$error)) {
+                                mermaid<-c("flowchart LR")
+                                mplus<-character(0)
+                                openmx<-character(0)
+                              } else {
+                                mermaid<-exported$obj$exports$mermaid
+                                mplus<-exported$obj$exports$mplus
+                                openmx<-exported$obj$exports$openmx
+                              }
                             }
                             self$tab_mermaid_syntax<-data.frame(
                               line=seq_along(mermaid),
                               code=mermaid,
+                              stringsAsFactors=FALSE
+                            )
+                            self$tab_mplus_syntax<-data.frame(
+                              line=seq_along(mplus),
+                              code=mplus,
+                              stringsAsFactors=FALSE
+                            )
+                            self$tab_openmx_syntax<-data.frame(
+                              line=seq_along(openmx),
+                              code=openmx,
                               stringsAsFactors=FALSE
                             )
                           },

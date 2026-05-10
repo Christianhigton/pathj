@@ -775,6 +775,30 @@ items:
                       title: Mermaid syntax
                       type: text
 
+          - name: mplusSyntax
+            title: Mplus-style Syntax
+            type: Table
+            visible: (showSyntax)
+            columns:
+                    - name: line
+                      title: Line
+                      type: integer
+                    - name: code
+                      title: Mplus-style syntax
+                      type: text
+
+          - name: openmxSyntax
+            title: OpenMx RAM Syntax
+            type: Table
+            visible: (showSyntax)
+            columns:
+                    - name: line
+                      title: Line
+                      type: integer
+                    - name: code
+                      title: OpenMx syntax
+                      type: text
+
 
   - name: models
     title: "Estimates"

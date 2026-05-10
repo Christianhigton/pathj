@@ -39,6 +39,7 @@ Syntax <- R6::R6Class(
               contrasts_names=NULL,
               multigroup=NULL,
               ieffects=NULL,
+              import=NULL,
               effect_decomp_structure=NULL,
               indirect_names=NULL,
               initialize=function(options,datamatic) {
@@ -224,13 +225,30 @@ Syntax <- R6::R6Class(
             },
             .check_imported_syntax=function(all_vars) {
               syntax_source <- self$options$syntaxSource
-              lines <- private$.syntax_lines()
-              if (length(lines) == 0)
+              syntax_text <- self$options$syntaxText
+              if (is.null(syntax_text) || !nzchar(trimws(syntax_text)))
                 stop("No model syntax was provided.")
-              if (identical(syntax_source, "mermaid"))
-                lines <- private$.mermaid_to_lavaan(lines)
+              imported <- try_hard({
+                sem_import_parse(syntax_text, source=syntax_source, variables=all_vars)
+              })
+              if (!isFALSE(imported$error))
+                stop(imported$error)
+              imported <- imported$obj
+              if (length(imported$errors) > 0) {
+                msg <- vapply(imported$errors, function(e) paste0("Line ", e$line, ": ", e$message), FUN.VALUE=character(1))
+                stop(paste(msg, collapse="\n"))
+              }
+              lines <- imported$exports$lavaan
               if (length(lines) == 0)
-                stop("No usable lavaan paths could be parsed from the imported syntax.")
+                stop("No usable SEM paths could be parsed from the imported syntax.")
+              self$import <- imported
+              for (warning in imported$warnings)
+                self$warnings <- list(topic="main", message=warning)
+              if (is.something(imported$engine_support)) {
+                engine_warnings <- imported$engine_support$warning[nzchar(imported$engine_support$warning)]
+                for (warning in engine_warnings)
+                  self$warnings <- list(topic="main", message=warning)
+              }
               if (is.null(all_vars))
                 all_vars <- self$vars
               private$.lav_models <- list(tob64(paste(lines, collapse=" ; "), all_vars))

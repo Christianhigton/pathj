@@ -5,7 +5,10 @@ version > 1.*.*
 
 Path analysis for *jamovi* based on lavaan, with jamovi output style and functions. Provides access to lavaan
              estimation with restructuring of data and options for executing most common tasks in path analysis.
-             Path diagrams can also be requested.
+Path diagrams can also be requested.
+
+Syntax import for lavaan, Mermaid, Mplus-style SEM syntax, and OpenMx RAM-style
+paths is documented in [docs/syntax-import.md](docs/syntax-import.md).
 
 # Docs and help
 

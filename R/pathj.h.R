@@ -77,6 +77,8 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             syntaxExampleChoice = "lavaan",
             syntaxExampleLavaan = "# Mediation and moderation\\nSleep ~ a*Stress\\nWellbeing ~ b*Sleep + cp*Stress + int*Stress_x_Support\\nindirect := a*b\\ntotal := cp + (a*b)\\n\\n# Multilevel template\\nlevel: 1\\n  Sleep ~ Stress\\nlevel: 2\\n  Sleep ~ Support",
             syntaxExampleMermaid = "flowchart LR\\nStress[Within-person Stress] --> Sleep[Sleep Quality]\\nSleep --> Wellbeing[Wellbeing]\\nStress[Within-person Stress] --> Wellbeing[Wellbeing]\\nStress_x_Support[Stress x Support Interaction] --> Wellbeing[Wellbeing]\\nSupport[Between-person Support] --> Sleep[Sleep Quality]",
+            syntaxExampleMplus = "VARIABLE:\\n  CATEGORICAL ARE depression;\\n  GROUPING IS gender (1=women 2=men);\\nMODEL:\\n  wellbeing BY wb1 wb2 wb3;\\n  depression ON stress anxiety;\\n  stress WITH anxiety;\\nMODEL CONSTRAINT:\\n  indirect = a*b;",
+            syntaxExampleOpenMx = "mxModel(\"example\",\\n  manifestVars=c(\"stress\",\"anxiety\",\"depression\",\"wb1\",\"wb2\",\"wb3\"),\\n  latentVars=c(\"wellbeing\"))\\nmxPath(from=\"stress\", to=\"depression\", arrows=1, labels=\"a\")\\nmxPath(from=\"anxiety\", to=\"depression\", arrows=1)\\nmxPath(from=\"wellbeing\", to=c(\"wb1\",\"wb2\",\"wb3\"), arrows=1)\\nmxPath(from=\"stress\", to=\"anxiety\", arrows=2)",
             syntaxExampleCopy = FALSE,
             syntaxExampleInsert = FALSE,
             group.equal = NULL, ...) {
@@ -522,7 +524,9 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 options=list(
                     "gui",
                     "lavaan",
-                    "mermaid"),
+                    "mermaid",
+                    "mplus",
+                    "openmx"),
                 default="gui")
             private$..syntaxVars <- jmvcore::OptionVariables$new(
                 "syntaxVars",
@@ -549,7 +553,9 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 syntaxExampleChoice,
                 options=list(
                     "lavaan",
-                    "mermaid"),
+                    "mermaid",
+                    "mplus",
+                    "openmx"),
                 default="lavaan")
             private$..syntaxExampleLavaan <- jmvcore::OptionString$new(
                 "syntaxExampleLavaan",
@@ -561,6 +567,16 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 syntaxExampleMermaid,
                 hidden=TRUE,
                 default="flowchart LR\\nStress[Within-person Stress] --> Sleep[Sleep Quality]\\nSleep --> Wellbeing[Wellbeing]\\nStress[Within-person Stress] --> Wellbeing[Wellbeing]\\nStress_x_Support[Stress x Support Interaction] --> Wellbeing[Wellbeing]\\nSupport[Between-person Support] --> Sleep[Sleep Quality]")
+            private$..syntaxExampleMplus <- jmvcore::OptionString$new(
+                "syntaxExampleMplus",
+                syntaxExampleMplus,
+                hidden=TRUE,
+                default="VARIABLE:\\n  CATEGORICAL ARE depression;\\n  GROUPING IS gender (1=women 2=men);\\nMODEL:\\n  wellbeing BY wb1 wb2 wb3;\\n  depression ON stress anxiety;\\n  stress WITH anxiety;\\nMODEL CONSTRAINT:\\n  indirect = a*b;")
+            private$..syntaxExampleOpenMx <- jmvcore::OptionString$new(
+                "syntaxExampleOpenMx",
+                syntaxExampleOpenMx,
+                hidden=TRUE,
+                default="mxModel(\"example\",\\n  manifestVars=c(\"stress\",\"anxiety\",\"depression\",\"wb1\",\"wb2\",\"wb3\"),\\n  latentVars=c(\"wellbeing\"))\\nmxPath(from=\"stress\", to=\"depression\", arrows=1, labels=\"a\")\\nmxPath(from=\"anxiety\", to=\"depression\", arrows=1)\\nmxPath(from=\"wellbeing\", to=c(\"wb1\",\"wb2\",\"wb3\"), arrows=1)\\nmxPath(from=\"stress\", to=\"anxiety\", arrows=2)")
             private$..syntaxExampleCopy <- jmvcore::OptionAction$new(
                 "syntaxExampleCopy",
                 syntaxExampleCopy,
@@ -649,6 +665,8 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$.addOption(private$..syntaxExampleChoice)
             self$.addOption(private$..syntaxExampleLavaan)
             self$.addOption(private$..syntaxExampleMermaid)
+            self$.addOption(private$..syntaxExampleMplus)
+            self$.addOption(private$..syntaxExampleOpenMx)
             self$.addOption(private$..syntaxExampleCopy)
             self$.addOption(private$..syntaxExampleInsert)
             self$.addOption(private$..group.equal)
@@ -724,6 +742,8 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         syntaxExampleChoice = function() private$..syntaxExampleChoice$value,
         syntaxExampleLavaan = function() private$..syntaxExampleLavaan$value,
         syntaxExampleMermaid = function() private$..syntaxExampleMermaid$value,
+        syntaxExampleMplus = function() private$..syntaxExampleMplus$value,
+        syntaxExampleOpenMx = function() private$..syntaxExampleOpenMx$value,
         syntaxExampleCopy = function() private$..syntaxExampleCopy$value,
         syntaxExampleInsert = function() private$..syntaxExampleInsert$value,
         group.equal = function() private$..group.equal$value),
@@ -798,6 +818,8 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
         ..syntaxExampleChoice = NA,
         ..syntaxExampleLavaan = NA,
         ..syntaxExampleMermaid = NA,
+        ..syntaxExampleMplus = NA,
+        ..syntaxExampleOpenMx = NA,
         ..syntaxExampleCopy = NA,
         ..syntaxExampleInsert = NA,
         ..group.equal = NA)
@@ -1438,7 +1460,9 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     modelComparison = function() private$.items[["modelComparison"]],
                     pcurve = function() private$.items[["pcurve"]],
                     lavaanSyntax = function() private$.items[["lavaanSyntax"]],
-                    mermaidSyntax = function() private$.items[["mermaidSyntax"]]),
+                    mermaidSyntax = function() private$.items[["mermaidSyntax"]],
+                    mplusSyntax = function() private$.items[["mplusSyntax"]],
+                    openmxSyntax = function() private$.items[["openmxSyntax"]]),
                 private = list(),
                 public=list(
                     initialize=function(options) {
@@ -1748,6 +1772,34 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="code", 
                                     `title`="Mermaid syntax", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="mplusSyntax",
+                            title="Mplus-style Syntax",
+                            visible="(showSyntax)",
+                            columns=list(
+                                list(
+                                    `name`="line",
+                                    `title`="Line",
+                                    `type`="integer"),
+                                list(
+                                    `name`="code",
+                                    `title`="Mplus-style syntax",
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="openmxSyntax",
+                            title="OpenMx RAM Syntax",
+                            visible="(showSyntax)",
+                            columns=list(
+                                list(
+                                    `name`="line",
+                                    `title`="Line",
+                                    `type`="integer"),
+                                list(
+                                    `name`="code",
+                                    `title`="OpenMx syntax",
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
