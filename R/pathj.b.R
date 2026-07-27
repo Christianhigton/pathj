@@ -507,15 +507,23 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
 
                 # helper to robustly resolve per-group N
                 .getNobs <- function(g) {
+                    .scalarN <- function(x) {
+                        x <- suppressWarnings(as.numeric(x))
+                        x <- x[is.finite(x) & !is.na(x) & x > 1]
+                        if (length(x) == 0) numeric(0) else x[[1]]
+                    }
                     # try mapped by group label
-                    v <- suppressWarnings(as.numeric(nmap[[g]]))
-                    if (length(v) == 0 || is.na(v) || !is.finite(v) || v <= 1) {
+                    v <- .scalarN(nmap[[g]])
+                    if (length(v) == 0 && length(nmap) == 1) {
+                        v <- .scalarN(nmap[[1]])
+                    }
+                    if (length(v) == 0) {
                         # fallback by group index based on mg$levels position
                         if (is.something(mg)) {
                             pos <- which(as.character(mg$levels) %in% as.character(g))
                             if (length(pos) == 1 && pos >= 1) {
-                                vv <- suppressWarnings(as.numeric(nobs[[pos]]))
-                                if (length(vv) > 0 && is.finite(vv) && vv > 1)
+                                vv <- .scalarN(nobs[[pos]])
+                                if (length(vv) > 0)
                                     v <- vv
                             }
                         }
@@ -575,7 +583,14 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 }
                 d <- if (length(rows)>0) do.call(rbind, lapply(rows, as.data.frame, stringsAsFactors=FALSE)) else NULL
                 if (is.null(d) || nrow(d)==0) {
-                    jmvcore::reject("Could not compute projected p-values")
+                    p <- ggplot2::ggplot() +
+                         ggplot2::annotate("text", x = 0, y = 0,
+                                           label = "No projected p-values are available for the selected focus.",
+                                           hjust = 0, vjust = 0.5, size = 4) +
+                         ggplot2::xlim(0, 1) +
+                         ggplot2::ylim(-0.5, 0.5) +
+                         ggplot2::theme_void()
+                    print(p)
                     return()
                 }
                 d$p <- pmin(pmax(as.numeric(d$p), 0), 1)
@@ -608,6 +623,17 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 if (is.something(mg) && !is.null(image$state$gkey)) {
                     d <- d[d$group == image$state$gkey, , drop=FALSE]
                     ttl <- paste0(image$state$gkey, ": ", target_title, " Mean p-values vs Sample Size")
+                }
+                if (nrow(d) == 0) {
+                    p <- ggplot2::ggplot() +
+                         ggplot2::annotate("text", x = 0, y = 0,
+                                           label = "No projected p-values are available for this group.",
+                                           hjust = 0, vjust = 0.5, size = 4) +
+                         ggplot2::xlim(0, 1) +
+                         ggplot2::ylim(-0.5, 0.5) +
+                         ggplot2::theme_void()
+                    print(p)
+                    return()
                 }
                 # line style options
                 .lt <- try(as.character(self$options$pcurve_linetype), silent=TRUE)

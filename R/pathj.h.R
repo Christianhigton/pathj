@@ -1539,6 +1539,10 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Recommended Next Steps",
                             columns=list(
                                 list(
+                                    `name`="step", 
+                                    `title`="Step", 
+                                    `type`="integer"),
+                                list(
                                     `name`="recommendation", 
                                     `title`="Recommendation", 
                                     `type`="text"))))
@@ -1780,12 +1784,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line",
-                                    `title`="Line",
+                                    `name`="line", 
+                                    `title`="Line", 
                                     `type`="integer"),
                                 list(
-                                    `name`="code",
-                                    `title`="Mplus-style syntax",
+                                    `name`="code", 
+                                    `title`="Mplus-style syntax", 
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1794,12 +1798,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line",
-                                    `title`="Line",
+                                    `name`="line", 
+                                    `title`="Line", 
                                     `type`="integer"),
                                 list(
-                                    `name`="code",
-                                    `title`="OpenMx syntax",
+                                    `name`="code", 
+                                    `title`="OpenMx syntax", 
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
@@ -2239,8 +2243,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
                     diagrams = function() private$.items[["diagrams"]],
-                    notes = function() private$.items[["notes"]],
                     legend = function() private$.items[["legend"]],
+                    notes = function() private$.items[["notes"]],
                     mermaidSyntax = function() private$.items[["mermaidSyntax"]]),
                 private = list(),
                 public=list(
@@ -2289,16 +2293,6 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             refs="semplot"))
                         self$add(jmvcore::Table$new(
                             options=options,
-                            name="notes",
-                            title="",
-                            visible=FALSE,
-                            columns=list(
-                                list(
-                                    `name`="message", 
-                                    `type`="text", 
-                                    `title`="Model diagram notes"))))
-                        self$add(jmvcore::Table$new(
-                            options=options,
                             name="legend",
                             title="Path Diagram Legend",
                             visible="(diagram && showPathLegend)",
@@ -2311,6 +2305,16 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `name`="meaning", 
                                     `type`="text", 
                                     `title`="Meaning"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="notes",
+                            title="",
+                            visible=FALSE,
+                            columns=list(
+                                list(
+                                    `name`="message", 
+                                    `type`="text", 
+                                    `title`="Model diagram notes"))))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="mermaidSyntax",
@@ -2411,3 +2415,4 @@ pathjBase <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 requiresMissings = FALSE,
                 weightsSupport = 'auto')
         }))
+

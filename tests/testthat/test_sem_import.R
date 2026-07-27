@@ -46,6 +46,82 @@ testthat::test_that("Mermaid round trips through graph schema", {
   testthat::expect_true(any(grepl("-->", imported$exports$mermaid, fixed=TRUE)))
 })
 
+testthat::test_that("imported syntax is reported as the estimated lavaan model", {
+  data("pathjdata")
+  mod <- pathj::pathj(
+    data=pathjdata,
+    syntaxSource="lavaan",
+    syntaxText="y1 ~ y2 + x1\ny2 ~ x2",
+    syntaxApply=TRUE,
+    syntaxVars=c("y1", "y2", "x1", "x2"),
+    showSyntax=TRUE)
+
+  info <- mod$info$asDF
+  syntax <- mod$intelligent$lavaanSyntax$asDF
+
+  testthat::expect_true("Estimated lavaan syntax" %in% info$info)
+  testthat::expect_equal(as.integer(info$value[info$info %in% "Imported lavaan statements"]), 2)
+  testthat::expect_equal(info$value[info$info %in% "Estimated lavaan syntax"], "y1 ~ y2 + x1 ; y2 ~ x2")
+  testthat::expect_true("y1 ~ y2 + x1" %in% syntax$code)
+  testthat::expect_true("y2 ~ x2" %in% syntax$code)
+})
+
+testthat::test_that("parallel mediation reports each indirect pathway", {
+  set.seed(1)
+  d <- data.frame(x=rnorm(200))
+  d$m1 <- .5*d$x + rnorm(200)
+  d$m2 <- .4*d$x + rnorm(200)
+  d$y <- .3*d$m1 + .25*d$m2 + .2*d$x + rnorm(200)
+
+  mod <- pathj::pathj(
+    data=d,
+    formula=list("m1 ~ x", "m2 ~ x", "y ~ m1 + m2 + x"),
+    indirect=TRUE)
+
+  effects <- mod$models$effects$asDF
+  decomp <- mod$intelligent$mediationDecomp$asDF
+
+  testthat::expect_true("x \U21d2 m1 \U21d2 y" %in% effects$pathway)
+  testthat::expect_true("x \U21d2 m2 \U21d2 y" %in% effects$pathway)
+  testthat::expect_true("m1" %in% decomp$mediator)
+  testthat::expect_true("m2" %in% decomp$mediator)
+})
+
+testthat::test_that("Mermaid import fills intelligent-report tables without lgroup crashes", {
+  set.seed(1)
+  d <- data.frame(
+    ACE_total=rnorm(121),
+    DERS_total=rnorm(121),
+    BIS_total=rnorm(121),
+    AUDIT_total=rnorm(121)
+  )
+  syntax <- paste(
+    "flowchart LR",
+    "ACE_total --> DERS_total",
+    "ACE_total --> BIS_total",
+    "DERS_total --> AUDIT_total",
+    "BIS_total --> AUDIT_total",
+    "DERS_total <--> BIS_total",
+    sep="\n"
+  )
+
+  mod <- pathj::pathj(
+    data=d,
+    syntaxSource="mermaid",
+    syntaxText=syntax,
+    syntaxApply=TRUE,
+    syntaxVars=names(d),
+    showSyntax=TRUE,
+    intelligentReport=TRUE)
+
+  testthat::expect_true(nrow(mod$models$coefficients$asDF) >= 4)
+  testthat::expect_true("Estimated lavaan syntax" %in% mod$info$asDF$info)
+  testthat::expect_true("Model Fit" %in% mod$intelligent$apaText$asDF$section)
+  testthat::expect_true(nrow(mod$intelligent$assumptions$asDF) > 0)
+  testthat::expect_true(nrow(mod$intelligent$recommendations$asDF) > 0)
+  testthat::expect_false(any(is.na(mod$intelligent$recommendations$asDF$recommendation)))
+})
+
 testthat::test_that("malformed OpenMx paths return line-level parser errors", {
   imported <- pathj:::sem_import_parse('mxPath(to="depression", arrows=1)', "openmx")
   testthat::expect_true(length(imported$errors) > 0)

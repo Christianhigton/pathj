@@ -586,6 +586,9 @@ items:
             title: Recommended Next Steps
             type: Table
             columns:
+                    - name: step
+                      title: Step
+                      type: integer
                     - name: recommendation
                       title: Recommendation
                       type: text

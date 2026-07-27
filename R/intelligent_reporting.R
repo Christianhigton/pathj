@@ -272,7 +272,7 @@ report_mediation <- function(fit) {
 detect_interaction_terms <- function(paths) {
   rhs_hit <- grepl(":", paths$rhs, fixed = TRUE) |
     grepl("\\*", paths$rhs) |
-    grepl("_x_|\\.x\\.|X", paths$rhs)
+    grepl("__XX__XX__|_x_|\\.x\\.", paths$rhs, ignore.case = TRUE)
   if ("label" %in% names(paths))
     rhs_hit <- rhs_hit | grepl("int|interaction|moder", paths$label, ignore.case = TRUE)
   rhs_hit

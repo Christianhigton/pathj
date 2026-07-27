@@ -77,7 +77,7 @@ j.init_table<-function(table,obj,ci=FALSE,ciroot="",ciformat="{}% Confidence Int
   }
   if (square)
      for (i in seq_len(nrow(obj))) {
-         table$addRow(rowKey=i,obj[i,])
+         table$addRow(rowKey=i,as.list(obj[i,,drop=FALSE]))
      }
   else
     for (i in seq_along(obj)) 
@@ -159,6 +159,7 @@ j.fill_table<-function(table,obj, fixNA=TRUE, append=FALSE, spaceby=NULL, start=
               t<-obj[i,]
               if (fixNA) 
                   t[which(is.na(t))]<-""
+              t<-as.list(t)
               FUNC(i+last,t)
            }
    else 

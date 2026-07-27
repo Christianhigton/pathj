@@ -66,6 +66,11 @@ Estimate <- R6::R6Class("Estimate",
                             model_vars<-model_variable_names(private$.lav_structure, group_var)
                             display_vars<-fromb64(model_vars,self$vars)
                             type_vars<-intersect(tob64(unique(c(self$options$endogenous, self$options$covs, self$options$syntaxVars)), self$vars), names(data))
+                            syntax_source <- self$options$syntaxSource
+                            if (is.null(syntax_source))
+                              syntax_source <- "gui"
+                            if (!identical(syntax_source, "gui"))
+                              type_vars<-unique(c(type_vars, intersect(model_vars, names(data))))
                             data_types<-detect_variable_types(data[, type_vars, drop=FALSE])
                             if (nrow(data_types)>0)
                               data_types$variable<-fromb64(data_types$variable,self$vars)
@@ -213,6 +218,10 @@ Estimate <- R6::R6Class("Estimate",
                                 boot.ci.type = self$options$bootci
                               )
                             }
+                            if (!is.data.frame(.lav_params) || nrow(.lav_params)==0) {
+                              self$errors<-"No parameter estimates were returned for this model. Check that all imported syntax variables are numeric, present in the data, and have usable variance."
+                              return(self$errors)
+                            }
 
                                                       
                             ## we need some info initialized by Syntax regarding the parameters properties
@@ -225,17 +234,18 @@ Estimate <- R6::R6Class("Estimate",
                             .lav_params$lhs<-fromb64(.lav_params$lhs,self$vars)
                             .lav_params$free<-(.lav_structure$free>0)
                             if (is.something(self$multigroup) && "group" %in% names(.lav_params)) {
-                              .lav_params$lgroup<-"All"
+                              .lav_params$lgroup<-rep("All", nrow(.lav_params))
                               valid_group<-!is.na(.lav_params$group) & .lav_params$group > 0 & .lav_params$group <= length(self$multigroup$levels)
                               .lav_params$lgroup[valid_group]<-self$multigroup$levels[.lav_params$group[valid_group]]
                             } else
-                              .lav_params$lgroup<-"1"
+                              .lav_params$lgroup<-rep("1", nrow(.lav_params))
                             
-                            .lav_params$endo<-FALSE
+                            .lav_params$endo<-rep(FALSE, nrow(.lav_params))
                             .lav_params$endo[.lav_params$lhs %in% self$options$endogenous | .lav_params$rhs %in% self$options$endogenous]<-TRUE
                             ## collect regression coefficient table
                             self$tab_coefficients<-.lav_params[.lav_params$op=="~",]
                             self$tab_effects<-self$effectsTable(.lav_params)
+                            self$tab_mediation_decomp<-self$mediationDecompositionTable()
 
                             ## collect variances and covariances table
                             self$tab_covariances<-.lav_params[.lav_params$op=="~~",]
@@ -494,19 +504,40 @@ Estimate <- R6::R6Class("Estimate",
                               return()
 
                             report_data <- data
-                            names(report_data) <- fromb64(names(report_data), self$vars)
                             report<-try_hard({
                               generate_report(
                                 self$model,
                                 data=report_data,
                                 teaching_mode=self$options$reportLevel,
-                                cluster=self$options$clusterVariable,
-                                within=self$options$withinVariables,
-                                between=self$options$betweenVariables,
+                                cluster=tob64(self$options$clusterVariable,self$vars),
+                                within=tob64(self$options$withinVariables,self$vars),
+                                between=tob64(self$options$betweenVariables,self$vars),
                                 pcurve_target=self$options$pcurve_target)
                             })
                             if (!isFALSE(report$error)) {
-                              self$warnings<-list(topic="main",message=paste("Intelligent report could not be generated:", report$error))
+                              message<-paste("Intelligent report could not be generated:", report$error)
+                              self$warnings<-list(topic="main",message=message)
+                              self$tab_report_text<-data.frame(section="Intelligent Report", text=message, stringsAsFactors=FALSE)
+                              self$tab_report_paragraph<-data.frame(
+                                warning="AI-assisted statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
+                                paragraph=message,
+                                stringsAsFactors=FALSE
+                              )
+                              self$tab_report_html<-self$reportParagraphHtml(self$tab_report_paragraph$warning[[1]], self$tab_report_paragraph$paragraph[[1]])
+                              self$tab_assumptions<-data.frame(
+                                check="Intelligent report",
+                                status_icon="Warning",
+                                status="Unavailable",
+                                explanation=message,
+                                recommendation="Check model convergence, variable types, and imported syntax; the core model estimates may still be available.",
+                                stringsAsFactors=FALSE
+                              )
+                              self$tab_recommendations<-data.frame(recommendation="Review the debug message and verify that the model returned valid parameter estimates.", stringsAsFactors=FALSE)
+                              self$tab_group_comparison<-data.frame()
+                              self$tab_mediation_decomp<-self$mediationDecompositionTable()
+                              self$tab_insights<-data.frame()
+                              self$tab_pcurve<-data.frame(n_tests=0L, n_significant=0L, prop_p_lt_025=NA_real_)
+                              self$tab_model_comparison<-data.frame(model="Current", chisq=NA_real_, df=NA_real_, pvalue=NA_real_, cfi=NA_real_, tli=NA_real_, rmsea=NA_real_, srmr=NA_real_, aic=NA_real_, bic=NA_real_, best_fit="", stringsAsFactors=FALSE)
                               return()
                             }
                             report<-report$obj
@@ -537,13 +568,20 @@ Estimate <- R6::R6Class("Estimate",
 
                             self$tab_assumptions<-self$decodeReportTable(report$diagnostics)
                             if (is.something(self$tab_assumptions)) {
+                              for (nm in c("check","status","explanation","recommendation"))
+                                if (!nm %in% names(self$tab_assumptions)) self$tab_assumptions[[nm]]<-NA_character_
                               self$tab_assumptions$status_icon<-ifelse(self$tab_assumptions$status=="Met", "OK",
                                                                        ifelse(self$tab_assumptions$status=="Violated", "Violated", "Warning"))
                               self$tab_assumptions<-self$tab_assumptions[,c("check","status_icon","status","explanation","recommendation"),drop=FALSE]
                             }
 
                             recs<-report$recommendations
+                            recs<-as.character(unname(recs))
+                            recs<-recs[!is.na(recs) & nzchar(recs)]
+                            if (length(recs)==0)
+                              recs<-"No additional recommendations were generated."
                             self$tab_recommendations<-data.frame(
+                              step=seq_along(recs),
                               recommendation=recs,
                               stringsAsFactors=FALSE
                             )
@@ -594,10 +632,30 @@ Estimate <- R6::R6Class("Estimate",
                           mediationDecompositionTable=function() {
                             effects<-self$tab_effects
                             if (!is.something(effects) || nrow(effects)==0)
-                              return(NULL)
+                              return(data.frame(
+                                lgroup="1",
+                                predictor="No mediation paths available",
+                                mediator="",
+                                outcome="",
+                                direct=NA_real_,
+                                indirect=NA_real_,
+                                total=NA_real_,
+                                percent_mediated=NA_real_,
+                                stringsAsFactors=FALSE
+                              ))
                             indirect<-effects[effects$effect=="Indirect",,drop=FALSE]
                             if (nrow(indirect)==0)
-                              return(NULL)
+                              return(data.frame(
+                                lgroup="1",
+                                predictor="No defined indirect effects",
+                                mediator="",
+                                outcome="",
+                                direct=NA_real_,
+                                indirect=NA_real_,
+                                total=NA_real_,
+                                percent_mediated=NA_real_,
+                                stringsAsFactors=FALSE
+                              ))
                             direct<-effects[effects$effect=="Direct",,drop=FALSE]
                             total<-effects[effects$effect=="Total",,drop=FALSE]
                             rows<-lapply(seq_len(nrow(indirect)), function(i) {

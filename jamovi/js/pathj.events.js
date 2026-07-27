@@ -515,10 +515,12 @@ var populateGuiFromSyntax = function(ui, context) {
     var allVars = [];
 
     for (var i = 0; i < paths.length; i++) {
-        addUnique(endogenous, paths[i].lhs);
+        if (paths[i].op !== "~~")
+            addUnique(endogenous, paths[i].lhs);
         addUnique(allVars, paths[i].lhs);
         for (var j = 0; j < paths[i].rhs.length; j++) {
-            addUnique(predictors, paths[i].rhs[j]);
+            if (paths[i].op !== "~~")
+                addUnique(predictors, paths[i].rhs[j]);
             addUnique(allVars, paths[i].rhs[j]);
         }
     }
@@ -538,7 +540,7 @@ var populateGuiFromSyntax = function(ui, context) {
     for (var e = 0; e < endogenous.length; e++) {
         var rhs = [];
         for (var p = 0; p < paths.length; p++) {
-            if (paths[p].lhs === endogenous[e]) {
+            if (paths[p].lhs === endogenous[e] && paths[p].op !== "~~") {
                 for (var r = 0; r < paths[p].rhs.length; r++)
                     addUnique(rhs, paths[p].rhs[r]);
             }
@@ -638,13 +640,14 @@ var parseLavaanPaths = function(syntax) {
         var line = lines[i].trim();
         if (line.length === 0 || line.indexOf("#") === 0)
             continue;
-        var match = line.match(/^([^~]+)~([^~].*)$/);
+        var match = line.match(/^([^~]+)(=~|~~|~)(.+)$/);
         if (match === null)
             continue;
         var lhs = cleanVarName(match[1]);
-        var rhs = match[2].split("+").map(cleanVarName).filter(function(x) { return x.length > 0; });
+        var op = match[2];
+        var rhs = match[3].split("+").map(cleanVarName).filter(function(x) { return x.length > 0; });
         if (lhs.length > 0 && rhs.length > 0)
-            paths.push({ lhs: lhs, rhs: rhs });
+            paths.push({ lhs: lhs, rhs: rhs, op: op });
     }
     return paths;
 };
@@ -653,14 +656,15 @@ var parseMermaidPaths = function(syntax) {
     var text = syntax.replace(/;/g, " ");
     text = text.replace(/^\s*(graph|flowchart)\s+[A-Za-z]+\s*/i, "");
     var node = "[A-Za-z0-9_.]+(?:\\[[^\\]]+\\]|\\([^\\)]*\\)|\\{[^\\}]*\\})?";
-    var regex = new RegExp("(" + node + ")\\s*-->\\s*(?:\\|[^|]*\\|\\s*)?(" + node + ")", "g");
+    var regex = new RegExp("(" + node + ")\\s*(-->|<-->)\\s*(?:\\|[^|]*\\|\\s*)?(" + node + ")", "g");
     var paths = [];
     var match;
     while ((match = regex.exec(text)) !== null) {
         var rhs = cleanMermaidNode(match[1]);
-        var lhs = cleanMermaidNode(match[2]);
+        var op = match[2] === "<-->" ? "~~" : "~";
+        var lhs = cleanMermaidNode(match[3]);
         if (lhs.length > 0 && rhs.length > 0)
-            paths.push({ lhs: lhs, rhs: [ rhs ] });
+            paths.push({ lhs: lhs, rhs: [ rhs ], op: op });
     }
     return paths;
 };

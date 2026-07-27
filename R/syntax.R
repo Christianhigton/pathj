@@ -95,11 +95,25 @@ Syntax <- R6::R6Class(
                   if (is.null(syntax_source))
                     syntax_source <- "gui"
                   if (!identical(syntax_source, "gui")) {
-                    syntax_lines <- self$options$syntaxText
+                    syntax_lines <- character(0)
+                    syntax_vars <- character(0)
+                    if (is.something(self$import) && is.something(self$import$exports$lavaan))
+                      syntax_lines <- self$import$exports$lavaan
+                    if (length(syntax_lines) == 0)
+                      syntax_lines <- private$.syntax_lines()
                     syntax_lines <- trimws(syntax_lines)
                     syntax_lines <- syntax_lines[nzchar(syntax_lines)]
-                    return(list(list(info="Model input", value=paste0(syntax_source, " syntax import")),
-                                list(info="Imported lines", value=length(syntax_lines))))
+                    if (is.something(self$import) && is.something(self$import$graph$edges) && nrow(self$import$graph$edges)>0)
+                      syntax_vars <- unique(c(self$import$graph$edges$from, self$import$graph$edges$to))
+                    syntax_vars <- syntax_vars[nzchar(syntax_vars)]
+                    out <- list(
+                      list(info="Model input", value=paste0(syntax_source, " syntax import")),
+                      list(info="Imported lavaan statements", value=length(syntax_lines)),
+                      list(info="Estimated lavaan syntax", value=paste(syntax_lines, collapse=" ; "))
+                    )
+                    if (length(syntax_vars)>0)
+                      out[[length(out)+1]] <- list(info="Imported model variables", value=paste(syntax_vars, collapse=", "))
+                    return(out)
                   }
                   lapply(seq_along(self$options$endogenousTerms), 
                        function(i) list(info="Model",
@@ -312,7 +326,7 @@ Syntax <- R6::R6Class(
                        .lav_structure$group<-ifelse(.lav_structure$group==0,length(levs)+1,.lav_structure$group)
                        .lav_structure$lgroup<-levs[.lav_structure$group]
                    } else
-                        .lav_structure$lgroup<-"1"
+                        .lav_structure$lgroup<-rep("1", nrow(.lav_structure))
               
               ### self$structure containts all parameters with plain names. Useful for children to refer to parameters properties
               ### is not a tab_* which will be displayed in results
