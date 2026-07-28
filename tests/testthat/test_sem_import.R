@@ -122,6 +122,37 @@ testthat::test_that("Mermaid import fills intelligent-report tables without lgro
   testthat::expect_false(any(is.na(mod$intelligent$recommendations$asDF$recommendation)))
 })
 
+testthat::test_that("Mermaid import can auto-compute mediation decomposition", {
+  set.seed(2)
+  d <- data.frame(ACE_total=rnorm(160))
+  d$DERS_total <- .45*d$ACE_total + rnorm(160)
+  d$BIS_total <- .35*d$ACE_total + rnorm(160)
+  d$AUDIT_total <- .30*d$DERS_total + .25*d$BIS_total + .15*d$ACE_total + rnorm(160)
+  syntax <- paste(
+    "flowchart LR",
+    "ACE_total --> DERS_total",
+    "ACE_total --> BIS_total",
+    "DERS_total --> AUDIT_total",
+    "BIS_total --> AUDIT_total",
+    sep="\n"
+  )
+
+  mod <- pathj::pathj(
+    data=d,
+    syntaxSource="mermaid",
+    syntaxText=syntax,
+    syntaxApply=TRUE,
+    syntaxVars=names(d),
+    indirect=TRUE)
+
+  effects <- mod$models$effects$asDF
+  decomp <- mod$intelligent$mediationDecomp$asDF
+  testthat::expect_true("ACE_total \U21d2 DERS_total \U21d2 AUDIT_total" %in% effects$pathway)
+  testthat::expect_true("ACE_total \U21d2 BIS_total \U21d2 AUDIT_total" %in% effects$pathway)
+  testthat::expect_true("DERS_total" %in% decomp$mediator)
+  testthat::expect_true("BIS_total" %in% decomp$mediator)
+})
+
 testthat::test_that("Mermaid import diagnostics tolerate empty modification-index filters", {
   set.seed(1)
   d <- data.frame(

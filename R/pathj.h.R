@@ -1302,6 +1302,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     modindices = function() private$.items[["modindices"]],
                     missingSummary = function() private$.items[["missingSummary"]],
                     missingPatterns = function() private$.items[["missingPatterns"]],
+                    missingPatternChart = function() private$.items[["missingPatternChart"]],
                     mcar = function() private$.items[["mcar"]]),
                 private = list(),
                 public=list(
@@ -1411,6 +1412,22 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="%", 
                                     `type`="number", 
                                     `format`="zto"))))
+                        self$add(jmvcore::Image$new(
+                            options=options,
+                            name="missingPatternChart",
+                            title="Missing Data Pattern Chart",
+                            visible="(showMissingDiagnostics)",
+                            renderFun=".plotMissingPatterns",
+                            width=800,
+                            height=500,
+                            clearWith=list(
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "multigroup",
+                                "data",
+                                "missing",
+                                "showMissingDiagnostics")))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="mcar",

@@ -490,6 +490,22 @@ items:
                       type: number
                       format: zto
 
+          - name: missingPatternChart
+            title: Missing Data Pattern Chart
+            type: Image
+            visible: (showMissingDiagnostics)
+            renderFun: .plotMissingPatterns
+            width: 800
+            height: 500
+            clearWith:
+                  - endogenous
+                  - covs
+                  - factors
+                  - multigroup
+                  - data
+                  - missing
+                  - showMissingDiagnostics
+
           - name: mcar
             title: MCAR Diagnostic
             type: Table

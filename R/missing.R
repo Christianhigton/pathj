@@ -57,6 +57,51 @@ missing_pattern_summary <- function(data, vars) {
   )
 }
 
+missing_pattern_plot_data <- function(data, vars, display_vars = NULL, max_patterns = 20) {
+  if (!is.something(display_vars))
+    display_vars <- vars
+
+  keep <- vars %in% names(data)
+  vars <- vars[keep]
+  display_vars <- as.character(display_vars[keep])
+
+  if (!is.something(vars) || nrow(data) == 0) {
+    return(data.frame(
+      pattern = character(0),
+      variable = character(0),
+      missing = logical(0),
+      n = integer(0),
+      percent = numeric(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  mat <- is.na(data[, vars, drop = FALSE])
+  pattern_codes <- apply(mat, 1, function(x) paste(ifelse(x, "M", "."), collapse = ""))
+  tab <- sort(table(pattern_codes), decreasing = TRUE)
+  if (length(tab) > max_patterns)
+    tab <- tab[seq_len(max_patterns)]
+
+  rows <- list()
+  for (i in seq_along(tab)) {
+    code <- names(tab)[[i]]
+    status <- strsplit(code, "", fixed = TRUE)[[1]] == "M"
+    count <- as.integer(tab[[i]])
+    pct <- 100 * count / nrow(data)
+    label <- sprintf("Pattern %d  n=%d (%.1f%%)", i, count, pct)
+    rows[[length(rows) + 1]] <- data.frame(
+      pattern = label,
+      variable = display_vars,
+      missing = status,
+      n = count,
+      percent = pct,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  do.call(rbind, rows)
+}
+
 mcar_diagnostic <- function(data, vars) {
   vars <- intersect(vars, names(data))
   numeric_vars <- vars[vapply(data[, vars, drop = FALSE], is.numeric, logical(1))]

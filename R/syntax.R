@@ -62,6 +62,7 @@ Syntax <- R6::R6Class(
                   private$.lav_constraints <- character(0)
                   private$.lav_defined <- character(0)
                   private$.lav_indirect <- character(0)
+                  private$.indirect()
                 } else {
                   # here we prepare the variables. Factors are expanded to dummies and all variables are B64 named
                   # this produce two lists of terms, in plain names self$lav_terms and in B64 private$.lav_terms

@@ -19,6 +19,7 @@ Estimate <- R6::R6Class("Estimate",
                           tab_effects=NULL,
                           tab_missing_summary=NULL,
                           tab_missing_patterns=NULL,
+                          missing_pattern_plot=NULL,
                           tab_mcar=NULL,
                           missing_info=NULL,
                           tab_report_text=NULL,
@@ -98,6 +99,7 @@ Estimate <- R6::R6Class("Estimate",
                             }
 
                             self$tab_missing_summary<-missing_data_summary(data, model_vars, display_vars)
+                            self$missing_pattern_plot<-missing_pattern_plot_data(data, model_vars, display_vars)
                             if (isTRUE(self$options$showMissingDiagnostics)) {
                               self$tab_missing_patterns<-missing_pattern_summary(data, model_vars)
                               self$tab_mcar<-mcar_diagnostic(data, model_vars)

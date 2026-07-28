@@ -390,6 +390,51 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             return(TRUE)
 
         },
+        .plotMissingPatterns=function(image, ggtheme, theme, ...) {
+            if (!isTRUE(self$options$showMissingDiagnostics))
+                return()
+
+            d <- private$.lav_machine$missing_pattern_plot
+            if (!is.data.frame(d) || nrow(d) == 0) {
+                p <- ggplot2::ggplot() +
+                     ggplot2::annotate("text", x = 0, y = 0,
+                                       label = "No analysis variables are available for missing-data diagnostics.",
+                                       hjust = 0.5, vjust = 0.5, size = 4) +
+                     ggplot2::xlim(-1, 1) +
+                     ggplot2::ylim(-1, 1) +
+                     ggplot2::theme_void()
+                plot(p)
+                return(TRUE)
+            }
+
+            d$pattern <- factor(d$pattern, levels = rev(unique(d$pattern)))
+            d$variable <- factor(d$variable, levels = unique(d$variable))
+            d$status <- factor(ifelse(d$missing, "Missing", "Observed"),
+                               levels = c("Observed", "Missing"))
+            caption <- if (any(d$missing, na.rm = TRUE)) {
+                "Dark cells indicate missing values; light cells indicate observed values."
+            } else {
+                "All selected model variables are complete."
+            }
+
+            p <- ggplot2::ggplot(d, ggplot2::aes(x = variable, y = pattern, fill = status)) +
+                 ggplot2::geom_tile(color = "white", linewidth = 0.35) +
+                 ggplot2::scale_fill_manual(values = c(Observed = "#f3f4f6", Missing = "#2563eb"),
+                                            drop = FALSE,
+                                            name = NULL) +
+                 ggplot2::scale_x_discrete(position = "top") +
+                 ggplot2::labs(x = NULL, y = NULL, title = "Missing Data Pattern Chart", caption = caption) +
+                 ggplot2::theme_minimal(base_size = 12) +
+                 ggplot2::theme(
+                   panel.grid = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(angle = 45, hjust = 0, vjust = 0.5),
+                   axis.text.y = ggplot2::element_text(size = 10),
+                   plot.title = ggplot2::element_text(face = "bold"),
+                   legend.position = "bottom")
+
+            plot(p)
+            return(TRUE)
+        },
         .plotPvalues=function(image, ggtheme, theme, ...) {
             if (self$options$pgraphs==FALSE)
                 return()
