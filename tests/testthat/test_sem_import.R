@@ -181,7 +181,9 @@ testthat::test_that("Mermaid import diagnostics tolerate empty modification-inde
   mod <- pathj:::pathjClass$new(options=options, data=d)
   mod$run()
 
-  testthat::expect_equal(nrow(mod$results$diagnostics$modindices$asDF), 0)
+  mi <- mod$results$diagnostics$modindices$asDF
+  testthat::expect_equal(nrow(mi), 1)
+  testthat::expect_match(mi$lhs[[1]], "No modification indices met")
   testthat::expect_true(nrow(mod$results$models$coefficients$asDF) >= 4)
 })
 

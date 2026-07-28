@@ -42,6 +42,8 @@ pathj(
   showlabels = FALSE,
   scoretest = TRUE,
   cumscoretest = FALSE,
+  modindices = FALSE,
+  miMin = 4,
   estimator = "ML",
   likelihood = "normal",
   missing = "fiml",
@@ -153,6 +155,11 @@ estimated}
 \item{scoretest}{.}
 
 \item{cumscoretest}{.}
+
+\item{modindices}{\code{TRUE} or \code{FALSE} (default), compute and show
+lavaan modification indices.}
+
+\item{miMin}{minimum modification index threshold for inclusion in the table.}
 
 \item{estimator}{Choose the diagram labels}
 

@@ -61,6 +61,9 @@
 #' @param showlabels .
 #' @param scoretest .
 #' @param cumscoretest .
+#' @param modindices \code{TRUE} or \code{FALSE} (default), compute and show
+#'   lavaan modification indices.
+#' @param miMin minimum modification index threshold for inclusion in the table.
 #' @param estimator Choose the diagram labels
 #' @param likelihood Choose the diagram labels
 #' @param missing Missing-data handling method. \code{"fiml"} uses full
@@ -170,6 +173,8 @@ pathj <- function(
   showlabels = FALSE,
   scoretest = TRUE,
   cumscoretest = FALSE,
+  modindices = FALSE,
+  miMin = 4,
   estimator = "ML",
   likelihood = "normal",
   missing = "fiml",
@@ -287,6 +292,8 @@ pathj <- function(
     showlabels = showlabels,
     scoretest = scoretest,
     cumscoretest = cumscoretest,
+    modindices = modindices,
+    miMin = miMin,
     estimator = estimator,
     likelihood = likelihood,
     missing = missing,

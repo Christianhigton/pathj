@@ -57,3 +57,15 @@ testthat::test_that("r2 table",{
 }
 )
 
+testthat::test_that("modification indices option keeps model output", {
+  mod <- pathj::pathj(
+    formula=forms,
+    data=pathjdata,
+    varcov = NULL,
+    modindices = TRUE,
+    miMin = 0)
+
+  testthat::expect_true(nrow(mod$diagnostics$modindices$asDF) >= 1)
+  testthat::expect_true(nrow(mod$models$coefficients$asDF) >= 2)
+})
+

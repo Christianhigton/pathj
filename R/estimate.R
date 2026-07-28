@@ -1,6 +1,19 @@
 ## This class takes care of estimating the model and return the results. It inherit from Syntax, and define the same tables
 ## defined by Syntax, but it fill them with the results.
 
+modindices_message_table <- function(message) {
+  data.frame(
+    lgroup = "",
+    lhs = message,
+    op = "",
+    rhs = "",
+    mi = NA_real_,
+    epc = NA_real_,
+    sepc.all = NA_real_,
+    stringsAsFactors = FALSE
+  )
+}
+
 Estimate <- R6::R6Class("Estimate",
                         inherit = Syntax,
                         cloneable=FALSE,
@@ -387,41 +400,25 @@ Estimate <- R6::R6Class("Estimate",
                             
                             # modification indices (diagnostics)
                             if (isTRUE(self$options$modindices)) {
+                              self$tab_mi<-modindices_message_table("Modification indices were not computed.")
                               mires <- try_hard({ lavaan::modindices(self$model) })
                               if (isFALSE(mires$error)) {
                                 mi <- mires$obj
                                 if (nrow(mi)==0) {
-                                  self$warnings<-list(topic="modindices",message="No fixed parameter available to compute modification indexes.")
-                                  self$tab_mi<-data.frame(
-                                    lgroup=character(0),
-                                    lhs=character(0),
-                                    op=character(0),
-                                    rhs=character(0),
-                                    mi=numeric(0),
-                                    epc=numeric(0),
-                                    sepc.all=numeric(0),
-                                    stringsAsFactors=FALSE
-                                  )
+                                  self$tab_mi<-modindices_message_table("No fixed parameters are available for modification indices.")
                                 } else {
                                   # threshold filter
                                   if (is.something(self$options$miMin))
                                     mi <- mi[!is.na(mi$mi) & mi$mi >= self$options$miMin, , drop=FALSE]
                                   if (nrow(mi)==0) {
-                                    self$warnings<-list(topic="modindices",message="No modification indexes met the selected minimum threshold.")
-                                    self$tab_mi<-data.frame(
-                                      lgroup=character(0),
-                                      lhs=character(0),
-                                      op=character(0),
-                                      rhs=character(0),
-                                      mi=numeric(0),
-                                      epc=numeric(0),
-                                      sepc.all=numeric(0),
-                                      stringsAsFactors=FALSE
-                                    )
+                                    self$tab_mi<-modindices_message_table("No modification indices met the selected minimum threshold.")
                                   } else {
                                     # add group label if multigroup
                                     if (is.something(self$multigroup)) {
-                                      mi$lgroup <- self$multigroup$levels[mi$group]
+                                      group_index <- suppressWarnings(as.integer(mi$group))
+                                      mi$lgroup <- ifelse(!is.na(group_index) & group_index >= 1 & group_index <= length(self$multigroup$levels),
+                                                          self$multigroup$levels[group_index],
+                                                          "")
                                     } else {
                                       mi$lgroup <- rep("1", nrow(mi))
                                     }
@@ -430,6 +427,8 @@ Estimate <- R6::R6Class("Estimate",
                                     mi$rhs <- fromb64(mi$rhs, self$vars)
                                     # keep relevant columns if present
                                     keep <- c("lgroup","lhs","op","rhs","mi","epc","sepc.all")
+                                    for (col in setdiff(keep, names(mi)))
+                                      mi[[col]] <- if (col %in% c("mi", "epc", "sepc.all")) NA_real_ else ""
                                     cols <- intersect(keep, names(mi))
                                     mi <- mi[, cols, drop=FALSE]
                                     # order by MI descending
@@ -438,9 +437,13 @@ Estimate <- R6::R6Class("Estimate",
                                     self$tab_mi <- mi
                                   }
                                 }
+                                if (!isFALSE(mires$warning))
+                                  self$warnings <- list(topic="modindices", message = mires$warning)
                               } else {
-                                self$warnings <- list(topic="modindices", message = mires$warning)
-                                self$warnings <- list(topic="modindices", message = mires$error)
+                                msg <- mires$error
+                                if (!isFALSE(mires$warning))
+                                  msg <- paste(mires$warning, msg, sep="; ")
+                                self$tab_mi<-modindices_message_table(paste0("Modification indices could not be computed: ", msg))
                               }
                             }
 
