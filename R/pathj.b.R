@@ -485,7 +485,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                         glab <- ifelse(is.finite(gi) & gi >= 1 & gi <= length(mg$levels), as.character(mg$levels[gi]), "All")
                         ss$lgroup <- glab
                     } else {
-                        ss$lgroup <- if ("group" %in% names(ss)) as.character(ss$group) else "All"
+                        ss$lgroup <- if ("group" %in% names(ss)) as.character(ss$group) else rep("All", nrow(ss))
                     }
                 }
                 if (!is.something(tab) || nrow(tab)==0) {

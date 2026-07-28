@@ -390,30 +390,52 @@ Estimate <- R6::R6Class("Estimate",
                                 mi <- mires$obj
                                 if (nrow(mi)==0) {
                                   self$warnings<-list(topic="modindices",message="No fixed parameter available to compute modification indexes.")
-                                  mi[1,1]<-"-"
-                                  self$tab_mi<-mi
-                                  return()
-                                }
-                                # threshold filter
-                                if (is.something(self$options$miMin))
-                                  mi <- mi[!is.na(mi$mi) & mi$mi >= self$options$miMin, , drop=FALSE]
-                                # add group label if multigroup
-                                if (is.something(self$multigroup)) {
-                                  mi$lgroup <- self$multigroup$levels[mi$group]
+                                  self$tab_mi<-data.frame(
+                                    lgroup=character(0),
+                                    lhs=character(0),
+                                    op=character(0),
+                                    rhs=character(0),
+                                    mi=numeric(0),
+                                    epc=numeric(0),
+                                    sepc.all=numeric(0),
+                                    stringsAsFactors=FALSE
+                                  )
                                 } else {
-                                  mi$lgroup <- "1"
+                                  # threshold filter
+                                  if (is.something(self$options$miMin))
+                                    mi <- mi[!is.na(mi$mi) & mi$mi >= self$options$miMin, , drop=FALSE]
+                                  if (nrow(mi)==0) {
+                                    self$warnings<-list(topic="modindices",message="No modification indexes met the selected minimum threshold.")
+                                    self$tab_mi<-data.frame(
+                                      lgroup=character(0),
+                                      lhs=character(0),
+                                      op=character(0),
+                                      rhs=character(0),
+                                      mi=numeric(0),
+                                      epc=numeric(0),
+                                      sepc.all=numeric(0),
+                                      stringsAsFactors=FALSE
+                                    )
+                                  } else {
+                                    # add group label if multigroup
+                                    if (is.something(self$multigroup)) {
+                                      mi$lgroup <- self$multigroup$levels[mi$group]
+                                    } else {
+                                      mi$lgroup <- rep("1", nrow(mi))
+                                    }
+                                    # decode names
+                                    mi$lhs <- fromb64(mi$lhs, self$vars)
+                                    mi$rhs <- fromb64(mi$rhs, self$vars)
+                                    # keep relevant columns if present
+                                    keep <- c("lgroup","lhs","op","rhs","mi","epc","sepc.all")
+                                    cols <- intersect(keep, names(mi))
+                                    mi <- mi[, cols, drop=FALSE]
+                                    # order by MI descending
+                                    if ("mi" %in% names(mi))
+                                      mi <- mi[order(-mi$mi), , drop=FALSE]
+                                    self$tab_mi <- mi
+                                  }
                                 }
-                                # decode names
-                                mi$lhs <- fromb64(mi$lhs, self$vars)
-                                mi$rhs <- fromb64(mi$rhs, self$vars)
-                                # keep relevant columns if present
-                                keep <- c("lgroup","lhs","op","rhs","mi","epc","sepc.all")
-                                cols <- intersect(keep, names(mi))
-                                mi <- mi[, cols, drop=FALSE]
-                                # order by MI descending
-                                if ("mi" %in% names(mi))
-                                  mi <- mi[order(-mi$mi), , drop=FALSE]
-                                self$tab_mi <- mi
                               } else {
                                 self$warnings <- list(topic="modindices", message = mires$warning)
                                 self$warnings <- list(topic="modindices", message = mires$error)

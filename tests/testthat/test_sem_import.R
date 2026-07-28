@@ -122,6 +122,38 @@ testthat::test_that("Mermaid import fills intelligent-report tables without lgro
   testthat::expect_false(any(is.na(mod$intelligent$recommendations$asDF$recommendation)))
 })
 
+testthat::test_that("Mermaid import diagnostics tolerate empty modification-index filters", {
+  set.seed(1)
+  d <- data.frame(
+    ACE_total=rnorm(121),
+    DERS_total=rnorm(121),
+    BIS_total=rnorm(121),
+    AUDIT_total=rnorm(121)
+  )
+  syntax <- paste(
+    "flowchart LR",
+    "ACE_total --> DERS_total",
+    "ACE_total --> BIS_total",
+    "DERS_total --> AUDIT_total",
+    "BIS_total --> AUDIT_total",
+    "DERS_total <--> BIS_total",
+    sep="\n"
+  )
+
+  options <- pathj:::pathjOptions$new(
+    syntaxSource="mermaid",
+    syntaxText=syntax,
+    syntaxApply=TRUE,
+    syntaxVars=names(d),
+    modindices=TRUE,
+    miMin=1e9)
+  mod <- pathj:::pathjClass$new(options=options, data=d)
+  mod$run()
+
+  testthat::expect_equal(nrow(mod$results$diagnostics$modindices$asDF), 0)
+  testthat::expect_true(nrow(mod$results$models$coefficients$asDF) >= 4)
+})
+
 testthat::test_that("malformed OpenMx paths return line-level parser errors", {
   imported <- pathj:::sem_import_parse('mxPath(to="depression", arrows=1)', "openmx")
   testthat::expect_true(length(imported$errors) > 0)
