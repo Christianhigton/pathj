@@ -46,6 +46,9 @@ Estimate <- R6::R6Class("Estimate",
                           tab_model_comparison=NULL,
                           tab_report_paragraph=NULL,
                           tab_report_html=NULL,
+                          tab_topology=NULL,
+                          tab_conditional_effects=NULL,
+                          tab_moderated_index=NULL,
                           tab_lavaan_syntax=NULL,
                           tab_mermaid_syntax=NULL,
                           tab_mplus_syntax=NULL,
@@ -355,7 +358,7 @@ Estimate <- R6::R6Class("Estimate",
                             }
                             alist[[length(alist)+1]]<-c(info="Original observations",value=self$missing_info$n_original)
                             alist[[length(alist)+1]]<-c(info="Number of observations",value=self$missing_info$n_used)
-                            alist[[length(alist)+1]]<-c(info="Missing values",value=self$missing_info$total_missing)
+                            alist[[length(alist)+1]]<-c(info="Recognised missing values",value=self$missing_info$total_missing)
                             alist[[length(alist)+1]]<-c(info="Cases removed",value=self$missing_info$n_removed)
                             alist[[length(alist)+1]]<-c(info="Free parameters",value=self$model@Fit@npar)
                             alist[[length(alist)+1]]<-c(info="Converged",value=self$model@Fit@converged) 
@@ -546,7 +549,7 @@ Estimate <- R6::R6Class("Estimate",
                               self$warnings<-list(topic="main",message=message)
                               self$tab_report_text<-data.frame(section="Intelligent Report", text=message, stringsAsFactors=FALSE)
                               self$tab_report_paragraph<-data.frame(
-                                warning="AI-assisted statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
+                                warning="Automatically generated statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
                                 paragraph=message,
                                 stringsAsFactors=FALSE
                               )
@@ -569,25 +572,45 @@ Estimate <- R6::R6Class("Estimate",
                             }
                             report<-report$obj
 
-                            report_rows<-list(
-                              data.frame(section="Model Fit", text=report$fit$text, stringsAsFactors=FALSE),
-                              data.frame(section="Direct Effects", text=report$paths$text, stringsAsFactors=FALSE),
-                              data.frame(section="Mediation", text=report$mediation$text, stringsAsFactors=FALSE),
-                              data.frame(section="Moderation", text=report$moderation$text, stringsAsFactors=FALSE),
-                              data.frame(section="Multigroup", text=report$multigroup$text, stringsAsFactors=FALSE),
-                              data.frame(section="Multilevel", text=report$multilevel$text, stringsAsFactors=FALSE),
-                              data.frame(section="Missing Data and Estimator", text=paste0(
-                                "Estimator used: ", estimator_used,
-                                if (length(ordered_vars)>0) paste0("; ordered variables: ", paste(fromb64(ordered_vars,self$vars), collapse=", ")) else "",
-                                ". Missing data method: ", self$missing_info$method_label, "."
-                              ), stringsAsFactors=FALSE),
-                              data.frame(section="Model Insights", text=report$insights$text, stringsAsFactors=FALSE),
-                              data.frame(section="Modification Indices", text=report$modification_indices$text, stringsAsFactors=FALSE),
-                              data.frame(section="P-Curve", text=report$p_curve$text, stringsAsFactors=FALSE)
-                            )
+                            report_rows<-list()
+                            add_report_row <- function(section, text, omit = character(0)) {
+                              text <- trimws(as.character(text %||% ""))
+                              if (!nzchar(text) || any(startsWith(text, omit)))
+                                return()
+                              report_rows[[length(report_rows) + 1L]] <<- data.frame(section=section, text=text, stringsAsFactors=FALSE)
+                            }
+                            add_report_row("Model Fit", report$fit$text)
+                            add_report_row("Detected Model", fromb64(report$topology$text, self$vars))
+                            add_report_row("Direct Effects", report$paths$text, c("No direct paths were statistically significant", "No direct regression paths were estimated"))
+                            add_report_row("Mediation", report$mediation$text, c("No indirect or defined effects were estimated"))
+                            add_report_row("Moderation", report$moderation$text, c("No interaction terms were detected"))
+                            add_report_row("Multigroup", report$multigroup$text, c("No multigroup regression paths were available"))
+                            add_report_row("Multilevel", report$multilevel$text, c("No cluster variable was supplied"))
+                            add_report_row("Missing Data and Estimator", paste0(
+                              "Estimator used: ", estimator_used,
+                              if (length(ordered_vars)>0) paste0("; ordered variables: ", paste(fromb64(ordered_vars,self$vars), collapse=", ")) else "",
+                              ". Missing data method: ", self$missing_info$method_label, "."
+                            ))
+                            add_report_row("Model Insights", report$insights$text)
+                            add_report_row("Modification Indices", report$modification_indices$text)
+                            add_report_row("P-Curve", report$p_curve$text)
+                            self$tab_topology<-data.frame(
+                              field=c("Detected model", "Predictors", "Mediators", "Outcomes", "Moderators", "Detected PROCESS model"),
+                              value=c(
+                                report$topology$display_name,
+                                paste(fromb64(report$topology$predictors, self$vars), collapse=", "),
+                                paste(fromb64(report$topology$mediators, self$vars), collapse=", "),
+                                paste(fromb64(report$topology$outcomes, self$vars), collapse=", "),
+                                paste(fromb64(report$topology$moderators, self$vars), collapse=", "),
+                                ifelse(is.na(report$topology$process_equivalent), "No direct equivalent", paste0(report$topology$process_equivalent, " (", report$topology$process_match, ")"))
+                              ), stringsAsFactors=FALSE)
+                            self$tab_conditional_effects<-report$conditional_effects
+                            if (is.data.frame(self$tab_conditional_effects) && "moderator" %in% names(self$tab_conditional_effects))
+                              self$tab_conditional_effects$moderator<-fromb64(self$tab_conditional_effects$moderator, self$vars)
+                            self$tab_moderated_index<-report$moderated_index
                             self$tab_report_text<-self$decodeReportTable(do.call(rbind, report_rows))
                             self$tab_report_paragraph<-data.frame(
-                              warning="AI-assisted statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
+                              warning="Automatically generated statistical text is a draft. Check the output, reviewer expectations, theory, and common sense before using it in a manuscript.",
                               paragraph=paste(self$tab_report_text$text, collapse=" "),
                               stringsAsFactors=FALSE
                             )

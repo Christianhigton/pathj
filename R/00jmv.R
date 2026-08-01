@@ -6,7 +6,7 @@
         `type`="software", 
         `author`="Gallucci, M.", 
         `year`=2021, 
-        `title`="PATHj: jamovi Path Analysis (Version 1.1.7.9013 local sideload)",
+        `title`="PATHj: jamovi Path Analysis (Version 1.1.7.9013 local sideload)", 
         `publisher`="[jamovi module]. For help please visit https://pathj.github.io/", 
         `url`="https://pathj.github.io/", 
         `versioning`="PATHj: jamovi Path Analysis"), 

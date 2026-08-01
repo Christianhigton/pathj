@@ -1361,7 +1361,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="missingSummary",
-                            title="Missing Data Summary",
+                            title="Recognised Missing Data Summary",
                             visible="(showMissingDiagnostics)",
                             clearWith=list(
                                 "endogenous",
@@ -1378,11 +1378,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `type`="text"),
                                 list(
                                     `name`="missing", 
-                                    `title`="Missing", 
+                                    `title`="Recognised missing values", 
                                     `type`="integer"),
                                 list(
                                     `name`="percent", 
-                                    `title`="Missing %", 
+                                    `title`="Recognised missing %", 
                                     `type`="number", 
                                     `format`="zto"))))
                         self$add(jmvcore::Table$new(
@@ -1466,6 +1466,9 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
+                    modelClassification = function() private$.items[["modelClassification"]],
+                    conditionalEffects = function() private$.items[["conditionalEffects"]],
+                    moderatedIndex = function() private$.items[["moderatedIndex"]],
                     apaText = function() private$.items[["apaText"]],
                     reportParagraph = function() private$.items[["reportParagraph"]],
                     assumptions = function() private$.items[["assumptions"]],
@@ -1506,6 +1509,75 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "reportLevel",
                     "reportParagraph",
                     "showSyntax"))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="modelClassification",
+                            title="Detected Mediation / Conditional-Process Model",
+                            columns=list(
+                                list(
+                                    `name`="field", 
+                                    `title`="Field", 
+                                    `type`="text"),
+                                list(
+                                    `name`="value", 
+                                    `title`="Value", 
+                                    `type`="text"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="conditionalEffects",
+                            title="Conditional Indirect Effects",
+                            visible="(intelligentReport)",
+                            columns=list(
+                                list(
+                                    `name`="moderator", 
+                                    `title`="Moderator", 
+                                    `type`="text"),
+                                list(
+                                    `name`="value", 
+                                    `title`="Value", 
+                                    `type`="number"),
+                                list(
+                                    `name`="indirect", 
+                                    `title`="Indirect", 
+                                    `type`="number"),
+                                list(
+                                    `name`="se", 
+                                    `title`="SE", 
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.lower", 
+                                    `title`="Lower", 
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.upper", 
+                                    `title`="Upper", 
+                                    `type`="number"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="moderatedIndex",
+                            title="Index of Moderated Mediation",
+                            visible="(intelligentReport)",
+                            columns=list(
+                                list(
+                                    `name`="index", 
+                                    `title`="Index", 
+                                    `type`="number"),
+                                list(
+                                    `name`="se", 
+                                    `title`="SE", 
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.lower", 
+                                    `title`="Lower", 
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.upper", 
+                                    `title`="Upper", 
+                                    `type`="number"),
+                                list(
+                                    `name`="note", 
+                                    `title`="Note", 
+                                    `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="apaText",

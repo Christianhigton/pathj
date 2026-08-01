@@ -893,6 +893,9 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
   teaching_mode <- match.arg(teaching_mode)
   pcurve_target <- match.arg(pcurve_target)
   fit_report <- report_fit(fit)
+  topology <- detect_mediation_topology(fit)
+  conditional_effects <- conditional_process_table(fit, topology, data = data)
+  moderated_index <- conditional_process_index(fit, topology)
   paths <- report_paths(fit, include_nonsignificant = teaching_mode == "advanced")
   mediation <- report_mediation(fit)
   moderation <- report_moderation(fit)
@@ -917,6 +920,7 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
   text <- paste(c(
     fit_report$text,
     paths$text,
+    topology$text,
     mediation$text,
     moderation$text,
     multigroup$text,
@@ -925,11 +929,33 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
     insights$text
   ), collapse = "\n\n")
 
+  conditional_text <- if (nrow(conditional_effects) > 0L) {
+    paste0("Conditional indirect effects through the moderator were estimated at the observed probing values. ",
+           paste(paste0(conditional_effects$moderator, " = ", apa_num(conditional_effects$value),
+                        ": indirect effect = ", apa_num(conditional_effects$indirect)), collapse = "; "), ".")
+  } else {
+    reason <- if (length(topology$moderators) == 0L) {
+      "it contains no moderator"
+    } else if (length(topology$indirect_paths) == 0L) {
+      "it contains no indirect pathway"
+    } else {
+      "the conditional effect could not be estimated from the fitted paths"
+    }
+    paste0("Conditional indirect effects were not defined for this model because ", reason, ".")
+  }
+  index_text <- if (is.finite(moderated_index$index[[1]])) {
+    paste0("The index of moderated mediation was ", apa_num(moderated_index$index[[1]]), ". ", moderated_index$note[[1]])
+  } else "The index of moderated mediation was not estimable for this model."
+  text <- paste(text, conditional_text, index_text, sep = "\n\n")
+
   list(
     teaching_mode = teaching_mode,
     text = text,
     fit = fit_report,
     paths = paths,
+    topology = topology,
+    conditional_effects = conditional_effects,
+    moderated_index = moderated_index,
     mediation = mediation,
     moderation = moderation,
     multigroup = multigroup,

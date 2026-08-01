@@ -111,6 +111,15 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             j.init_table(self$results$intelligent$apaText,
                          lav_machine$tab_report_text,
                          ci=F)
+            j.init_table(self$results$intelligent$modelClassification,
+                         lav_machine$tab_topology,
+                         ci=F)
+            j.init_table(self$results$intelligent$conditionalEffects,
+                         lav_machine$tab_conditional_effects,
+                         ci=F)
+            j.init_table(self$results$intelligent$moderatedIndex,
+                         lav_machine$tab_moderated_index,
+                         ci=F)
             j.init_table(self$results$intelligent$assumptions,
                          lav_machine$tab_assumptions,
                          ci=F)
@@ -253,16 +262,28 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              j.add_warnings(self$results$diagnostics$modindices, lav_machine, "modindices")
              j.fill_table(self$results$diagnostics$missingSummary, lav_machine$tab_missing_summary, append=TRUE)
              j.fill_table(self$results$diagnostics$missingPatterns, lav_machine$tab_missing_patterns, append=TRUE)
+             self$results$diagnostics$mcar$deleteRows()
              j.fill_table(self$results$diagnostics$mcar, lav_machine$tab_mcar, append=TRUE)
 
              j.fill_table(self$results$intelligent$apaText, lav_machine$tab_report_text, append=TRUE)
+             j.fill_table(self$results$intelligent$modelClassification, lav_machine$tab_topology, append=TRUE)
+             j.fill_table(self$results$intelligent$conditionalEffects, lav_machine$tab_conditional_effects, append=TRUE)
+             j.fill_table(self$results$intelligent$moderatedIndex, lav_machine$tab_moderated_index, append=TRUE)
              if (isTRUE(self$options$reportParagraph) && is.something(lav_machine$tab_report_html))
                  self$results$intelligent$reportParagraph$setContent(lav_machine$tab_report_html)
              j.fill_table(self$results$intelligent$assumptions, lav_machine$tab_assumptions, append=TRUE)
              j.fill_table(self$results$intelligent$recommendations, lav_machine$tab_recommendations, append=TRUE)
              j.fill_table(self$results$intelligent$variableTypes, lav_machine$tab_variable_types, append=TRUE)
              j.fill_table(self$results$intelligent$mediationDecomp, lav_machine$tab_mediation_decomp, append=TRUE, spaceby="lgroup")
-             j.fill_table(self$results$intelligent$groupComparison, lav_machine$tab_group_comparison, append=TRUE)
+             self$results$intelligent$groupComparison$deleteRows()
+             if (is.something(lav_machine$tab_group_comparison) &&
+                 is.data.frame(lav_machine$tab_group_comparison) &&
+                 nrow(lav_machine$tab_group_comparison) > 0 &&
+                 is.something(self$options$multigroup)) {
+                 j.fill_table(self$results$intelligent$groupComparison, lav_machine$tab_group_comparison, append=TRUE)
+             } else {
+                 self$results$intelligent$groupComparison$setVisible(FALSE)
+             }
              j.fill_table(self$results$intelligent$insights, lav_machine$tab_insights, append=TRUE)
              j.fill_table(self$results$intelligent$modelComparison, lav_machine$tab_model_comparison, append=TRUE)
              j.fill_table(self$results$intelligent$pcurve, lav_machine$tab_pcurve, append=TRUE)

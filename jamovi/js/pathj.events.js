@@ -550,6 +550,11 @@ var populateGuiFromSyntax = function(ui, context) {
     ui.endogenousTerms.setValue(terms);
     updateSuppliers(ui, context);
     context.workspace.importingSyntax = false;
+    // Imported syntax has populated the GUI controls; switch back to the
+    // builder so users can continue editing the model interactively.
+    setOptionValue(ui, "syntaxSource", "gui");
+    setOptionValue(ui, "syntaxApply", false);
+    updateSyntaxEditor(ui);
 };
 
 var renderSyntaxPreview = function(ui) {

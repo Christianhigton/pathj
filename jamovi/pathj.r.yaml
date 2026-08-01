@@ -443,7 +443,7 @@ items:
                       type: number
 
           - name: missingSummary
-            title: Missing Data Summary
+            title: Recognised Missing Data Summary
             type: Table
             visible: (showMissingDiagnostics)
             clearWith:
@@ -459,10 +459,10 @@ items:
                       title: Variable
                       type: text
                     - name: missing
-                      title: Missing
+                      title: Recognised missing values
                       type: integer
                     - name: percent
-                      title: Missing %
+                      title: Recognised missing %
                       type: number
                       format: zto
 
@@ -561,6 +561,62 @@ items:
                   - reportParagraph
                   - showSyntax
     items:
+          - name: modelClassification
+            title: Detected Mediation / Conditional-Process Model
+            type: Table
+            columns:
+                    - name: field
+                      title: Field
+                      type: text
+                    - name: value
+                      title: Value
+                      type: text
+
+          - name: conditionalEffects
+            title: Conditional Indirect Effects
+            type: Table
+            visible: (intelligentReport)
+            columns:
+                    - name: moderator
+                      title: Moderator
+                      type: text
+                    - name: value
+                      title: Value
+                      type: number
+                    - name: indirect
+                      title: Indirect
+                      type: number
+                    - name: se
+                      title: SE
+                      type: number
+                    - name: ci.lower
+                      title: Lower
+                      type: number
+                    - name: ci.upper
+                      title: Upper
+                      type: number
+
+          - name: moderatedIndex
+            title: Index of Moderated Mediation
+            type: Table
+            visible: (intelligentReport)
+            columns:
+                    - name: index
+                      title: Index
+                      type: number
+                    - name: se
+                      title: SE
+                      type: number
+                    - name: ci.lower
+                      title: Lower
+                      type: number
+                    - name: ci.upper
+                      title: Upper
+                      type: number
+                    - name: note
+                      title: Note
+                      type: text
+
           - name: apaText
             title: Automatic APA Narrative
             type: Table

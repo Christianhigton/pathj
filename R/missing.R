@@ -41,6 +41,13 @@ missing_data_summary <- function(data, vars, display_vars = NULL) {
   )
 }
 
+missing_data_guidance <- function() {
+  paste(
+    "If you expected missing data, check that blank cells and user-defined missing-value codes,",
+    "such as 99, -99, 'Missing', or similar values, have been correctly defined as missing in jamovi before interpreting these diagnostics."
+  , sep = "\n")
+}
+
 missing_pattern_summary <- function(data, vars) {
   vars <- intersect(vars, names(data))
   if (!is.something(vars) || nrow(data) == 0)
@@ -104,6 +111,27 @@ missing_pattern_plot_data <- function(data, vars, display_vars = NULL, max_patte
 
 mcar_diagnostic <- function(data, vars) {
   vars <- intersect(vars, names(data))
+  recognized_missing <- if (is.something(vars)) {
+    sum(is.na(data[, vars, drop = FALSE]))
+  } else {
+    0L
+  }
+
+  if (recognized_missing == 0L) {
+    return(data.frame(
+      test = "Little's MCAR test",
+      statistic = NA_real_,
+      df = NA_integer_,
+      pvalue = NA_real_,
+      note = paste(
+        "No recognised missing values were detected. Little's MCAR test was not performed because there were no recognised missing-data patterns to evaluate.",
+        paste0("Guidance:\n", missing_data_guidance()),
+        sep = "\n\n"
+      ),
+      stringsAsFactors = FALSE
+    ))
+  }
+
   numeric_vars <- vars[vapply(data[, vars, drop = FALSE], is.numeric, logical(1))]
   if (length(numeric_vars) < 2) {
     return(data.frame(
@@ -111,7 +139,8 @@ mcar_diagnostic <- function(data, vars) {
       statistic = NA_real_,
       df = NA_integer_,
       pvalue = NA_real_,
-      note = "At least two numeric variables are required.",
+      note = paste("Little's MCAR test could not be estimated from the available missing-data patterns.",
+                   "At least two numeric variables are required."),
       stringsAsFactors = FALSE
     ))
   }
@@ -122,7 +151,8 @@ mcar_diagnostic <- function(data, vars) {
       statistic = NA_real_,
       df = NA_integer_,
       pvalue = NA_real_,
-      note = "Install the naniar package to compute this diagnostic.",
+      note = paste("Little's MCAR test could not be estimated from the available missing-data patterns.",
+                   "Install the naniar package to compute this diagnostic."),
       stringsAsFactors = FALSE
     ))
   }
@@ -134,17 +164,35 @@ mcar_diagnostic <- function(data, vars) {
       statistic = NA_real_,
       df = NA_integer_,
       pvalue = NA_real_,
-      note = res$error,
+      note = paste("Little's MCAR test could not be estimated from the available missing-data patterns.",
+                   as.character(res$error)),
       stringsAsFactors = FALSE
     ))
   }
 
   out <- as.data.frame(res$obj)
+  statistic <- if ("statistic" %in% names(out)) suppressWarnings(as.numeric(out$statistic[[1]])) else NA_real_
+  df <- if ("df" %in% names(out)) suppressWarnings(as.numeric(out$df[[1]])) else NA_real_
+  pvalue <- if ("p.value" %in% names(out)) suppressWarnings(as.numeric(out$p.value[[1]])) else NA_real_
+  valid <- length(statistic) == 1L && length(df) == 1L && length(pvalue) == 1L &&
+    is.finite(statistic) && is.finite(df) && is.finite(pvalue) && df > 0
+
+  if (!valid) {
+    return(data.frame(
+      test = "Little's MCAR test",
+      statistic = NA_real_,
+      df = NA_integer_,
+      pvalue = NA_real_,
+      note = "Little's MCAR test could not be estimated from the available missing-data patterns.",
+      stringsAsFactors = FALSE
+    ))
+  }
+
   data.frame(
     test = "Little's MCAR test",
-    statistic = if ("statistic" %in% names(out)) out$statistic[[1]] else NA_real_,
-    df = if ("df" %in% names(out)) as.integer(out$df[[1]]) else NA_integer_,
-    pvalue = if ("p.value" %in% names(out)) out$p.value[[1]] else NA_real_,
+    statistic = statistic,
+    df = as.integer(df),
+    pvalue = pvalue,
     note = "Large p-values are consistent with MCAR; this test is only a screening aid.",
     stringsAsFactors = FALSE
   )
