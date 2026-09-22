@@ -22,7 +22,7 @@ jobs:
 
       - name: Install jmvtools
         run: |
-          Rscript -e 'install.packages("jmvtools", repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+          Rscript -e 'install.packages(c("jmvtools", "semPlot"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
 
       - name: Build and verify Intel module
         run: Rscript scripts/build_intel_jmo.R

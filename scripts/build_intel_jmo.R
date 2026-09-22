@@ -50,6 +50,7 @@ writeLines(
     r_launcher
 )
 Sys.chmod(r_launcher, mode = "0755")
+tool_library <- normalizePath(.libPaths()[1], mustWork = TRUE)
 
 # Bypass the node R package, whose macOS binary may be arm64 even on an Intel
 # host. The compiler itself is JavaScript and runs under the runner's native Node.
@@ -57,6 +58,7 @@ prepare_args <- c(
     shQuote(compiler),
     "--prepare", shQuote(root),
     "--home", shQuote(jamovi_home),
+    "--rlibs", shQuote(tool_library),
     "--assume-app-version", "2.7.0"
 )
 prepare_status <- system2(node, args = prepare_args)
@@ -67,6 +69,7 @@ args <- c(
     shQuote(compiler),
     "--build", shQuote(root),
     "--home", shQuote(jamovi_home),
+    "--rlibs", shQuote(tool_library),
     "--assume-app-version", "2.7.0",
     "--jmo", shQuote(output)
 )
