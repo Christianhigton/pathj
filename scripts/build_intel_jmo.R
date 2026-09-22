@@ -28,12 +28,27 @@ compiler <- system.file(
 if (!nzchar(compiler) || !file.exists(compiler))
     stop("The jamovi compiler bundled with jmvtools was not found")
 
+# The compiler derives its macOS R path from a jamovi application bundle.
+# CI only needs a minimal bundle-shaped shim pointing at the runner's Intel R.
+jamovi_home <- tempfile("jamovi-intel-home-")
+macos_dir <- file.path(jamovi_home, "Contents", "MacOS")
+r_versions_dir <- file.path(
+    jamovi_home, "Contents", "Frameworks", "R.framework", "Versions", "Current"
+)
+dir.create(macos_dir, recursive = TRUE)
+dir.create(r_versions_dir, recursive = TRUE)
+if (!file.symlink("/usr/bin/true", file.path(macos_dir, "jamovi")))
+    stop("Could not create the temporary jamovi executable shim")
+if (!file.symlink(R.home(), file.path(r_versions_dir, "Resources")))
+    stop("Could not link the Intel R runtime into the temporary jamovi home")
+
 # Bypass the node R package, whose macOS binary may be arm64 even on an Intel
 # host. The compiler itself is JavaScript and runs under the runner's native Node.
 prepare_args <- c(
     shQuote(compiler),
     "--prepare", shQuote(root),
-    "--rpath", shQuote(R.home("bin"))
+    "--home", shQuote(jamovi_home),
+    "--assume-app-version", "2.7.0"
 )
 prepare_status <- system2(node, args = prepare_args)
 if (!identical(prepare_status, 0L))
@@ -42,6 +57,7 @@ if (!identical(prepare_status, 0L))
 args <- c(
     shQuote(compiler),
     "--build", shQuote(root),
+    "--home", shQuote(jamovi_home),
     "--assume-app-version", "2.7.0",
     "--jmo", shQuote(output)
 )
