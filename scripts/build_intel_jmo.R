@@ -18,16 +18,26 @@ if (!arch %in% c("x86_64", "x86-64")) {
 if (!requireNamespace("jmvtools", quietly = TRUE))
     stop("The jmvtools package is required")
 
-# Build dependencies for the same R and CPU architecture as the active runner.
-jmvtools::prepare(root)
-
-node <- node::node()
+node <- Sys.which("node")
+if (!nzchar(node))
+    stop("A native Node.js executable was not found on PATH")
 compiler <- system.file(
     "node_modules", "jamovi-compiler", "index.js",
     package = "jmvtools"
 )
 if (!nzchar(compiler) || !file.exists(compiler))
     stop("The jamovi compiler bundled with jmvtools was not found")
+
+# Bypass the node R package, whose macOS binary may be arm64 even on an Intel
+# host. The compiler itself is JavaScript and runs under the runner's native Node.
+prepare_args <- c(
+    shQuote(compiler),
+    "--prepare", shQuote(root),
+    "--rpath", shQuote(R.home("bin"))
+)
+prepare_status <- system2(node, args = prepare_args)
+if (!identical(prepare_status, 0L))
+    stop("Intel dependency preparation failed with status ", prepare_status)
 
 args <- c(
     shQuote(compiler),
