@@ -21,8 +21,13 @@ if (!requireNamespace("jmvtools", quietly = TRUE))
 # Build dependencies for the same R and CPU architecture as the active runner.
 jmvtools::prepare(root)
 
-node <- getFromNamespace("node", "jmvtools")()
-compiler <- getFromNamespace("jmcPath", "jmvtools")()
+node <- node::node()
+compiler <- system.file(
+    "node_modules", "jamovi-compiler", "index.js",
+    package = "jmvtools"
+)
+if (!nzchar(compiler) || !file.exists(compiler))
+    stop("The jamovi compiler bundled with jmvtools was not found")
 
 args <- c(
     shQuote(compiler),
