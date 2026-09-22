@@ -44,9 +44,13 @@ generate_model_insights(fit)
 
 diagnose_modification_indices(fit, threshold = 10)
 
-p_curve_analysis(fit)
+p_curve_analysis(fit, target = c("all", "direct", "mediation", "moderation",
+  "multigroup", "multilevel"), within = NULL, between = NULL)
 
-generate_report(fit, data = NULL, teaching_mode = c("apa", "basic", "advanced"))
+generate_report(fit, data = NULL, teaching_mode = c("apa", "basic", "advanced"),
+  cluster = NULL, within = NULL, between = NULL,
+  pcurve_target = c("all", "direct", "mediation", "moderation",
+    "multigroup", "multilevel"))
 }
 \arguments{
 \item{model}{lavaan model syntax.}
@@ -65,6 +69,10 @@ generate_report(fit, data = NULL, teaching_mode = c("apa", "basic", "advanced"))
 \item{diagnostics}{A diagnostics data frame returned by \code{check_assumptions()}.}
 \item{cluster}{Optional clustering variable name.}
 \item{threshold}{Minimum modification index to report.}
+\item{target}{Effect family to include in the p-value screen.}
+\item{within}{Optional within-person or level-1 variables.}
+\item{between}{Optional between-person or level-2 variables.}
+\item{pcurve_target}{Effect family to include in the report's p-value screen.}
 \item{teaching_mode}{Reporting level: \code{"basic"}, \code{"apa"}, or \code{"advanced"}.}
 }
 \description{

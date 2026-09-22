@@ -567,7 +567,7 @@ Estimate <- R6::R6Class("Estimate",
                               self$tab_mediation_decomp<-self$mediationDecompositionTable()
                               self$tab_insights<-data.frame()
                               self$tab_pcurve<-data.frame(n_tests=0L, n_significant=0L, prop_p_lt_025=NA_real_)
-                              self$tab_model_comparison<-data.frame(model="Current", chisq=NA_real_, df=NA_real_, pvalue=NA_real_, cfi=NA_real_, tli=NA_real_, rmsea=NA_real_, srmr=NA_real_, aic=NA_real_, bic=NA_real_, best_fit="", stringsAsFactors=FALSE)
+                              self$tab_model_comparison<-data.frame(model="Current", chisq=NA_real_, df=NA_real_, pvalue=NA_real_, cfi=NA_real_, tli=NA_real_, rmsea=NA_real_, srmr=NA_real_, aic=NA_real_, bic=NA_real_, identification="unavailable", fit_note=message, best_fit="", stringsAsFactors=FALSE)
                               return()
                             }
                             report<-report$obj
@@ -621,7 +621,8 @@ Estimate <- R6::R6Class("Estimate",
                               for (nm in c("check","status","explanation","recommendation"))
                                 if (!nm %in% names(self$tab_assumptions)) self$tab_assumptions[[nm]]<-NA_character_
                               self$tab_assumptions$status_icon<-ifelse(self$tab_assumptions$status=="Met", "OK",
-                                                                       ifelse(self$tab_assumptions$status=="Violated", "Violated", "Warning"))
+                                                                       ifelse(self$tab_assumptions$status=="Info", "Info",
+                                                                              ifelse(self$tab_assumptions$status=="Violated", "Violated", "Warning")))
                               self$tab_assumptions<-self$tab_assumptions[,c("check","status_icon","status","explanation","recommendation"),drop=FALSE]
                             }
 
@@ -691,6 +692,7 @@ Estimate <- R6::R6Class("Estimate",
                                 indirect=NA_real_,
                                 total=NA_real_,
                                 percent_mediated=NA_real_,
+                                percent_mediated_interpretation="Not available",
                                 stringsAsFactors=FALSE
                               ))
                             indirect<-effects[effects$effect=="Indirect",,drop=FALSE]
@@ -704,6 +706,7 @@ Estimate <- R6::R6Class("Estimate",
                                 indirect=NA_real_,
                                 total=NA_real_,
                                 percent_mediated=NA_real_,
+                                percent_mediated_interpretation="Not available",
                                 stringsAsFactors=FALSE
                               ))
                             direct<-effects[effects$effect=="Direct",,drop=FALSE]
@@ -713,15 +716,18 @@ Estimate <- R6::R6Class("Estimate",
                               d<-direct[direct$predictor==r$predictor & direct$outcome==r$outcome & direct$lgroup==r$lgroup,,drop=FALSE]
                               t<-total[total$predictor==r$predictor & total$outcome==r$outcome & total$lgroup==r$lgroup,,drop=FALSE]
                               total_est<-if (nrow(t)>0) t$est[[1]] else if (nrow(d)>0) d$est[[1]] + r$est[[1]] else NA_real_
+                              direct_est<-if (nrow(d)>0) d$est[[1]] else NA_real_
+                              proportion<-mediation_proportion(r$est[[1]], direct_est, total_est)
                               data.frame(
                                 lgroup=r$lgroup,
                                 predictor=r$predictor,
                                 mediator=ifelse(grepl("\U21d2", r$pathway), paste(strsplit(r$pathway, " \U21d2 ")[[1]][-c(1,length(strsplit(r$pathway, " \U21d2 ")[[1]]))], collapse=" \U21d2 "), ""),
                                 outcome=r$outcome,
-                                direct=if (nrow(d)>0) d$est[[1]] else NA_real_,
+                                direct=direct_est,
                                 indirect=r$est[[1]],
                                 total=total_est,
-                                percent_mediated=if (!is.na(total_est) && total_est != 0) 100 * r$est[[1]] / total_est else NA_real_,
+                                percent_mediated=proportion$value,
+                                percent_mediated_interpretation=if (proportion$interpretable) "Interpretable" else paste0("Not interpretable: ", proportion$reason),
                                 stringsAsFactors=FALSE
                               )
                             })
@@ -746,8 +752,8 @@ Estimate <- R6::R6Class("Estimate",
                               )
                             }
                             rows[[length(rows)+1]]<-add_rows(insights$strongest_predictors,"Strongest predictor")
-                            rows[[length(rows)+1]]<-add_rows(insights$risk_factors,"Risk/amplifying factor")
-                            rows[[length(rows)+1]]<-add_rows(insights$protective_factors,"Protective/buffering factor")
+                            rows[[length(rows)+1]]<-add_rows(insights$positive_associations,"Significant positive association")
+                            rows[[length(rows)+1]]<-add_rows(insights$negative_associations,"Significant negative association")
                             rows<-rows[!vapply(rows,is.null,logical(1))]
                             if (!is.something(rows))
                               return(NULL)

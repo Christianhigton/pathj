@@ -45,6 +45,76 @@ safe_fit_measures <- function(fit, measures) {
   vals
 }
 
+model_identification <- function(fit) {
+  df <- unname(safe_fit_measures(fit, "df")[["df"]])
+  converged <- tryCatch(isTRUE(lavaan::lavInspect(fit, "converged")),
+                        error = function(e) FALSE)
+  if (!is.finite(df) || df < 0 || !converged) {
+    status <- "underidentified"
+  } else if (df == 0) {
+    status <- "just_identified"
+  } else {
+    status <- "overidentified"
+  }
+  list(status = status, df = df, converged = converged)
+}
+
+# A mediated proportion is descriptive only when the component effects operate
+# in the same direction and the denominator is not dominated by cancellation.
+mediation_proportion <- function(indirect, direct, total = direct + indirect,
+                                 relative_tolerance = .05, max_abs_ratio = 1) {
+  values <- c(indirect = indirect, direct = direct, total = total)
+  if (any(!is.finite(values)))
+    return(list(value = NA_real_, interpretable = FALSE,
+                reason = "The direct, indirect, and total effects were not all estimable."))
+  scale <- max(abs(c(direct, indirect)), .Machine$double.eps)
+  if (abs(total) <= relative_tolerance * scale)
+    return(list(value = NA_real_, interpretable = FALSE,
+                reason = "The total effect is zero or too close to zero for a stable proportion."))
+  if (direct * indirect < 0)
+    return(list(value = NA_real_, interpretable = FALSE,
+                reason = "The direct and indirect effects operate in opposite directions."))
+  ratio <- indirect / total
+  if (!is.finite(ratio) || ratio < 0 || abs(ratio) > max_abs_ratio)
+    return(list(value = NA_real_, interpretable = FALSE,
+                reason = "The indirect-to-total ratio is unstable or substantively misleading."))
+  list(value = 100 * ratio, interpretable = TRUE, reason = "Interpretable")
+}
+
+#' Summarise simulation-based power from replicate p-values.
+#'
+#' @param simulations A data frame containing one row per valid simulated fit.
+#' @param alpha Significance threshold.
+#' @param effect_cols Columns identifying an effect (for example path and group).
+#' @param sample_size_col Column containing candidate sample size.
+#' @param pvalue_col Column containing the simulated p-value.
+#' @return A data frame with estimated power and the number of valid simulations.
+#' @export
+simulation_power_summary <- function(simulations, alpha = .05,
+                                     effect_cols = c("effect"),
+                                     sample_size_col = "n",
+                                     pvalue_col = "pvalue") {
+  required <- unique(c(effect_cols, sample_size_col, pvalue_col))
+  if (!is.data.frame(simulations) || !all(required %in% names(simulations)))
+    stop("simulations must contain effect, sample-size, and p-value columns")
+  d <- simulations[is.finite(simulations[[pvalue_col]]) &
+                     !is.na(simulations[[pvalue_col]]), required, drop = FALSE]
+  if (nrow(d) == 0L)
+    return(data.frame())
+  keys <- interaction(d[c(effect_cols, sample_size_col)], drop = TRUE, lex.order = TRUE)
+  split_rows <- split(seq_len(nrow(d)), keys)
+  rows <- lapply(split_rows, function(ii) {
+    out <- d[ii[[1]], c(effect_cols, sample_size_col), drop = FALSE]
+    p <- d[[pvalue_col]][ii]
+    out$power <- sum(p < alpha) / length(p)
+    out$valid_simulations <- length(p)
+    out
+  })
+  ans <- do.call(rbind, rows)
+  rownames(ans) <- NULL
+  ans
+}
+
 model_observed_variables <- function(model) {
   pt <- try_hard(lavaan::lavaanify(model, fixed.x = FALSE))
   if (!isFALSE(pt$error) || !is.something(pt$obj))
@@ -169,17 +239,32 @@ report_fit <- function(fit) {
     stringsAsFactors = FALSE
   )
 
-  text <- paste0(
-    "Model fit was evaluated using chi-square, CFI, TLI, RMSEA, and SRMR. ",
-    "The model fit was chi-square(",
-    apa_num(tab$df, 0), ") = ", apa_num(tab$chisq), ", ",
+  identification <- model_identification(fit)
+  tab$identification <- identification$status
+  tab$fit_informative <- identical(identification$status, "overidentified")
+
+  indices <- paste0(
+    "chi-square(", apa_num(tab$df, 0), ") = ", apa_num(tab$chisq), ", ",
     apa_p(tab$pvalue), ", CFI = ", apa_num(tab$cfi),
     ", TLI = ", apa_num(tab$tli), ", RMSEA = ", apa_num(tab$rmsea),
     " [", apa_num(tab$rmsea.ci.lower), ", ", apa_num(tab$rmsea.ci.upper),
-    "], and SRMR = ", apa_num(tab$srmr), "."
-  )
+    "], and SRMR = ", apa_num(tab$srmr), ".")
+  text <- if (identical(identification$status, "just_identified")) {
+    paste0(
+      "Model identification: Just-identified model. The model has 0 degrees of freedom and therefore reproduces the observed covariance matrix exactly. ",
+      "Global fit indices such as chi-square, CFI, TLI, RMSEA, and SRMR are not informative for evaluating model fit. ",
+      "Interpretation should instead focus on parameter estimates, confidence intervals, indirect effects, and explained variance. ",
+      "For transparency, the numerical indices were ", indices)
+  } else if (identical(identification$status, "underidentified")) {
+    paste0(
+      "Model identification warning: the model appears underidentified or did not converge. ",
+      "Global fit indices and parameter interpretations may be unreliable. Review model identification before interpreting the results. ",
+      "Available numerical indices were ", indices)
+  } else {
+    paste0("Model fit was evaluated using chi-square, CFI, TLI, RMSEA, and SRMR. The model fit statistics were ", indices)
+  }
 
-  list(table = tab, text = text)
+  list(table = tab, text = text, identification = identification)
 }
 
 #' APA-style direct path report.
@@ -197,15 +282,18 @@ report_paths <- function(fit, include_nonsignificant = FALSE) {
   paths$beta <- if ("std.all" %in% names(paths)) paths$std.all else paths$est
   paths$effect_size <- effect_size_label(paths$beta)
   paths$significant <- !is.na(paths$pvalue) & paths$pvalue < .05
+  paths$direction <- ifelse(paths$beta < 0, "negative", "positive")
   paths$interpretation <- ifelse(
     paths$significant,
-    paste0(paths$rhs, " was a ", paths$effect_size, " predictor of ", paths$lhs, "."),
+    paste0("Significant ", paths$direction, " association: higher ", paths$rhs,
+           " values were associated with ", ifelse(paths$beta < 0, "lower", "higher"),
+           " ", paths$lhs, " values."),
     paste0(paths$rhs, " was not a statistically significant predictor of ", paths$lhs, ".")
   )
 
   keep <- intersect(c("lhs", "rhs", "group", "est", "se", "z", "pvalue",
                       "ci.lower", "ci.upper", "beta", "effect_size",
-                      "significant", "interpretation"), names(paths))
+                      "significant", "direction", "interpretation"), names(paths))
   tab <- paths[, keep, drop = FALSE]
 
   text_rows <- paths[paths$significant | include_nonsignificant, , drop = FALSE]
@@ -215,7 +303,9 @@ report_paths <- function(fit, include_nonsignificant = FALSE) {
     text <- paste(vapply(seq_len(nrow(text_rows)), function(i) {
       r <- text_rows[i, ]
       paste0(
-        r$rhs, " predicted ", r$lhs, ", beta = ", apa_num(r$beta),
+        "Higher ", r$rhs, " values were associated with ",
+        ifelse(r$beta < 0, "lower", "higher"), " ", r$lhs,
+        " values, beta = ", apa_num(r$beta),
         ", SE = ", apa_num(r$se), ", z = ", apa_num(r$z), ", ",
         apa_p(r$pvalue), " (", r$effect_size, " effect)."
       )
@@ -236,12 +326,17 @@ report_mediation <- function(fit) {
   if (nrow(defs) == 0)
     return(list(table = data.frame(), text = "No indirect or defined effects were estimated."))
 
-  is_indirect <- grepl("ind|indirect|^ie", defs$lhs, ignore.case = TRUE) |
-    grepl("\\*", defs$rhs)
+  is_indirect <- (grepl("ind|indirect|^ie|^ab$", defs$lhs, ignore.case = TRUE) |
+    grepl("\\*", defs$rhs)) &
+    !grepl("total|^direct$|^direct_|^cp$", defs$lhs, ignore.case = TRUE)
   med <- defs[is_indirect, , drop = FALSE]
   if (nrow(med) == 0)
     med <- defs
 
+  ci_available <- is.finite(med$ci.lower) & is.finite(med$ci.upper)
+  ci_supported <- ci_available & (med$ci.lower > 0 | med$ci.upper < 0)
+  supported <- ifelse(ci_available, ci_supported,
+                      !is.na(med$pvalue) & med$pvalue < .05)
   tab <- data.frame(
     effect = med$lhs,
     expression = med$rhs,
@@ -252,19 +347,70 @@ report_mediation <- function(fit) {
     ci.lower = med$ci.lower,
     ci.upper = med$ci.upper,
     beta = if ("std.all" %in% names(med)) med$std.all else med$est,
-    significant = !is.na(med$pvalue) & med$pvalue < .05,
+    significant = supported,
+    ci_supported = ci_supported,
+    direct = NA_real_,
+    total = NA_real_,
     percent_mediated = NA_real_,
+    percent_mediated_interpretation = "Not available",
     stringsAsFactors = FALSE
   )
 
-  text <- paste(vapply(seq_len(nrow(tab)), function(i) {
+  topology <- tryCatch(detect_mediation_topology(fit), error = function(e) NULL)
+  pe_paths <- pe[pe$op == "~", , drop = FALSE]
+  simple_details <- ""
+  if (is.list(topology) && identical(topology$model_class, "simple_mediation") &&
+      length(topology$predictors) == 1L && length(topology$mediators) == 1L &&
+      length(topology$outcomes) == 1L) {
+    x <- topology$predictors[[1]]; m <- topology$mediators[[1]]; y <- topology$outcomes[[1]]
+    get_path <- function(lhs, rhs) pe_paths[pe_paths$lhs == lhs & pe_paths$rhs == rhs, , drop = FALSE]
+    a <- get_path(m, x); b <- get_path(y, m); direct <- get_path(y, x)
+    direct_est <- if (nrow(direct)) direct$est[[1]] else NA_real_
+    total_defs <- defs[grepl("total", defs$lhs, ignore.case = TRUE), , drop = FALSE]
+    for (i in seq_len(nrow(tab))) {
+      total_est <- if (nrow(total_defs)) total_defs$est[[1]] else direct_est + tab$indirect[[i]]
+      proportion <- mediation_proportion(tab$indirect[[i]], direct_est, total_est)
+      tab$direct[[i]] <- direct_est
+      tab$total[[i]] <- total_est
+      tab$percent_mediated[[i]] <- proportion$value
+      tab$percent_mediated_interpretation[[i]] <- if (proportion$interpretable)
+        "Interpretable" else paste0("Not interpretable: ", proportion$reason)
+    }
+    fmt_path <- function(label, row) {
+      if (nrow(row) == 0L) return(paste0(label, " was not estimable"))
+      paste0(label, " = ", apa_num(row$est[[1]]), ", 95% CI [",
+             apa_num(row$ci.lower[[1]]), ", ", apa_num(row$ci.upper[[1]]), "], ",
+             apa_p(row$pvalue[[1]]))
+    }
+    r2 <- tryCatch(lavaan::lavInspect(fit, "r2"), error = function(e) numeric(0))
+    if (is.list(r2)) r2 <- r2[[1]]
+    r2_text <- paste(c(
+      if (m %in% names(r2)) paste0("R-squared for ", m, " = ", apa_num(r2[[m]])) else NULL,
+      if (y %in% names(r2)) paste0("R-squared for ", y, " = ", apa_num(r2[[y]])) else NULL
+    ), collapse = "; ")
+    simple_details <- paste0(
+      "A mediation model was tested. ", fmt_path("The a path", a), "; ",
+      fmt_path("the b path", b), "; ", fmt_path("the direct effect", direct), "; ",
+      "the total effect = ", apa_num(if (nrow(total_defs)) total_defs$est[[1]] else direct_est + tab$indirect[[1]]), ".",
+      if (nzchar(r2_text)) paste0(" ", r2_text, ".") else "")
+  }
+
+  effect_text <- paste(vapply(seq_len(nrow(tab)), function(i) {
     r <- tab[i, ]
     paste0(
       "The indirect effect ", r$effect, " was beta = ", apa_num(r$beta),
       ", 95% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper),
-      "], ", apa_p(r$pvalue), "."
+      "], ", apa_p(r$pvalue), ". ",
+      if (!is.na(r$direct) && r$direct * r$indirect < 0)
+        "The direct and indirect effects had opposite signs, an inconsistent mediation or suppression-type pattern. "
+      else "",
+      if (isTRUE(r$significant))
+        "The indirect effect was statistically supported."
+      else
+        "The indirect effect was not statistically supported; a mediation effect should not be inferred."
     )
   }, FUN.VALUE = character(1)), collapse = " ")
+  text <- paste(c(simple_details, effect_text)[nzchar(c(simple_details, effect_text))], collapse = " ")
 
   list(table = tab, text = text)
 }
@@ -291,7 +437,7 @@ report_moderation <- function(fit) {
     return(list(table = data.frame(), text = "No interaction terms were detected."))
 
   paths$beta <- if ("std.all" %in% names(paths)) paths$std.all else paths$est
-  paths$direction <- ifelse(paths$beta >= 0, "amplifying", "buffering")
+  paths$direction <- ifelse(paths$beta >= 0, "positive", "negative")
   paths$significant <- !is.na(paths$pvalue) & paths$pvalue < .05
   tab <- paths[, intersect(c("lhs", "rhs", "group", "est", "se", "z", "pvalue",
                              "ci.lower", "ci.upper", "beta", "direction",
@@ -300,7 +446,7 @@ report_moderation <- function(fit) {
     r <- paths[i, ]
     paste0(
       "The interaction term ", r$rhs, " predicting ", r$lhs,
-      " was ", r$direction, ", beta = ", apa_num(r$beta),
+      " had a ", r$direction, " coefficient, beta = ", apa_num(r$beta),
       ", ", apa_p(r$pvalue), "."
     )
   }, FUN.VALUE = character(1)), collapse = " ")
@@ -327,6 +473,30 @@ compare_groups <- function(fit, group_labels = NULL) {
     group_labels <- labels
   }
 
+  nobs <- tryCatch(lavaan::lavInspect(fit, "nobs"), error = function(e) NA_real_)
+  if (is.list(nobs)) nobs <- unlist(nobs, use.names = FALSE)
+  nobs <- as.numeric(nobs)
+  if (length(nobs) == 1L && length(group_labels) > 1L) nobs <- rep(NA_real_, length(group_labels))
+  if (length(nobs) < length(group_labels)) length(nobs) <- length(group_labels)
+
+  partable <- tryCatch(lavaan::parameterTable(fit), error = function(e) NULL)
+  formal_test <- function(lhs, rhs, g1, g2, fallback_z) {
+    if (!is.null(partable) && "plabel" %in% names(partable)) {
+      hit <- partable$op == "~" & partable$lhs == lhs & partable$rhs == rhs &
+        partable$group %in% c(g1, g2)
+      labs <- partable$plabel[hit][match(c(g1, g2), partable$group[hit])]
+      if (length(labs) == 2L && all(!is.na(labs)) && all(nzchar(labs)) && labs[[1]] != labs[[2]]) {
+        wt <- tryCatch(lavaan::lavTestWald(fit, constraints = paste(labs[[1]], "==", labs[[2]])),
+                       error = function(e) NULL)
+        if (is.list(wt) && is.finite(wt$stat) && is.finite(wt$p.value))
+          return(c(z = sign(fallback_z) * sqrt(wt$stat), pvalue = wt$p.value))
+      } else if (length(labs) == 2L && identical(labs[[1]], labs[[2]])) {
+        return(c(z = 0, pvalue = 1))
+      }
+    }
+    c(z = fallback_z, pvalue = 2 * stats::pnorm(abs(fallback_z), lower.tail = FALSE))
+  }
+
   keys <- unique(paste(paths$lhs, paths$rhs, sep = "\r"))
   rows <- lapply(keys, function(key) {
     parts <- strsplit(key, "\r", fixed = TRUE)[[1]]
@@ -334,44 +504,63 @@ compare_groups <- function(fit, group_labels = NULL) {
     x <- x[order(x$group), , drop = FALSE]
     if (nrow(x) < 2)
       return(NULL)
-    g1 <- x[1, ]
-    g2 <- x[2, ]
-    diff <- g1$est - g2$est
-    se_diff <- sqrt(g1$se^2 + g2$se^2)
-    z <- diff / se_diff
-    p <- 2 * stats::pnorm(abs(z), lower.tail = FALSE)
-    data.frame(
-      path = paste(parts[[1]], "~", parts[[2]]),
-      group_1 = group_labels[[g1$group]],
-      group_2 = group_labels[[g2$group]],
-      group_1_beta = g1$std.all,
-      group_2_beta = g2$std.all,
-      difference = diff,
-      z = z,
-      pvalue = p,
-      significant = !is.na(p) && p < .05,
-      interpretation = ifelse(!is.na(p) && p < .05,
-                              "The path differs significantly between groups.",
-                              "No statistically significant group difference was detected."),
-      stringsAsFactors = FALSE
-    )
+    pairs <- utils::combn(seq_len(nrow(x)), 2L, simplify = FALSE)
+    do.call(rbind, lapply(pairs, function(pair) {
+      g1 <- x[pair[[1]], ]; g2 <- x[pair[[2]], ]
+      diff <- g1$est - g2$est
+      se_diff <- sqrt(g1$se^2 + g2$se^2)
+      fallback_z <- diff / se_diff
+      test <- formal_test(parts[[1]], parts[[2]], g1$group, g2$group, fallback_z)
+      p <- unname(test[["pvalue"]]); z <- unname(test[["z"]])
+      g1_sig <- !is.na(g1$pvalue) && g1$pvalue < .05
+      g2_sig <- !is.na(g2$pvalue) && g2$pvalue < .05
+      diff_sig <- is.finite(p) && p < .05
+      interpretation <- if (diff_sig) {
+        "The formal comparison indicated a statistically significant between-group difference."
+      } else if (xor(g1_sig, g2_sig)) {
+        "The pathway reached statistical significance in one group but not another; however, the direct comparison of path coefficients did not indicate a statistically significant between-group difference."
+      } else {
+        "The formal comparison did not indicate a statistically significant between-group difference."
+      }
+      data.frame(
+        path = paste(parts[[1]], "~", parts[[2]]),
+        group_1 = group_labels[[g1$group]], group_1_n = nobs[[g1$group]],
+        group_2 = group_labels[[g2$group]], group_2_n = nobs[[g2$group]],
+        group_1_beta = g1$std.all, group_1_pvalue = g1$pvalue,
+        group_2_beta = g2$std.all, group_2_pvalue = g2$pvalue,
+        difference = diff, z = z, pvalue = p,
+        significant = diff_sig, interpretation = interpretation,
+        stringsAsFactors = FALSE
+      )
+    }))
   })
   tab <- do.call(rbind, rows[!vapply(rows, is.null, logical(1))])
   if (!is.something(tab))
     tab <- data.frame()
 
+  size_text <- paste0("Group sample sizes: ",
+                      paste(paste0(group_labels, " (n = ", nobs[seq_along(group_labels)], ")"), collapse = ", "), ".")
+  small_warning <- if (any(is.finite(nobs) & nobs < 20))
+    " One or more groups contain fewer than 20 observations. Group-specific path estimates and standard errors may be unstable. Treat these results as exploratory."
+  else ""
   if (nrow(tab) == 0 || !any(tab$significant)) {
-    text <- "No statistically significant multigroup differences in regression paths were detected."
+    detail <- if (nrow(tab) > 0 && any(grepl("one group", tab$interpretation, fixed = TRUE)))
+      paste(unique(tab$interpretation[grepl("one group", tab$interpretation, fixed = TRUE)]), collapse = " ")
+    else "No statistically significant multigroup differences in regression paths were detected."
   } else {
     sig <- tab[tab$significant, , drop = FALSE]
-    text <- paste(vapply(seq_len(nrow(sig)), function(i) {
+    detail <- paste(vapply(seq_len(nrow(sig)), function(i) {
       r <- sig[i, ]
-      paste0("The multigroup ", r$path, " path differed between ", r$group_1,
-             " and ", r$group_2, ", z = ", apa_num(r$z), ", ", apa_p(r$pvalue), ".")
+      paste0("The formal comparison of the ", r$path, " path between ", r$group_1,
+             " and ", r$group_2, " was significant, z = ", apa_num(r$z), ", ", apa_p(r$pvalue), ".")
     }, FUN.VALUE = character(1)), collapse = " ")
   }
+  text <- paste0(size_text, small_warning, " ", detail)
 
-  list(table = tab, text = text)
+  list(table = tab, text = text,
+       group_sizes = data.frame(group = group_labels, n = nobs[seq_along(group_labels)],
+                                small_group = nobs[seq_along(group_labels)] < 20,
+                                stringsAsFactors = FALSE))
 }
 
 #' Alias for multigroup reporting.
@@ -485,18 +674,28 @@ diagnostic_row <- function(check, status, explanation, recommendation) {
 #' @export
 check_assumptions <- function(fit, data = NULL, cluster = NULL) {
   rows <- list()
+  identification <- model_identification(fit)
   ff <- safe_fit_measures(fit, c("cfi", "tli", "rmsea", "srmr"))
   ok_fit <- (is.na(ff[["cfi"]]) || ff[["cfi"]] >= .90) &&
     (is.na(ff[["rmsea"]]) || ff[["rmsea"]] <= .08) &&
     (is.na(ff[["srmr"]]) || ff[["srmr"]] <= .08)
-  rows[[length(rows) + 1]] <- diagnostic_row(
-    "Model fit",
-    ifelse(ok_fit, "Met", "Warning"),
-    paste0("CFI = ", apa_num(ff[["cfi"]]), ", RMSEA = ", apa_num(ff[["rmsea"]]),
-           ", SRMR = ", apa_num(ff[["srmr"]]), "."),
-    ifelse(ok_fit, "Report fit indices and proceed with substantive interpretation.",
-           "Inspect residuals, theory, and modification indices before changing the model.")
-  )
+  if (identical(identification$status, "just_identified")) {
+    rows[[length(rows) + 1]] <- diagnostic_row(
+      "Global model fit", "Info", "Not evaluable: the model is just-identified (df = 0).",
+      "Interpret path coefficients, indirect effects, confidence intervals, and R-squared rather than global fit indices.")
+  } else if (identical(identification$status, "underidentified")) {
+    rows[[length(rows) + 1]] <- diagnostic_row(
+      "Global model fit", "Violated",
+      "The model appears underidentified or did not converge; global fit is not interpretable.",
+      "Resolve model identification and convergence before interpreting fit or parameters.")
+  } else {
+    rows[[length(rows) + 1]] <- diagnostic_row(
+      "Global model fit", ifelse(ok_fit, "Met", "Warning"),
+      paste0("CFI = ", apa_num(ff[["cfi"]]), ", RMSEA = ", apa_num(ff[["rmsea"]]),
+             ", SRMR = ", apa_num(ff[["srmr"]]), "."),
+      ifelse(ok_fit, "Report fit indices and proceed with substantive interpretation.",
+             "Inspect residuals, theory, and modification indices before changing the model."))
+  }
 
   rows[[length(rows) + 1]] <- diagnostic_row(
     "Recursive structure",
@@ -524,15 +723,23 @@ check_assumptions <- function(fit, data = NULL, cluster = NULL) {
     max_kurt <- if (ncol(num) > 0) max(abs(vapply(num, function(x) numeric_kurtosis(x) - 3, numeric(1))), na.rm = TRUE) else NA_real_
     mardia <- mardia_summary(num)
     normal_warn <- (!is.na(max_skew) && max_skew > 2) || (!is.na(max_kurt) && max_kurt > 7)
+    estimator <- toupper(as.character(attr(fit, "pathj_estimator") %||%
+                                        tryCatch(fit@Options$estimator, error = function(e) "")))
+    normal_recommendation <- if (normal_warn && estimator %in% c("ML", "MLR", "MLM", "MLMV", "MLF")) {
+      "Consider robust ML/MLR where available, bootstrap confidence intervals for indirect effects, and sensitivity analysis."
+    } else if (normal_warn) {
+      "Use an estimator appropriate to the variable distributions and consider bootstrap confidence intervals and sensitivity analysis."
+    } else {
+      "No severe violation was detected by automated screening; still inspect distributions and estimator robustness."
+    }
     rows[[length(rows) + 1]] <- diagnostic_row(
       "Multivariate normality",
-      ifelse(normal_warn, "Warning", "Met"),
+      ifelse(normal_warn, "Warning", "Info"),
       paste0("Maximum absolute skew = ", apa_num(max_skew),
              "; maximum excess kurtosis = ", apa_num(max_kurt),
              "; Mardia skew = ", apa_num(mardia[["skew"]]),
              "; Mardia kurtosis = ", apa_num(mardia[["kurtosis"]]), "."),
-      ifelse(normal_warn, "Prefer robust ML, WLSMV for ordered variables, or bootstrap confidence intervals.",
-             "Distributional screening did not flag severe non-normality.")
+      normal_recommendation
     )
 
     max_cor <- NA_real_
@@ -701,7 +908,7 @@ generate_recommendations <- function(diagnostics) {
 #' Model insight engine for fitted SEM paths.
 #'
 #' @param fit A lavaan object.
-#' @return A list with strongest predictors, mediators, risk/protective tables, and text.
+#' @return A list with strongest predictors, mediators, signed-association tables, and text.
 #' @export
 generate_model_insights <- function(fit) {
   paths <- report_paths(fit, include_nonsignificant = TRUE)$table
@@ -711,20 +918,24 @@ generate_model_insights <- function(fit) {
   paths$abs_beta <- abs(paths$beta)
   paths <- paths[order(-paths$abs_beta), , drop = FALSE]
   strongest <- paths[seq_len(min(3, nrow(paths))), , drop = FALSE]
-  risk <- paths[!is.na(paths$beta) & paths$beta > 0 & paths$significant, , drop = FALSE]
-  protective <- paths[!is.na(paths$beta) & paths$beta < 0 & paths$significant, , drop = FALSE]
+  positive <- paths[!is.na(paths$beta) & paths$beta > 0 & paths$significant, , drop = FALSE]
+  negative <- paths[!is.na(paths$beta) & paths$beta < 0 & paths$significant, , drop = FALSE]
   med <- report_mediation(fit)$table
 
   text <- paste0(
     "The strongest direct predictor was ", strongest$rhs[[1]], " predicting ",
     strongest$lhs[[1]], " (beta = ", apa_num(strongest$beta[[1]]), "). ",
-    if (nrow(risk) > 0) paste0("Positive significant paths may be interpreted as risk or amplifying factors when higher outcome scores are adverse. ") else "",
-    if (nrow(protective) > 0) paste0("Negative significant paths may be interpreted as protective or buffering factors when higher outcome scores are adverse. ") else "",
-    if (is.something(med) && nrow(med) > 0) "Defined indirect effects were available for mediation interpretation." else "No defined indirect effects were available."
+    if (nrow(positive) > 0) "Positive coefficients indicate that higher predictor values were associated with higher outcome values; their desirability cannot be inferred without knowing the outcome coding. " else "",
+    if (nrow(negative) > 0) "Negative coefficients indicate that higher predictor values were associated with lower outcome values; the practical meaning depends on how the outcome is coded. " else "",
+    if (is.something(med) && nrow(med) > 0 && any(med$significant))
+      "At least one indirect effect was statistically supported."
+    else if (is.something(med) && nrow(med) > 0)
+      "A mediation model was tested, but no indirect effect was statistically supported."
+    else "No defined indirect effects were available."
   )
 
   list(strongest_predictors = strongest, key_mediators = med,
-       risk_factors = risk, protective_factors = protective, text = text)
+       positive_associations = positive, negative_associations = negative, text = text)
 }
 
 #' Modification-index diagnostics.
@@ -827,6 +1038,7 @@ compare_models <- function(...) {
   measures <- c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr", "aic", "bic")
   rows <- lapply(seq_along(fits), function(i) {
     ff <- safe_fit_measures(fits[[i]], measures)
+    identification <- model_identification(fits[[i]])$status
     data.frame(
       model = names(fits)[[i]],
       chisq = ff[["chisq"]],
@@ -838,6 +1050,12 @@ compare_models <- function(...) {
       srmr = ff[["srmr"]],
       aic = ff[["aic"]],
       bic = ff[["bic"]],
+      identification = identification,
+      fit_note = if (identification == "just_identified")
+        "Global fit indices are not informative because df = 0."
+      else if (identification == "underidentified")
+        "Model identification/convergence must be resolved before fit is interpreted."
+      else "Global fit indices are available for evaluation.",
       stringsAsFactors = FALSE
     )
   })
@@ -860,10 +1078,14 @@ compare_models <- function(...) {
       nested <- nested_try$obj
   }
 
-  text <- paste0(
-    tab$model[[best_i]], " demonstrated the strongest comparative fit by lowest ",
-    toupper(criterion), ". Model selection should consider both statistical fit and theoretical justification."
-  )
+  text <- if (length(fits) == 1L) {
+    "Fit and information criteria are shown for the current model; comparative model selection requires at least two fitted models."
+  } else {
+    paste0(tab$model[[best_i]], " had the strongest comparative support by lowest ",
+           toupper(criterion), ". Model selection should consider both statistical evidence and theoretical justification.")
+  }
+  if (any(tab$identification == "just_identified"))
+    text <- paste0(text, " Just-identified models have df = 0; their global fit indices are not substantively interpretable.")
   if (is.something(nested) && is.data.frame(nested) && "Pr(>Chisq)" %in% names(nested)) {
     p <- nested[["Pr(>Chisq)"]][length(nested[["Pr(>Chisq)"]])]
     if (!is.na(p)) {

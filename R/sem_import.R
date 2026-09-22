@@ -305,7 +305,9 @@ sem_import_ast_to_graph <- function(ast, variables=NULL) {
   metadata$endogenous <- unique(edge_df$to[edge_df$type == "regression"])
   metadata$exogenous <- setdiff(unique(edge_df$from[edge_df$type == "regression"]), metadata$endogenous)
   metadata$latent_variables <- unique(c(node_df$id[node_df$type == "latent"], metadata$latents))
-  list(nodes=node_df, edges=edge_df, metadata=metadata)
+  schema <- sem_schema_new(nodes=node_df, edges=edge_df, metadata=metadata)
+  schema$metadata$validation <- sem_schema_validate(schema, data_vars=variables)
+  schema
 }
 
 sem_import_exports <- function(graph) {
