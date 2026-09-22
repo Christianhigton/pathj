@@ -21,10 +21,8 @@ jobs:
           r-version: "4.5.0"
 
       - name: Install jmvtools
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            github::jamovi/jmvtools
+        run: |
+          Rscript -e 'install.packages("jmvtools", repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
 
       - name: Build and verify Intel module
         run: Rscript scripts/build_intel_jmo.R
