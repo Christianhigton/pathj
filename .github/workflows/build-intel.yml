@@ -24,7 +24,7 @@ jobs:
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
-            any::jmvtools
+            github::jamovi/jmvtools
 
       - name: Build and verify Intel module
         run: Rscript scripts/build_intel_jmo.R
