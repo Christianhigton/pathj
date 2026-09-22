@@ -36,11 +36,20 @@ r_versions_dir <- file.path(
     jamovi_home, "Contents", "Frameworks", "R.framework", "Versions", "Current"
 )
 dir.create(macos_dir, recursive = TRUE)
-dir.create(r_versions_dir, recursive = TRUE)
+fake_r_bin <- file.path(r_versions_dir, "Resources", "bin")
+dir.create(fake_r_bin, recursive = TRUE)
 if (!file.symlink("/usr/bin/true", file.path(macos_dir, "jamovi")))
     stop("Could not create the temporary jamovi executable shim")
-if (!file.symlink(R.home(), file.path(r_versions_dir, "Resources")))
-    stop("Could not link the Intel R runtime into the temporary jamovi home")
+r_launcher <- file.path(fake_r_bin, "R")
+writeLines(
+    c(
+        "#!/bin/sh",
+        "unset R_HOME R_SHARE_DIR",
+        sprintf("exec %s \"$@\"", shQuote(Sys.which("R")))
+    ),
+    r_launcher
+)
+Sys.chmod(r_launcher, mode = "0755")
 
 # Bypass the node R package, whose macOS binary may be arm64 even on an Intel
 # host. The compiler itself is JavaScript and runs under the runner's native Node.
