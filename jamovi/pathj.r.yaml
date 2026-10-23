@@ -711,6 +711,9 @@ items:
                     - name: percent_mediated
                       title: "% Mediated"
                       type: number
+                    - name: percent_mediated_interpretation
+                      title: Interpretation
+                      type: text
 
           - name: groupComparison
             title: Multigroup Path Comparison
@@ -723,15 +726,29 @@ items:
                     - name: group_1
                       title: Group 1
                       type: text
+                    - name: group_1_n
+                      title: Group 1 N
+                      type: integer
                     - name: group_2
                       title: Group 2
                       type: text
                     - name: group_1_beta
                       title: Group 1 β
                       type: number
+                    - name: group_1_pvalue
+                      title: Group 1 p
+                      type: number
+                      format: zto,pvalue
                     - name: group_2_beta
                       title: Group 2 β
                       type: number
+                    - name: group_2_n
+                      title: Group 2 N
+                      type: integer
+                    - name: group_2_pvalue
+                      title: Group 2 p
+                      type: number
+                      format: zto,pvalue
                     - name: difference
                       title: Difference
                       type: number
@@ -808,6 +825,12 @@ items:
                     - name: bic
                       title: BIC
                       type: number
+                    - name: identification
+                      title: Identification
+                      type: text
+                    - name: fit_note
+                      title: Fit Interpretation
+                      type: text
                     - name: best_fit
                       title: Best Fit
                       type: text
@@ -1341,10 +1364,10 @@ items:
                      type: text
                      title: Mermaid syntax
 
-  # P-value graphs
+  # Power graphs
   - name: pgraphs
     type: Group
-    title: P-Value Graphs
+    title: Simulation-Based Power
     visible: (pgraphs)
     clearWith:
                   - endogenous
@@ -1355,7 +1378,7 @@ items:
                   - multigroup
     items:
            - name: pcurves
-             title: P-Value Curves
+             title: Estimated Power by Sample Size
              type: Array
              visible: (pgraphs)
              template:

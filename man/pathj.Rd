@@ -10,6 +10,9 @@ pathj(
   factors = NULL,
   covs = NULL,
   multigroup = NULL,
+  clusterVariable = NULL,
+  withinVariables = NULL,
+  betweenVariables = NULL,
   se = "standard",
   r2ci = "fisher",
   r2test = FALSE,
@@ -76,6 +79,16 @@ pathj(
 \item{covs}{a vector of strings naming the covariates from \code{data}}
 
 \item{multigroup}{factor defining groups for multigroup analysis}
+
+\item{clusterVariable}{optional cluster or participant identifier used for
+multilevel diagnostics, ICC screening, and within-/between-person
+interpretation.}
+
+\item{withinVariables}{variables interpreted at the within-person or level-1
+occasion level when \code{clusterVariable} is supplied.}
+
+\item{betweenVariables}{variables interpreted at the between-person or level-2
+cluster level when \code{clusterVariable} is supplied.}
 
 \item{se}{.}
 
@@ -176,9 +189,9 @@ pairwise deletion with a warning.}
 
 \item{miStrategy}{multigroup imputation strategy when \code{missing = "mi"}.
 \code{"include_group"} keeps the group variable in one imputation model;
-\code{"within_group"} imputes separately within each group. When the optional
-\code{lavaan.mi} package is available, formal pooled MI fit measures are also
-reported.}
+\code{"within_group"} imputes separately within each group.
+When the optional \code{lavaan.mi} package is available, formal pooled MI
+fit measures are also reported.}
 
 \item{showMissingDiagnostics}{\code{TRUE} or \code{FALSE} (default), show
 missing-data summaries, patterns, and an MCAR diagnostic when available.}
@@ -209,14 +222,13 @@ non-overlapping table legend explaining path labels and significance stars
 below the path diagram.}
 
 \item{syntaxSource}{model input source: \code{"gui"}, \code{"lavaan"},
-\code{"mermaid"}, \code{"mplus"}, or \code{"openmx"}. When not \code{"gui"},
-\code{syntaxText} is used as the model syntax.}
+\code{"mermaid"}, \code{"mplus"}, or \code{"openmx"}. When not
+\code{"gui"}, \code{syntaxText} is used as the model syntax.}
 
 \item{syntaxVars}{variables referenced by imported syntax. When omitted in R
 calls with \code{data}, all columns in \code{data} are made available.}
 
-\item{syntaxText}{full lavaan, Mermaid, Mplus-style, or OpenMx RAM syntax
-pasted as one string.}
+\item{syntaxText}{full lavaan or Mermaid syntax pasted as one string.}
 
 \item{syntaxApply}{\code{TRUE} or \code{FALSE} (default FALSE), confirm that
 imported syntax should be used for estimation.}

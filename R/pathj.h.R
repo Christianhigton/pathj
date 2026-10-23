@@ -1693,7 +1693,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="percent_mediated", 
                                     `title`="% Mediated", 
-                                    `type`="number"))))
+                                    `type`="number"),
+                                list(
+                                    `name`="percent_mediated_interpretation",
+                                    `title`="Interpretation",
+                                    `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="groupComparison",
@@ -1709,6 +1713,10 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Group 1", 
                                     `type`="text"),
                                 list(
+                                    `name`="group_1_n",
+                                    `title`="Group 1 N",
+                                    `type`="integer"),
+                                list(
                                     `name`="group_2", 
                                     `title`="Group 2", 
                                     `type`="text"),
@@ -1717,9 +1725,23 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Group 1 \u03B2", 
                                     `type`="number"),
                                 list(
+                                    `name`="group_1_pvalue",
+                                    `title`="Group 1 p",
+                                    `type`="number",
+                                    `format`="zto,pvalue"),
+                                list(
                                     `name`="group_2_beta", 
                                     `title`="Group 2 \u03B2", 
                                     `type`="number"),
+                                list(
+                                    `name`="group_2_n",
+                                    `title`="Group 2 N",
+                                    `type`="integer"),
+                                list(
+                                    `name`="group_2_pvalue",
+                                    `title`="Group 2 p",
+                                    `type`="number",
+                                    `format`="zto,pvalue"),
                                 list(
                                     `name`="difference", 
                                     `title`="Difference", 
@@ -1817,6 +1839,14 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `name`="bic", 
                                     `title`="BIC", 
                                     `type`="number"),
+                                list(
+                                    `name`="identification",
+                                    `title`="Identification",
+                                    `type`="text"),
+                                list(
+                                    `name`="fit_note",
+                                    `title`="Fit Interpretation",
+                                    `type`="text"),
                                 list(
                                     `name`="best_fit", 
                                     `title`="Best Fit", 
@@ -2428,7 +2458,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                         super$initialize(
                             options=options,
                             name="pgraphs",
-                            title="P-Value Graphs",
+                            title="Simulation-Based Power",
                             clearWith=list(
                     "endogenous",
                     "cov_y",
@@ -2439,7 +2469,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                         self$add(jmvcore::Array$new(
                             options=options,
                             name="pcurves",
-                            title="P-Value Curves",
+                            title="Estimated Power by Sample Size",
                             visible="(pgraphs)",
                             template=jmvcore::Image$new(
                                 options=options,
@@ -2504,4 +2534,3 @@ pathjBase <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 requiresMissings = FALSE,
                 weightsSupport = 'auto')
         }))
-

@@ -48,8 +48,8 @@ testthat::test_that("assumption diagnostics return statuses and recommendations"
   fit <- run_model("m ~ x + z\ny ~ m + x + z", sim_data, estimator = "MLR")
   diagnostics <- check_assumptions(fit, sim_data)
   testthat::expect_true(all(c("check", "status", "explanation", "recommendation") %in% names(diagnostics)))
-  testthat::expect_true("Model fit" %in% diagnostics$check)
-  testthat::expect_true(all(diagnostics$status %in% c("Met", "Warning", "Violated")))
+  testthat::expect_true("Global model fit" %in% diagnostics$check)
+  testthat::expect_true(all(diagnostics$status %in% c("Met", "Info", "Warning", "Violated")))
   testthat::expect_type(generate_recommendations(diagnostics), "character")
 })
 

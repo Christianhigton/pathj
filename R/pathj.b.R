@@ -476,7 +476,9 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 unique(sort(ss))
             }
 
-            ## New: project p-values from standardized effects without resampling
+            ## Monte Carlo power under the fitted effect sizes and asymptotic
+            ## sampling distribution. This estimates Pr(p < alpha); it does not
+            ## relabel a mean-p-value curve as power.
             {
                 # parse sizes from options (comma/space separated), fallback to defaults
                 .parseSizes <- function(s) {
@@ -605,7 +607,15 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     c(suppressWarnings(as.numeric(hit$ci.lower[1])), suppressWarnings(as.numeric(hit$ci.upper[1])))
                 }
                 rows <- list()
-                show_ci <- isTRUE(try(self$options$pcurve_ribbons, silent=TRUE))
+                alpha <- .05
+                simulations <- 2000L
+                old_seed_exists <- exists(".Random.seed", envir=.GlobalEnv, inherits=FALSE)
+                if (old_seed_exists) old_seed <- get(".Random.seed", envir=.GlobalEnv, inherits=FALSE)
+                on.exit({
+                    if (old_seed_exists) assign(".Random.seed", old_seed, envir=.GlobalEnv)
+                    else if (exists(".Random.seed", envir=.GlobalEnv, inherits=FALSE)) rm(".Random.seed", envir=.GlobalEnv)
+                }, add=TRUE)
+                set.seed(104729L)
                 for (i in seq_len(nrow(tab))) {
                     # derive group label robustly: prefer lgroup, else map numeric group via mg$levels
                     if ("lgroup" %in% names(tab)) {
@@ -624,34 +634,21 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     if (length(Nobs) == 0 || is.na(Nobs) || !is.finite(Nobs) || Nobs <= 1) next
                     z0 <- as.numeric(tab$z[i])
                     bci <- .getBetaCI(g, as.character(tab$lhs[i]), as.character(tab$rhs[i]))
-                        if (show_ci) {
-                            zlo0 <- z0 - 1.96
-                            zhi0 <- z0 + 1.96
-                        }
                         for (n in sizes) {
                             sq <- sqrt(n / Nobs)
-                            zn <- z0 * sq
-                            p  <- 2 * stats::pnorm(-abs(zn))
-                        if (show_ci) {
-                            zlo_n <- zlo0 * sq
-                            zhi_n <- zhi0 * sq
-                            abs_hi <- max(abs(zlo_n), abs(zhi_n))
-                            abs_lo <- min(abs(zlo_n), abs(zhi_n))
-                            pu <- 2 * stats::pnorm(-abs_lo)
-                            pl <- 2 * stats::pnorm(-abs_hi)
-                            rows[[length(rows)+1]] <- list(group=g, lhs=tab$lhs[i], rhs=tab$rhs[i], n=n, p=p,
-                                                            p_l=pl, p_u=pu, beta=tab$beta[i], beta_l=bci[1], beta_u=bci[2])
-                        } else {
-                            rows[[length(rows)+1]] <- list(group=g, lhs=tab$lhs[i], rhs=tab$rhs[i], n=n, p=p,
-                                                            beta=tab$beta[i], beta_l=bci[1], beta_u=bci[2])
-                        }
+                            simulated_z <- stats::rnorm(simulations, mean=z0 * sq, sd=1)
+                            simulated_p <- 2 * stats::pnorm(-abs(simulated_z))
+                            rows[[length(rows)+1]] <- data.frame(
+                                group=g, lhs=tab$lhs[i], rhs=tab$rhs[i], n=n,
+                                pvalue=simulated_p, beta=tab$beta[i],
+                                beta_l=bci[1], beta_u=bci[2], stringsAsFactors=FALSE)
                     }
                 }
-                d <- if (length(rows)>0) do.call(rbind, lapply(rows, as.data.frame, stringsAsFactors=FALSE)) else NULL
-                if (is.null(d) || nrow(d)==0) {
+                simulated <- if (length(rows)>0) do.call(rbind, rows) else NULL
+                if (is.null(simulated) || nrow(simulated)==0) {
                     p <- ggplot2::ggplot() +
                          ggplot2::annotate("text", x = 0, y = 0,
-                                           label = "No projected p-values are available for the selected focus.",
+                                           label = "No power simulations are available for the selected focus.",
                                            hjust = 0, vjust = 0.5, size = 4) +
                          ggplot2::xlim(0, 1) +
                          ggplot2::ylim(-0.5, 0.5) +
@@ -659,9 +656,11 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     print(p)
                     return()
                 }
-                d$p <- pmin(pmax(as.numeric(d$p), 0), 1)
-                if ("p_l" %in% names(d)) d$p_l <- pmin(pmax(as.numeric(d$p_l), 0), 1)
-                if ("p_u" %in% names(d)) d$p_u <- pmin(pmax(as.numeric(d$p_u), 0), 1)
+                d <- simulation_power_summary(simulated, alpha=alpha,
+                    effect_cols=c("group", "lhs", "rhs"),
+                    sample_size_col="n", pvalue_col="pvalue")
+                metadata <- unique(simulated[c("group", "lhs", "rhs", "beta", "beta_l", "beta_u")])
+                d <- merge(d, metadata, by=c("group", "lhs", "rhs"), all.x=TRUE, sort=FALSE)
                 d$n <- as.numeric(d$n)
                 d <- d[order(d$n), , drop=FALSE]
                 # label with beta and its 95% CI per path (same within a group)
@@ -685,15 +684,15 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                                        moderation = "Moderation / Interaction Paths",
                                        multigroup = "Multigroup Paths",
                                        multilevel = "Multilevel Variables")
-                ttl <- paste0(target_title, ": Mean p-values vs Sample Size")
+                ttl <- paste0(target_title, ": Estimated Power by Sample Size")
                 if (is.something(mg) && !is.null(image$state$gkey)) {
                     d <- d[d$group == image$state$gkey, , drop=FALSE]
-                    ttl <- paste0(image$state$gkey, ": ", target_title, " Mean p-values vs Sample Size")
+                    ttl <- paste0(image$state$gkey, ": ", target_title, " Estimated Power by Sample Size")
                 }
                 if (nrow(d) == 0) {
                     p <- ggplot2::ggplot() +
                          ggplot2::annotate("text", x = 0, y = 0,
-                                           label = "No projected p-values are available for this group.",
+                                           label = "No power simulations are available for this group.",
                                            hjust = 0, vjust = 0.5, size = 4) +
                          ggplot2::xlim(0, 1) +
                          ggplot2::ylim(-0.5, 0.5) +
@@ -707,13 +706,13 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 .lw <- try(as.numeric(self$options$pcurve_lwd), silent=TRUE)
                 if (!is.finite(.lw) || .lw <= 0) .lw <- 1.2
 
-                cap <- paste0("Sample sizes: ", paste(sizes, collapse=", "))
+                cap <- paste0("Monte Carlo normal-approximation power; alpha = .05; ",
+                              simulations, " valid simulations per effect and sample size.")
                 p <- ggplot2::ggplot() +
                       ggplot2::scale_x_continuous(breaks = brks) +
                       ggplot2::scale_y_continuous(limits = c(0, 1)) +
-                      ggplot2::geom_hline(ggplot2::aes(yintercept = 0.05, linetype = "p = 0.05"), color = "red", show.legend = TRUE) +
-                      ggplot2::scale_linetype_manual(values = c("p = 0.05" = "dashed"), name = "") +
-                      ggplot2::labs(x = "Sample size (n)", y = "Mean p-value", color = "Predictor", title = ttl, caption = cap) +
+                      ggplot2::geom_hline(yintercept = c(.80, .90), linetype = c("dashed", "dotted"), color = c("#d95f02", "#7570b3")) +
+                      ggplot2::labs(x = "Sample size (n)", y = "Estimated power", color = "Effect", title = ttl, caption = cap) +
                       ggplot2::theme_minimal(base_size = 12)
                 # palette + optional ribbons
                 .pal <- try(as.character(self$options$pcurve_palette), silent=TRUE)
@@ -729,12 +728,8 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 }
                 names(vals) <- labs
                 p <- p + ggplot2::scale_color_manual(values = vals) + ggplot2::scale_fill_manual(values = vals)
-                if (all(c("p_l","p_u") %in% names(d)))
-                    p <- p + ggplot2::geom_ribbon(data=d, ggplot2::aes(x=n, ymin=p_l, ymax=p_u, fill=lab, group=lab), alpha=0.15, inherit.aes=FALSE) +
-                             ggplot2::guides(fill = "none")
-                
-                p <- p + ggplot2::geom_line(data=d, ggplot2::aes(x = n, y = p, color = lab, group = lab), linetype=.lt, size=.lw) +
-                        ggplot2::geom_point(data=d, ggplot2::aes(x = n, y = p, color = lab, group = lab), size = 2)
+                p <- p + ggplot2::geom_line(data=d, ggplot2::aes(x = n, y = power, color = lab, group = lab), linetype=.lt, size=.lw) +
+                        ggplot2::geom_point(data=d, ggplot2::aes(x = n, y = power, color = lab, group = lab), size = 2)
                 print(p)
                 return(TRUE)
             }

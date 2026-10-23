@@ -627,7 +627,7 @@ children:
             template:
               type: ComboBox
   - type: CollapseBox
-    label: P-Value Graphs
+    label: Simulation-Based Power
     collapsed: true
     stretchFactor: 1
     style: list
@@ -638,7 +638,7 @@ children:
         children:
           - type: CheckBox
             name: pgraphs
-            label: Show p-value graphs
+            label: Show estimated power graph
           - type: ComboBox
             name: pcurve_target
             label: P-curve focus
