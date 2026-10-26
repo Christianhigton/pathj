@@ -63,6 +63,11 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                          ci=T,
                          ciwidth=self$options$ciWidth,
                          spaceby="group")
+            j.init_table(self$results$models$loadings,
+                         lav_machine$tab_loadings,
+                         ci=TRUE,
+                         ciwidth=self$options$ciWidth,
+                         spaceby="group")
 
             ### prepare var cov table ###
             j.init_table(self$results$models$correlations,
@@ -298,6 +303,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              
             ### parameters estimates ####
             j.fill_table(self$results$models$coefficients,lav_machine$tab_coefficients)
+            j.fill_table(self$results$models$loadings,lav_machine$tab_loadings)
 
             j.fill_table(self$results$models$correlations,lav_machine$tab_covariances)
             
@@ -714,7 +720,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                       ggplot2::geom_hline(yintercept = c(.80, .90), linetype = c("dashed", "dotted"), color = c("#d95f02", "#7570b3")) +
                       ggplot2::labs(x = "Sample size (n)", y = "Estimated power", color = "Effect", title = ttl, caption = cap) +
                       ggplot2::theme_minimal(base_size = 12)
-                # palette + optional ribbons
+                # palette
                 .pal <- try(as.character(self$options$pcurve_palette), silent=TRUE)
                 labs <- levels(d$lab)
                 if (!is.character(.pal) || length(.pal) == 0) .pal <- "default"
@@ -722,9 +728,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                     vals <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
                     vals <- rep(vals, length.out=length(labs))
                 } else {
-                    vals <- try(scales::hue_pal()(length(labs)), silent=TRUE)
-                    if (inherits(vals, "try-error"))
-                        vals <- grDevices::hcl(h=seq(15, 375, length.out=length(labs)+1)[1:length(labs)], c=100, l=65)
+                    vals <- grDevices::hcl(h=seq(15, 375, length.out=length(labs)+1)[1:length(labs)], c=100, l=65)
                 }
                 names(vals) <- labs
                 p <- p + ggplot2::scale_color_manual(values = vals) + ggplot2::scale_fill_manual(values = vals)

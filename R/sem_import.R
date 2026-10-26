@@ -1,5 +1,6 @@
 SEM_IMPORT_EDGE_TYPES <- c("regression", "loading", "covariance", "variance", "intercept")
 
+#' @export
 sem_import_tokenize <- function(text, source="lavaan") {
   if (is.null(text))
     text <- ""
@@ -22,6 +23,7 @@ sem_import_tokenize <- function(text, source="lavaan") {
   tokens
 }
 
+#' @export
 sem_import_parse <- function(text, source="lavaan", variables=NULL) {
   source <- tolower(source %||% "lavaan")
   parsed <- switch(source,

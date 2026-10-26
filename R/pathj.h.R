@@ -331,6 +331,7 @@ pathjOptions <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
             private$..pcurve_ribbons <- jmvcore::OptionBool$new(
                 "pcurve_ribbons",
                 pcurve_ribbons,
+                hidden=TRUE,
                 default=TRUE)
             private$..diag_paths <- jmvcore::OptionList$new(
                 "diag_paths",
@@ -856,18 +857,18 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                     "constraints"),
                 columns=list(
                     list(
-                        `name`="info", 
-                        `type`="text", 
-                        `title`="", 
+                        `name`="info",
+                        `type`="text",
+                        `title`="",
                         `combineBelow`=TRUE),
                     list(
-                        `name`="value", 
-                        `type`="text", 
+                        `name`="value",
+                        `type`="text",
                         `title`=""),
                     list(
-                        `name`="specs", 
-                        `type`="text", 
-                        `title`="", 
+                        `name`="specs",
+                        `type`="text",
+                        `title`="",
                         `combineBelow`=TRUE)),
                 refs="pathj"))
             self$add(R6::R6Class(
@@ -904,21 +905,21 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "constraints"),
                             columns=list(
                                 list(
-                                    `name`="label", 
-                                    `title`="Label", 
+                                    `name`="label",
+                                    `title`="Label",
                                     `type`="text"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="integer"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -935,35 +936,35 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "constraints"),
                             columns=list(
                                 list(
-                                    `name`="type", 
-                                    `type`="text", 
-                                    `title`="Type", 
-                                    `visible`=TRUE, 
+                                    `name`="type",
+                                    `type`="text",
+                                    `title`="Type",
+                                    `visible`=TRUE,
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Par 1", 
+                                    `name`="lhs",
+                                    `title`="Par 1",
                                     `type`="text"),
                                 list(
-                                    `name`="op", 
-                                    `title`="", 
+                                    `name`="op",
+                                    `title`="",
                                     `type`="text"),
                                 list(
-                                    `name`="rhs", 
-                                    `title`="Par 2", 
+                                    `name`="rhs",
+                                    `title`="Par 2",
                                     `type`="text"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="integer"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -979,44 +980,44 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "constraints"),
                             columns=list(
                                 list(
-                                    `name`="aic", 
-                                    `title`="AIC", 
-                                    `visible`="(estimator:ML)", 
+                                    `name`="aic",
+                                    `title`="AIC",
+                                    `visible`="(estimator:ML)",
                                     `type`="number"),
                                 list(
-                                    `name`="bic", 
-                                    `title`="BIC", 
-                                    `type`="number", 
+                                    `name`="bic",
+                                    `title`="BIC",
+                                    `type`="number",
                                     `visible`="(estimator:ML)"),
                                 list(
-                                    `name`="bic2", 
-                                    `title`="adj. BIC", 
-                                    `type`="number", 
+                                    `name`="bic2",
+                                    `title`="adj. BIC",
+                                    `type`="number",
                                     `visible`="(estimator:ML)"),
                                 list(
-                                    `name`="srmr", 
-                                    `title`="SRMR", 
-                                    `type`="number", 
+                                    `name`="srmr",
+                                    `title`="SRMR",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea", 
-                                    `title`="RMSEA", 
-                                    `type`="number", 
+                                    `name`="rmsea",
+                                    `title`="RMSEA",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea.ci.lower", 
-                                    `title`="Lower", 
-                                    `type`="number", 
+                                    `name`="rmsea.ci.lower",
+                                    `title`="Lower",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea.ci.upper", 
-                                    `title`="Upper", 
-                                    `type`="number", 
+                                    `name`="rmsea.ci.upper",
+                                    `title`="Upper",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea.pvalue", 
-                                    `title`="RMSEA p", 
-                                    `type`="number", 
+                                    `name`="rmsea.pvalue",
+                                    `title`="RMSEA p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1032,34 +1033,34 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "constraints"),
                             columns=list(
                                 list(
-                                    `name`="cfi", 
-                                    `title`="CFI", 
-                                    `type`="number", 
+                                    `name`="cfi",
+                                    `title`="CFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="tli", 
-                                    `title`="TLI", 
-                                    `type`="number", 
+                                    `name`="tli",
+                                    `title`="TLI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rni", 
-                                    `title`="RNI", 
-                                    `type`="number", 
+                                    `name`="rni",
+                                    `title`="RNI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="gfi", 
-                                    `title`="GFI", 
-                                    `type`="number", 
+                                    `name`="gfi",
+                                    `title`="GFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="agfi", 
-                                    `title`="adj. GFI", 
-                                    `type`="number", 
+                                    `name`="agfi",
+                                    `title`="adj. GFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="pgfi", 
-                                    `title`="pars. GFI", 
-                                    `type`="number", 
+                                    `name`="pgfi",
+                                    `title`="pars. GFI",
+                                    `type`="number",
                                     `format`="zto"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1081,49 +1082,49 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miStrategy"),
                             columns=list(
                                 list(
-                                    `name`="imputation", 
-                                    `title`="Imputation", 
+                                    `name`="imputation",
+                                    `title`="Imputation",
                                     `type`="integer"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="integer"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="cfi", 
-                                    `title`="CFI", 
-                                    `type`="number", 
+                                    `name`="cfi",
+                                    `title`="CFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="tli", 
-                                    `title`="TLI", 
-                                    `type`="number", 
+                                    `name`="tli",
+                                    `title`="TLI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea", 
-                                    `title`="RMSEA", 
-                                    `type`="number", 
+                                    `name`="rmsea",
+                                    `title`="RMSEA",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="srmr", 
-                                    `title`="SRMR", 
-                                    `type`="number", 
+                                    `name`="srmr",
+                                    `title`="SRMR",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="aic", 
-                                    `title`="AIC", 
+                                    `name`="aic",
+                                    `title`="AIC",
                                     `type`="number"),
                                 list(
-                                    `name`="bic", 
-                                    `title`="BIC", 
+                                    `name`="bic",
+                                    `title`="BIC",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1145,53 +1146,53 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miStrategy"),
                             columns=list(
                                 list(
-                                    `name`="method", 
-                                    `title`="Method", 
+                                    `name`="method",
+                                    `title`="Method",
                                     `type`="text"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="cfi", 
-                                    `title`="CFI", 
-                                    `type`="number", 
+                                    `name`="cfi",
+                                    `title`="CFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="tli", 
-                                    `title`="TLI", 
-                                    `type`="number", 
+                                    `name`="tli",
+                                    `title`="TLI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea", 
-                                    `title`="RMSEA", 
-                                    `type`="number", 
+                                    `name`="rmsea",
+                                    `title`="RMSEA",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="srmr", 
-                                    `title`="SRMR", 
-                                    `type`="number", 
+                                    `name`="srmr",
+                                    `title`="SRMR",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="aic", 
-                                    `title`="AIC", 
+                                    `name`="aic",
+                                    `title`="AIC",
                                     `type`="number"),
                                 list(
-                                    `name`="bic", 
-                                    `title`="BIC", 
+                                    `name`="bic",
+                                    `title`="BIC",
                                     `type`="number"),
                                 list(
-                                    `name`="note", 
-                                    `title`="Note", 
+                                    `name`="note",
+                                    `title`="Note",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1213,49 +1214,49 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miStrategy"),
                             columns=list(
                                 list(
-                                    `name`="statistic", 
-                                    `title`="Statistic", 
+                                    `name`="statistic",
+                                    `title`="Statistic",
                                     `type`="text"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="cfi", 
-                                    `title`="CFI", 
-                                    `type`="number", 
+                                    `name`="cfi",
+                                    `title`="CFI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="tli", 
-                                    `title`="TLI", 
-                                    `type`="number", 
+                                    `name`="tli",
+                                    `title`="TLI",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="rmsea", 
-                                    `title`="RMSEA", 
-                                    `type`="number", 
+                                    `name`="rmsea",
+                                    `title`="RMSEA",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="srmr", 
-                                    `title`="SRMR", 
-                                    `type`="number", 
+                                    `name`="srmr",
+                                    `title`="SRMR",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="aic", 
-                                    `title`="AIC", 
+                                    `name`="aic",
+                                    `title`="AIC",
                                     `type`="number"),
                                 list(
-                                    `name`="bic", 
-                                    `title`="BIC", 
+                                    `name`="bic",
+                                    `title`="BIC",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1277,24 +1278,24 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miStrategy"),
                             columns=list(
                                 list(
-                                    `name`="imputation", 
-                                    `title`="Imputation", 
+                                    `name`="imputation",
+                                    `title`="Imputation",
                                     `type`="integer"),
                                 list(
-                                    `name`="status", 
-                                    `title`="Status", 
+                                    `name`="status",
+                                    `title`="Status",
                                     `type`="text"),
                                 list(
-                                    `name`="converged", 
-                                    `title`="Converged", 
+                                    `name`="converged",
+                                    `title`="Converged",
                                     `type`="text"),
                                 list(
-                                    `name`="warning", 
-                                    `title`="Warning", 
+                                    `name`="warning",
+                                    `title`="Warning",
                                     `type`="text"),
                                 list(
-                                    `name`="error", 
-                                    `title`="Error", 
+                                    `name`="error",
+                                    `title`="Error",
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
@@ -1329,34 +1330,34 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miMin"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="LHS", 
+                                    `name`="lhs",
+                                    `title`="LHS",
                                     `type`="text"),
                                 list(
-                                    `name`="op", 
-                                    `title`="", 
+                                    `name`="op",
+                                    `title`="",
                                     `type`="text"),
                                 list(
-                                    `name`="rhs", 
-                                    `title`="RHS", 
+                                    `name`="rhs",
+                                    `title`="RHS",
                                     `type`="text"),
                                 list(
-                                    `name`="mi", 
-                                    `title`="MI", 
+                                    `name`="mi",
+                                    `title`="MI",
                                     `type`="number"),
                                 list(
-                                    `name`="epc", 
-                                    `title`="EPC", 
+                                    `name`="epc",
+                                    `title`="EPC",
                                     `type`="number"),
                                 list(
-                                    `name`="sepc.all", 
-                                    `title`="SEPC", 
+                                    `name`="sepc.all",
+                                    `title`="SEPC",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1373,17 +1374,17 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "showMissingDiagnostics"),
                             columns=list(
                                 list(
-                                    `name`="variable", 
-                                    `title`="Variable", 
+                                    `name`="variable",
+                                    `title`="Variable",
                                     `type`="text"),
                                 list(
-                                    `name`="missing", 
-                                    `title`="Recognised missing values", 
+                                    `name`="missing",
+                                    `title`="Recognised missing values",
                                     `type`="integer"),
                                 list(
-                                    `name`="percent", 
-                                    `title`="Recognised missing %", 
-                                    `type`="number", 
+                                    `name`="percent",
+                                    `title`="Recognised missing %",
+                                    `type`="number",
                                     `format`="zto"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1400,17 +1401,17 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "showMissingDiagnostics"),
                             columns=list(
                                 list(
-                                    `name`="pattern", 
-                                    `title`="Pattern", 
+                                    `name`="pattern",
+                                    `title`="Pattern",
                                     `type`="text"),
                                 list(
-                                    `name`="n", 
-                                    `title`="N", 
+                                    `name`="n",
+                                    `title`="N",
                                     `type`="integer"),
                                 list(
-                                    `name`="percent", 
-                                    `title`="%", 
-                                    `type`="number", 
+                                    `name`="percent",
+                                    `title`="%",
+                                    `type`="number",
                                     `format`="zto"))))
                         self$add(jmvcore::Image$new(
                             options=options,
@@ -1443,25 +1444,25 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "showMissingDiagnostics"),
                             columns=list(
                                 list(
-                                    `name`="test", 
-                                    `title`="Test", 
+                                    `name`="test",
+                                    `title`="Test",
                                     `type`="text"),
                                 list(
-                                    `name`="statistic", 
-                                    `title`="Statistic", 
+                                    `name`="statistic",
+                                    `title`="Statistic",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="integer"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="note", 
-                                    `title`="Note", 
+                                    `name`="note",
+                                    `title`="Note",
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
@@ -1515,12 +1516,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Detected Mediation / Conditional-Process Model",
                             columns=list(
                                 list(
-                                    `name`="field", 
-                                    `title`="Field", 
+                                    `name`="field",
+                                    `title`="Field",
                                     `type`="text"),
                                 list(
-                                    `name`="value", 
-                                    `title`="Value", 
+                                    `name`="value",
+                                    `title`="Value",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1529,28 +1530,28 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(intelligentReport)",
                             columns=list(
                                 list(
-                                    `name`="moderator", 
-                                    `title`="Moderator", 
+                                    `name`="moderator",
+                                    `title`="Moderator",
                                     `type`="text"),
                                 list(
-                                    `name`="value", 
-                                    `title`="Value", 
+                                    `name`="value",
+                                    `title`="Value",
                                     `type`="number"),
                                 list(
-                                    `name`="indirect", 
-                                    `title`="Indirect", 
+                                    `name`="indirect",
+                                    `title`="Indirect",
                                     `type`="number"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
+                                    `name`="se",
+                                    `title`="SE",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `title`="Lower", 
+                                    `name`="ci.lower",
+                                    `title`="Lower",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `title`="Upper", 
+                                    `name`="ci.upper",
+                                    `title`="Upper",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1559,24 +1560,24 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(intelligentReport)",
                             columns=list(
                                 list(
-                                    `name`="index", 
-                                    `title`="Index", 
+                                    `name`="index",
+                                    `title`="Index",
                                     `type`="number"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
+                                    `name`="se",
+                                    `title`="SE",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `title`="Lower", 
+                                    `name`="ci.lower",
+                                    `title`="Lower",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `title`="Upper", 
+                                    `name`="ci.upper",
+                                    `title`="Upper",
                                     `type`="number"),
                                 list(
-                                    `name`="note", 
-                                    `title`="Note", 
+                                    `name`="note",
+                                    `title`="Note",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1584,13 +1585,13 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Automatic APA Narrative",
                             columns=list(
                                 list(
-                                    `name`="section", 
-                                    `title`="Section", 
-                                    `type`="text", 
+                                    `name`="section",
+                                    `title`="Section",
+                                    `type`="text",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="text", 
-                                    `title`="Interpretation", 
+                                    `name`="text",
+                                    `title`="Interpretation",
                                     `type`="text"))))
                         self$add(jmvcore::Html$new(
                             options=options,
@@ -1603,24 +1604,24 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Assumption Checks and Recommendations",
                             columns=list(
                                 list(
-                                    `name`="check", 
-                                    `title`="Check", 
+                                    `name`="check",
+                                    `title`="Check",
                                     `type`="text"),
                                 list(
-                                    `name`="status_icon", 
-                                    `title`="Status", 
+                                    `name`="status_icon",
+                                    `title`="Status",
                                     `type`="text"),
                                 list(
-                                    `name`="status", 
-                                    `title`="Result", 
+                                    `name`="status",
+                                    `title`="Result",
                                     `type`="text"),
                                 list(
-                                    `name`="explanation", 
-                                    `title`="Explanation", 
+                                    `name`="explanation",
+                                    `title`="Explanation",
                                     `type`="text"),
                                 list(
-                                    `name`="recommendation", 
-                                    `title`="Recommendation", 
+                                    `name`="recommendation",
+                                    `title`="Recommendation",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1628,12 +1629,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Recommended Next Steps",
                             columns=list(
                                 list(
-                                    `name`="step", 
-                                    `title`="Step", 
+                                    `name`="step",
+                                    `title`="Step",
                                     `type`="integer"),
                                 list(
-                                    `name`="recommendation", 
-                                    `title`="Recommendation", 
+                                    `name`="recommendation",
+                                    `title`="Recommendation",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1641,20 +1642,20 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Variable Type Detection",
                             columns=list(
                                 list(
-                                    `name`="variable", 
-                                    `title`="Variable", 
+                                    `name`="variable",
+                                    `title`="Variable",
                                     `type`="text"),
                                 list(
-                                    `name`="type", 
-                                    `title`="Type", 
+                                    `name`="type",
+                                    `title`="Type",
                                     `type`="text"),
                                 list(
-                                    `name`="n_unique", 
-                                    `title`="Unique", 
+                                    `name`="n_unique",
+                                    `title`="Unique",
                                     `type`="integer"),
                                 list(
-                                    `name`="ordered", 
-                                    `title`="Ordered", 
+                                    `name`="ordered",
+                                    `title`="Ordered",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1662,37 +1663,37 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Mediation Decomposition",
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
                                     `visible`="(multigroup)"),
                                 list(
-                                    `name`="predictor", 
-                                    `title`="Predictor", 
+                                    `name`="predictor",
+                                    `title`="Predictor",
                                     `type`="text"),
                                 list(
-                                    `name`="mediator", 
-                                    `title`="Mediator", 
+                                    `name`="mediator",
+                                    `title`="Mediator",
                                     `type`="text"),
                                 list(
-                                    `name`="outcome", 
-                                    `title`="Outcome", 
+                                    `name`="outcome",
+                                    `title`="Outcome",
                                     `type`="text"),
                                 list(
-                                    `name`="direct", 
-                                    `title`="Direct", 
+                                    `name`="direct",
+                                    `title`="Direct",
                                     `type`="number"),
                                 list(
-                                    `name`="indirect", 
-                                    `title`="Indirect", 
+                                    `name`="indirect",
+                                    `title`="Indirect",
                                     `type`="number"),
                                 list(
-                                    `name`="total", 
-                                    `title`="Total", 
+                                    `name`="total",
+                                    `title`="Total",
                                     `type`="number"),
                                 list(
-                                    `name`="percent_mediated", 
-                                    `title`="% Mediated", 
+                                    `name`="percent_mediated",
+                                    `title`="% Mediated",
                                     `type`="number"),
                                 list(
                                     `name`="percent_mediated_interpretation",
@@ -1705,24 +1706,24 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(multigroup)",
                             columns=list(
                                 list(
-                                    `name`="path", 
-                                    `title`="Path", 
+                                    `name`="path",
+                                    `title`="Path",
                                     `type`="text"),
                                 list(
-                                    `name`="group_1", 
-                                    `title`="Group 1", 
+                                    `name`="group_1",
+                                    `title`="Group 1",
                                     `type`="text"),
                                 list(
                                     `name`="group_1_n",
                                     `title`="Group 1 N",
                                     `type`="integer"),
                                 list(
-                                    `name`="group_2", 
-                                    `title`="Group 2", 
+                                    `name`="group_2",
+                                    `title`="Group 2",
                                     `type`="text"),
                                 list(
-                                    `name`="group_1_beta", 
-                                    `title`="Group 1 \u03B2", 
+                                    `name`="group_1_beta",
+                                    `title`="Group 1 \u03B2",
                                     `type`="number"),
                                 list(
                                     `name`="group_1_pvalue",
@@ -1730,8 +1731,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="group_2_beta", 
-                                    `title`="Group 2 \u03B2", 
+                                    `name`="group_2_beta",
+                                    `title`="Group 2 \u03B2",
                                     `type`="number"),
                                 list(
                                     `name`="group_2_n",
@@ -1743,25 +1744,25 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="difference", 
-                                    `title`="Difference", 
+                                    `name`="difference",
+                                    `title`="Difference",
                                     `type`="number"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
+                                    `name`="z",
+                                    `title`="z",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="significant", 
-                                    `title`="Significant", 
+                                    `name`="significant",
+                                    `title`="Significant",
                                     `type`="text"),
                                 list(
-                                    `name`="interpretation", 
-                                    `title`="Interpretation", 
+                                    `name`="interpretation",
+                                    `title`="Interpretation",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1769,29 +1770,29 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Model Insights",
                             columns=list(
                                 list(
-                                    `name`="insight", 
-                                    `title`="Insight", 
+                                    `name`="insight",
+                                    `title`="Insight",
                                     `type`="text"),
                                 list(
-                                    `name`="outcome", 
-                                    `title`="Outcome", 
+                                    `name`="outcome",
+                                    `title`="Outcome",
                                     `type`="text"),
                                 list(
-                                    `name`="predictor", 
-                                    `title`="Predictor", 
+                                    `name`="predictor",
+                                    `title`="Predictor",
                                     `type`="text"),
                                 list(
-                                    `name`="beta", 
-                                    `title`="\u03B2", 
+                                    `name`="beta",
+                                    `title`="\u03B2",
                                     `type`="number"),
                                 list(
-                                    `name`="effect_size", 
-                                    `title`="Effect Size", 
+                                    `name`="effect_size",
+                                    `title`="Effect Size",
                                     `type`="text"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1799,45 +1800,45 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Model Comparison and Selection",
                             columns=list(
                                 list(
-                                    `name`="model", 
-                                    `title`="Model", 
+                                    `name`="model",
+                                    `title`="Model",
                                     `type`="text"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="X\u00B2", 
+                                    `name`="chisq",
+                                    `title`="X\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
+                                    `name`="df",
+                                    `title`="df",
                                     `type`="integer"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="cfi", 
-                                    `title`="CFI", 
+                                    `name`="cfi",
+                                    `title`="CFI",
                                     `type`="number"),
                                 list(
-                                    `name`="tli", 
-                                    `title`="TLI", 
+                                    `name`="tli",
+                                    `title`="TLI",
                                     `type`="number"),
                                 list(
-                                    `name`="rmsea", 
-                                    `title`="RMSEA", 
+                                    `name`="rmsea",
+                                    `title`="RMSEA",
                                     `type`="number"),
                                 list(
-                                    `name`="srmr", 
-                                    `title`="SRMR", 
+                                    `name`="srmr",
+                                    `title`="SRMR",
                                     `type`="number"),
                                 list(
-                                    `name`="aic", 
-                                    `title`="AIC", 
+                                    `name`="aic",
+                                    `title`="AIC",
                                     `type`="number"),
                                 list(
-                                    `name`="bic", 
-                                    `title`="BIC", 
+                                    `name`="bic",
+                                    `title`="BIC",
                                     `type`="number"),
                                 list(
                                     `name`="identification",
@@ -1848,8 +1849,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Fit Interpretation",
                                     `type`="text"),
                                 list(
-                                    `name`="best_fit", 
-                                    `title`="Best Fit", 
+                                    `name`="best_fit",
+                                    `title`="Best Fit",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1857,16 +1858,16 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="P-Curve Screen",
                             columns=list(
                                 list(
-                                    `name`="n_tests", 
-                                    `title`="Tests", 
+                                    `name`="n_tests",
+                                    `title`="Tests",
                                     `type`="integer"),
                                 list(
-                                    `name`="n_significant", 
-                                    `title`="Significant", 
+                                    `name`="n_significant",
+                                    `title`="Significant",
                                     `type`="integer"),
                                 list(
-                                    `name`="prop_p_lt_025", 
-                                    `title`="p < .025", 
+                                    `name`="prop_p_lt_025",
+                                    `title`="p < .025",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1875,12 +1876,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line", 
-                                    `title`="Line", 
+                                    `name`="line",
+                                    `title`="Line",
                                     `type`="integer"),
                                 list(
-                                    `name`="code", 
-                                    `title`="lavaan syntax", 
+                                    `name`="code",
+                                    `title`="lavaan syntax",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1889,12 +1890,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line", 
-                                    `title`="Line", 
+                                    `name`="line",
+                                    `title`="Line",
                                     `type`="integer"),
                                 list(
-                                    `name`="code", 
-                                    `title`="Mermaid syntax", 
+                                    `name`="code",
+                                    `title`="Mermaid syntax",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1903,12 +1904,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line", 
-                                    `title`="Line", 
+                                    `name`="line",
+                                    `title`="Line",
                                     `type`="integer"),
                                 list(
-                                    `name`="code", 
-                                    `title`="Mplus-style syntax", 
+                                    `name`="code",
+                                    `title`="Mplus-style syntax",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -1917,18 +1918,19 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(showSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line", 
-                                    `title`="Line", 
+                                    `name`="line",
+                                    `title`="Line",
                                     `type`="integer"),
                                 list(
-                                    `name`="code", 
-                                    `title`="OpenMx syntax", 
+                                    `name`="code",
+                                    `title`="OpenMx syntax",
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
                 active = list(
                     r2 = function() private$.items[["r2"]],
                     coefficients = function() private$.items[["coefficients"]],
+                    loadings = function() private$.items[["loadings"]],
                     correlations = function() private$.items[["correlations"]],
                     intercepts = function() private$.items[["intercepts"]],
                     defined = function() private$.items[["defined"]],
@@ -1957,46 +1959,46 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "multigroup"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Variable", 
+                                    `name`="lhs",
+                                    `title`="Variable",
                                     `type`="text"),
                                 list(
-                                    `name`="r2", 
-                                    `title`="R\u00B2", 
+                                    `name`="r2",
+                                    `title`="R\u00B2",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="chisq", 
-                                    `title`="Wald X\u00B2", 
-                                    `type`="number", 
+                                    `name`="chisq",
+                                    `title`="Wald X\u00B2",
+                                    `type`="number",
                                     `visible`="(r2test)"),
                                 list(
-                                    `name`="df", 
-                                    `title`="df", 
-                                    `type`="integer", 
+                                    `name`="df",
+                                    `title`="df",
+                                    `type`="integer",
                                     `visible`="(r2test)"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
-                                    `format`="zto,pvalue", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
+                                    `format`="zto,pvalue",
                                     `visible`="(r2test)"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2016,54 +2018,115 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "multigroup"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="label", 
-                                    `title`="Label", 
-                                    `type`="text", 
+                                    `name`="label",
+                                    `title`="Label",
+                                    `type`="text",
                                     `visible`="(showlabels)"),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Dep", 
+                                    `name`="lhs",
+                                    `title`="Dep",
                                     `type`="text"),
                                 list(
-                                    `name`="rhs", 
-                                    `title`="Pred", 
+                                    `name`="rhs",
+                                    `title`="Pred",
                                     `type`="text"),
                                 list(
-                                    `name`="est", 
-                                    `title`="Estimate", 
+                                    `name`="est",
+                                    `title`="Estimate",
                                     `type`="number"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
+                                    `name`="se",
+                                    `title`="SE",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="std.all", 
-                                    `type`="number", 
+                                    `name`="std.all",
+                                    `type`="number",
                                     `title`="\u03B2"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
+                                    `name`="z",
+                                    `title`="z",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
+                                    `format`="zto,pvalue"))))
+                        self$add(jmvcore::Table$new(
+                            options=options,
+                            name="loadings",
+                            title="Factor Loadings",
+                            refs="lavaan",
+                            clearWith=list(
+                                "endogenousTerms",
+                                "endogenous",
+                                "covs",
+                                "factors",
+                                "ciType",
+                                "constraints",
+                                "data",
+                                "multigroup",
+                                "syntaxText"),
+                            columns=list(
+                                list(
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
+                                    `combineBelow`=TRUE),
+                                list(
+                                    `name`="lhs",
+                                    `title`="Factor",
+                                    `type`="text"),
+                                list(
+                                    `name`="rhs",
+                                    `title`="Indicator",
+                                    `type`="text"),
+                                list(
+                                    `name`="est",
+                                    `title`="Estimate",
+                                    `type`="number"),
+                                list(
+                                    `name`="se",
+                                    `title`="SE",
+                                    `type`="number"),
+                                list(
+                                    `name`="ci.lower",
+                                    `title`="Lower",
+                                    `type`="number",
+                                    `visible`="(ci)"),
+                                list(
+                                    `name`="ci.upper",
+                                    `title`="Upper",
+                                    `type`="number",
+                                    `visible`="(ci)"),
+                                list(
+                                    `name`="std.all",
+                                    `title`="Standardized",
+                                    `type`="number"),
+                                list(
+                                    `name`="z",
+                                    `title`="z",
+                                    `type`="number"),
+                                list(
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2082,62 +2145,62 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "varcov"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="label", 
-                                    `title`="Label", 
-                                    `type`="text", 
+                                    `name`="label",
+                                    `title`="Label",
+                                    `type`="text",
                                     `visible`="(showlabels)"),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Variable 1", 
+                                    `name`="lhs",
+                                    `title`="Variable 1",
                                     `type`="text"),
                                 list(
-                                    `name`="rhs", 
-                                    `title`="Variable 2", 
+                                    `name`="rhs",
+                                    `title`="Variable 2",
                                     `type`="text"),
                                 list(
-                                    `name`="est", 
-                                    `title`="Estimate", 
+                                    `name`="est",
+                                    `title`="Estimate",
                                     `type`="number"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
+                                    `name`="se",
+                                    `title`="SE",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="std.all", 
-                                    `type`="number", 
+                                    `name`="std.all",
+                                    `type`="number",
                                     `title`="\u03B2"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
+                                    `name`="z",
+                                    `title`="z",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="user", 
-                                    `title`="Method", 
+                                    `name`="user",
+                                    `title`="Method",
                                     `type`="text"),
                                 list(
-                                    `name`="type", 
-                                    `title`="Type", 
+                                    `name`="type",
+                                    `title`="Type",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2156,51 +2219,51 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "multigroup"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="label", 
-                                    `title`="Label", 
-                                    `type`="text", 
+                                    `name`="label",
+                                    `title`="Label",
+                                    `type`="text",
                                     `visible`="(showlabels)"),
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Variable", 
+                                    `name`="lhs",
+                                    `title`="Variable",
                                     `type`="text"),
                                 list(
-                                    `name`="est", 
-                                    `title`="Intercept", 
-                                    `type`="number", 
+                                    `name`="est",
+                                    `title`="Intercept",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
-                                    `type`="number", 
+                                    `name`="se",
+                                    `title`="SE",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
-                                    `type`="number", 
+                                    `name`="z",
+                                    `title`="z",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2219,53 +2282,53 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "multigroup"),
                             columns=list(
                                 list(
-                                    `name`="lhs", 
-                                    `title`="Label", 
+                                    `name`="lhs",
+                                    `title`="Label",
                                     `type`="text"),
                                 list(
-                                    `name`="desc", 
-                                    `title`="Description", 
+                                    `name`="desc",
+                                    `title`="Description",
                                     `type`="text"),
                                 list(
-                                    `name`="rhs", 
-                                    `title`="Parameter", 
+                                    `name`="rhs",
+                                    `title`="Parameter",
                                     `type`="text"),
                                 list(
-                                    `name`="est", 
-                                    `title`="Estimate", 
-                                    `type`="number", 
+                                    `name`="est",
+                                    `title`="Estimate",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
-                                    `type`="number", 
+                                    `name`="se",
+                                    `title`="SE",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
-                                    `visible`="(ci)", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
+                                    `visible`="(ci)",
                                     `format`="zto"),
                                 list(
-                                    `name`="std.all", 
-                                    `type`="number", 
-                                    `title`="\u03B2", 
+                                    `name`="std.all",
+                                    `type`="number",
+                                    `title`="\u03B2",
                                     `format`="zto"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
-                                    `type`="number", 
+                                    `name`="z",
+                                    `title`="z",
+                                    `type`="number",
                                     `format`="zto"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2288,61 +2351,61 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 "miSeed"),
                             columns=list(
                                 list(
-                                    `name`="lgroup", 
-                                    `title`="Group", 
-                                    `type`="text", 
-                                    `visible`="(multigroup)", 
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)",
                                     `combineBelow`=TRUE),
                                 list(
-                                    `name`="effect", 
-                                    `title`="Effect", 
+                                    `name`="effect",
+                                    `title`="Effect",
                                     `type`="text"),
                                 list(
-                                    `name`="predictor", 
-                                    `title`="Predictor", 
+                                    `name`="predictor",
+                                    `title`="Predictor",
                                     `type`="text"),
                                 list(
-                                    `name`="outcome", 
-                                    `title`="Outcome", 
+                                    `name`="outcome",
+                                    `title`="Outcome",
                                     `type`="text"),
                                 list(
-                                    `name`="pathway", 
-                                    `title`="Pathway", 
+                                    `name`="pathway",
+                                    `title`="Pathway",
                                     `type`="text"),
                                 list(
-                                    `name`="est", 
-                                    `title`="Estimate", 
+                                    `name`="est",
+                                    `title`="Estimate",
                                     `type`="number"),
                                 list(
-                                    `name`="se", 
-                                    `title`="SE", 
+                                    `name`="se",
+                                    `title`="SE",
                                     `type`="number"),
                                 list(
-                                    `name`="ci.lower", 
-                                    `type`="number", 
-                                    `title`="Lower", 
+                                    `name`="ci.lower",
+                                    `type`="number",
+                                    `title`="Lower",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="ci.upper", 
-                                    `type`="number", 
-                                    `title`="Upper", 
+                                    `name`="ci.upper",
+                                    `type`="number",
+                                    `title`="Upper",
                                     `visible`="(ci)"),
                                 list(
-                                    `name`="std.all", 
-                                    `type`="number", 
+                                    `name`="std.all",
+                                    `type`="number",
                                     `title`="\u03B2"),
                                 list(
-                                    `name`="z", 
-                                    `title`="z", 
+                                    `name`="z",
+                                    `title`="z",
                                     `type`="number"),
                                 list(
-                                    `name`="pvalue", 
-                                    `title`="p", 
-                                    `type`="number", 
+                                    `name`="pvalue",
+                                    `title`="p",
+                                    `type`="number",
                                     `format`="zto,pvalue"),
                                 list(
-                                    `name`="stars", 
-                                    `title`="Sig.", 
+                                    `name`="stars",
+                                    `title`="Sig.",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2351,12 +2414,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible=FALSE,
                             columns=list(
                                 list(
-                                    `name`="rname", 
-                                    `title`="Name", 
+                                    `name`="rname",
+                                    `title`="Name",
                                     `type`="text"),
                                 list(
-                                    `name`="clab", 
-                                    `title`="Contrast", 
+                                    `name`="clab",
+                                    `title`="Contrast",
                                     `type`="text"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
@@ -2417,12 +2480,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(diagram && showPathLegend)",
                             columns=list(
                                 list(
-                                    `name`="item", 
-                                    `type`="text", 
+                                    `name`="item",
+                                    `type`="text",
                                     `title`="Item"),
                                 list(
-                                    `name`="meaning", 
-                                    `type`="text", 
+                                    `name`="meaning",
+                                    `type`="text",
                                     `title`="Meaning"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2431,8 +2494,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible=FALSE,
                             columns=list(
                                 list(
-                                    `name`="message", 
-                                    `type`="text", 
+                                    `name`="message",
+                                    `type`="text",
                                     `title`="Model diagram notes"))))
                         self$add(jmvcore::Table$new(
                             options=options,
@@ -2441,12 +2504,12 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             visible="(diagram && showMermaidDiagramSyntax)",
                             columns=list(
                                 list(
-                                    `name`="line", 
-                                    `type`="integer", 
+                                    `name`="line",
+                                    `type`="integer",
                                     `title`="Line"),
                                 list(
-                                    `name`="code", 
-                                    `type`="text", 
+                                    `name`="code",
+                                    `type`="text",
                                     `title`="Mermaid syntax"))))}))$new(options=options))
             self$add(R6::R6Class(
                 inherit = jmvcore::Group,
@@ -2501,16 +2564,16 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                 title="Constraints input examples",
                 columns=list(
                     list(
-                        `name`="info", 
-                        `type`="text", 
+                        `name`="info",
+                        `type`="text",
                         `title`="Aim"),
                     list(
-                        `name`="example", 
-                        `type`="text", 
+                        `name`="example",
+                        `type`="text",
                         `title`="Example"),
                     list(
-                        `name`="com", 
-                        `type`="text", 
+                        `name`="com",
+                        `type`="text",
                         `title`="Outcome"))))},
         .setModel=function(x) private$..model <- x))
 

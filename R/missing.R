@@ -338,26 +338,29 @@ handle_missing_data <- function(data, vars, options, group = NULL) {
 }
 
 with_safe_lavaan_cores <- function(expr) {
-  cores <- parallel::detectCores()
-  if (!is.na(cores))
-    return(force(expr))
-
-  ns <- asNamespace("parallel")
-  old <- get("detectCores", envir = ns)
-  unlockBinding("detectCores", ns)
-  assign("detectCores", function(...) 1L, envir = ns)
-  lockBinding("detectCores", ns)
-  on.exit({
-    unlockBinding("detectCores", ns)
-    assign("detectCores", old, envir = ns)
-    lockBinding("detectCores", ns)
-  }, add = TRUE)
-
   force(expr)
 }
 
 run_sem_model <- function(lavoptions) {
   try_hard({ with_safe_lavaan_cores(do.call(lavaan::lavaan, lavoptions)) })
+}
+
+mi_status_table <- function(results) {
+  do.call(rbind, lapply(seq_along(results), function(i) {
+    result <- results[[i]]
+    ok <- isFALSE(result$error) && is.something(result$obj)
+    converged <- ok && isTRUE(tryCatch(lavaan::lavInspect(result$obj, "converged"),
+                                       error = function(e) FALSE))
+    status <- if (!ok) "Failed" else if (!converged) "Excluded" else "Used"
+    data.frame(
+      imputation = i,
+      status = status,
+      converged = if (ok) ifelse(converged, "TRUE", "FALSE") else "",
+      warning = if (!isFALSE(result$warning)) paste(result$warning, collapse = "; ") else "",
+      error = if (!isFALSE(result$error)) paste(result$error, collapse = "; ") else "",
+      stringsAsFactors = FALSE
+    )
+  }))
 }
 
 pool_results_if_needed <- function(param_list, ci = TRUE, level = .95) {
@@ -413,7 +416,7 @@ effect_stars <- function(p) {
 
 fit_measures_table <- function(models, imputation = seq_along(models), measures = c("chisq","df","pvalue","cfi","tli","rmsea","srmr","aic","bic")) {
   rows <- lapply(seq_along(models), function(i) {
-    ff <- lavaan::fitmeasures(models[[i]], fit.measures = measures)
+    ff <- preferred_fit_measures(models[[i]])
     data.frame(
       imputation = imputation[[i]],
       chisq = unname(ff[["chisq"]]),
@@ -425,6 +428,7 @@ fit_measures_table <- function(models, imputation = seq_along(models), measures 
       srmr = unname(ff[["srmr"]]),
       aic = unname(ff[["aic"]]),
       bic = unname(ff[["bic"]]),
+      fit_variant = unname(ff[["fit_variant"]]),
       stringsAsFactors = FALSE
     )
   })
@@ -434,7 +438,7 @@ fit_measures_table <- function(models, imputation = seq_along(models), measures 
 fit_measures_summary <- function(tab) {
   if (!is.something(tab))
     return(NULL)
-  numeric_cols <- setdiff(names(tab), "imputation")
+  numeric_cols <- setdiff(names(tab)[vapply(tab, is.numeric, logical(1))], "imputation")
   stat_row <- function(label, fun) {
     vals <- vapply(tab[, numeric_cols, drop=FALSE], function(x) fun(x, na.rm=TRUE), numeric(1))
     data.frame(statistic=label, as.list(vals), check.names=FALSE, stringsAsFactors=FALSE)

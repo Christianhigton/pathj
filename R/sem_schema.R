@@ -14,6 +14,7 @@ SEM_SCHEMA_OUTCOME_TYPES <- c(
   "continuous", "ordinal", "binary", "count", "zero_inflated", "unknown"
 )
 
+#' @export
 sem_schema_new <- function(nodes=NULL, edges=NULL, metadata=list()) {
   nodes <- sem_schema_nodes(nodes)
   edges <- sem_schema_edges(edges)
@@ -130,6 +131,7 @@ sem_schema_metadata <- function(metadata=list()) {
   metadata
 }
 
+#' @export
 sem_schema_validate <- function(schema, data_vars=NULL, engine="lavaan") {
   if (!inherits(schema, "pathj_sem_schema"))
     schema <- sem_schema_new(schema$nodes, schema$edges, schema$metadata)
@@ -197,6 +199,7 @@ sem_schema_from_import <- function(imported) {
   sem_schema_new(imported$nodes, imported$edges, imported$metadata)
 }
 
+#' @export
 sem_schema_capability_map <- function(schema=NULL) {
   data.frame(
     engine=c("lavaan", "OpenMx", "brms", "Stan", "blavaan"),

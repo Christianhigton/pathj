@@ -14,6 +14,16 @@ modindices_message_table <- function(message) {
   )
 }
 
+parameter_row_keys <- function(x) {
+  key_columns <- c("lhs", "op", "rhs", "group", "block", "level")
+  values <- lapply(key_columns, function(column) {
+    if (column %in% names(x)) as.character(x[[column]]) else rep("", nrow(x))
+  })
+  base_key <- do.call(paste, c(values, sep = "\r"))
+  occurrence <- stats::ave(seq_along(base_key), base_key, FUN = seq_along)
+  paste(base_key, occurrence, sep = "\r")
+}
+
 Estimate <- R6::R6Class("Estimate",
                         inherit = Syntax,
                         cloneable=FALSE,
@@ -30,6 +40,7 @@ Estimate <- R6::R6Class("Estimate",
                           tab_constfit=NULL,
                           tab_mi=NULL,
                           tab_effects=NULL,
+                          tab_loadings=NULL,
                           tab_missing_summary=NULL,
                           tab_missing_patterns=NULL,
                           missing_pattern_plot=NULL,
@@ -54,6 +65,9 @@ Estimate <- R6::R6Class("Estimate",
                           tab_mplus_syntax=NULL,
                           tab_openmx_syntax=NULL,
                           tab_path_legend=NULL,
+                          report_parameter_estimates=NULL,
+                          report_fit_summary=NULL,
+                          report_fit_summary_type=NULL,
                           initialize=function(options,datamatic) {
                             super$initialize(
                               options=options,
@@ -113,6 +127,8 @@ Estimate <- R6::R6Class("Estimate",
                               if (length(ordered_vars)>0)
                                 lavoptions[["ordered"]]<-ordered_vars
                             }
+                            if (length(ordered_vars) > 0L)
+                              lavoptions[["model"]]<-private$.lavaan_syntax()
 
                             self$tab_missing_summary<-missing_data_summary(data, model_vars, display_vars)
                             self$missing_pattern_plot<-missing_pattern_plot_data(data, model_vars, display_vars)
@@ -153,26 +169,12 @@ Estimate <- R6::R6Class("Estimate",
                                 run_sem_model(opts)
                               })
 
-                              mi_status<-do.call(rbind, lapply(seq_along(mi_results), function(i) {
-                                res<-mi_results[[i]]
-                                ok<-isFALSE(res$error) && is.something(res$obj)
-                                conv<-FALSE
-                                if (ok)
-                                  conv<-isTRUE(tryCatch(res$obj@Fit@converged, error=function(e) FALSE))
-                                data.frame(
-                                  imputation=i,
-                                  status=if (ok) "Used" else "Failed",
-                                  converged=if (ok) ifelse(conv, "TRUE", "FALSE") else "",
-                                  warning=if (!isFALSE(res$warning)) paste(res$warning, collapse="; ") else "",
-                                  error=if (!isFALSE(res$error)) paste(res$error, collapse="; ") else "",
-                                  stringsAsFactors=FALSE
-                                )
-                              }))
+                              mi_status<-mi_status_table(mi_results)
                               self$tab_mi_status<-mi_status
 
                               successful<-mi_status$imputation[mi_status$status == "Used"]
                               failed<-mi_status$imputation[mi_status$status == "Failed"]
-                              not_converged<-mi_status$imputation[mi_status$status == "Used" & mi_status$converged != "TRUE"]
+                              not_converged<-mi_status$imputation[mi_status$status == "Excluded"]
 
                               mi_warnings<-unique(mi_status$warning[nchar(mi_status$warning) > 0])
                               if (is.something(mi_warnings)) {
@@ -186,8 +188,9 @@ Estimate <- R6::R6Class("Estimate",
                                   self$errors<-"All imputed SEM models failed."
                                 return(self$errors)
                               }
-                              if (length(failed) > 0)
-                                self$warnings<-list(topic="main",message=paste0("MI pooling used ", length(successful), " of ", length(mi_results), " imputations because ", length(failed), " imputed model(s) failed. See MI Imputation Status."))
+                              excluded_count<-length(failed) + length(not_converged)
+                              if (excluded_count > 0)
+                                self$warnings<-list(topic="main",message=paste0("MI pooling used ", length(successful), " of ", length(mi_results), " imputations because ", excluded_count, " imputed model(s) failed or did not converge. See MI Imputation Status."))
                               if (length(not_converged) > 0)
                                 self$warnings<-list(topic="main",message=paste0("Some imputed SEM models did not converge: ", paste(not_converged, collapse=", "), "."))
 
@@ -227,6 +230,14 @@ Estimate <- R6::R6Class("Estimate",
                                 )
                               })
                               .lav_params<-pool_results_if_needed(mi_params, ci=self$options$ci, level=self$ciwidth)
+                              self$report_parameter_estimates<-.lav_params
+                              if (is.something(self$tab_mi_pooled_fit)) {
+                                self$report_fit_summary<-self$tab_mi_pooled_fit
+                                self$report_fit_summary_type<-paste0("pooled MI (", self$tab_mi_pooled_fit$method[[1]], ")")
+                              } else if (is.something(self$tab_mi_fit_summary)) {
+                                self$report_fit_summary<-self$tab_mi_fit_summary[self$tab_mi_fit_summary$statistic == "Mean", , drop=FALSE]
+                                self$report_fit_summary_type<-"descriptive mean across converged imputations"
+                              }
                             } else {
                               .lav_params<-lavaan::parameterestimates(
                                 self$model,
@@ -248,9 +259,13 @@ Estimate <- R6::R6Class("Estimate",
                             .lav_structure<-.lav_structure[sel,]
                             ## make some change to render the results
                             
+                            fit_structure<-lavaan::parameterTable(self$model)
+                            fit_key<-parameter_row_keys(fit_structure)
+                            estimate_key<-parameter_row_keys(.lav_params)
+                            fit_match<-match(estimate_key, fit_key)
+                            .lav_params$free<-fit_structure$free[fit_match] > 0
                             .lav_params$rhs<-fromb64(.lav_params$rhs,self$vars)
                             .lav_params$lhs<-fromb64(.lav_params$lhs,self$vars)
-                            .lav_params$free<-(.lav_structure$free>0)
                             if (is.something(self$multigroup) && "group" %in% names(.lav_params)) {
                               .lav_params$lgroup<-rep("All", nrow(.lav_params))
                               valid_group<-!is.na(.lav_params$group) & .lav_params$group > 0 & .lav_params$group <= length(self$multigroup$levels)
@@ -258,10 +273,13 @@ Estimate <- R6::R6Class("Estimate",
                             } else
                               .lav_params$lgroup<-rep("1", nrow(.lav_params))
                             
+                            fitted_endogenous<-unique(.lav_params$lhs[.lav_params$op == "~"])
+                            endogenous_vars<-unique(c(self$options$endogenous, fitted_endogenous))
                             .lav_params$endo<-rep(FALSE, nrow(.lav_params))
-                            .lav_params$endo[.lav_params$lhs %in% self$options$endogenous | .lav_params$rhs %in% self$options$endogenous]<-TRUE
+                            .lav_params$endo[.lav_params$lhs %in% endogenous_vars | .lav_params$rhs %in% endogenous_vars]<-TRUE
                             ## collect regression coefficient table
                             self$tab_coefficients<-.lav_params[.lav_params$op=="~",]
+                            self$tab_loadings<-.lav_params[.lav_params$op=="=~",]
                             self$tab_effects<-self$effectsTable(.lav_params)
                             self$tab_mediation_decomp<-self$mediationDecompositionTable()
 
@@ -275,7 +293,7 @@ Estimate <- R6::R6Class("Estimate",
                             
                             # prepare and comput R2 and collect a table for them
                             tab<-self$tab_covariances
-                            end<-tab[tab$lhs %in% self$options$endogenous & tab$lhs==tab$rhs,]
+                            end<-tab[tab$lhs %in% fitted_endogenous & tab$lhs==tab$rhs,]
                             self$computeR2(end)
 
                             
@@ -286,10 +304,16 @@ Estimate <- R6::R6Class("Estimate",
                             
                             #### fit tests ###
                             alist<-list()
+                            ff<-NULL
+                            preferred_ff<-NULL
                             results<-try_hard(lavaan::fitmeasures(self$model))
                      
                             if (is.something(results$obj)) {
                                     ff<-results$obj
+                                    preferred_ff<-preferred_fit_measures(self$model)
+                                    for (nm in c("chisq", "df", "pvalue", "cfi", "tli", "rmsea",
+                                                 "rmsea.ci.lower", "rmsea.ci.upper", "srmr", "aic", "bic"))
+                                      if (nm %in% names(preferred_ff)) ff[[nm]]<-preferred_ff[[nm]]
                                     alist<-list()
                                     if (ff[["df"]]>0)
                                         alist[[1]]<-list(label="User Model",
@@ -352,6 +376,8 @@ Estimate <- R6::R6Class("Estimate",
                             # fit indices
                             alist<-list()
                             alist[[length(alist)+1]]<-c(info="Estimation Method",value=self$model@Options$estimator)
+                            if (is.something(preferred_ff))
+                              alist[[length(alist)+1]]<-c(info="Fit indices variant", value=preferred_ff$fit_variant)
                             alist[[length(alist)+1]]<-c(info="Missing data method",value=self$missing_info$method_label)
                             alist[[length(alist)+1]]<-c(info="Missing data note",value=ifelse(isTRUE(self$missing_info$all_available), "All available data were used", ""))
                             if (self$missing_info$method == "mi") {
@@ -370,8 +396,10 @@ Estimate <- R6::R6Class("Estimate",
                             alist[[length(alist)+1]]<-c(info="Free parameters",value=self$model@Fit@npar)
                             alist[[length(alist)+1]]<-c(info="Converged",value=self$model@Fit@converged) 
                             alist[[length(alist)+1]]<-c(info="",value="")
-                            try(alist[[length(alist)+1]]<-c(info="Loglikelihood user model",value=round(ff[["logl"]],digits=3) ))
-                            try(alist[[length(alist)+1]]<-c(info="Loglikelihood unrestricted model",value=round(ff[["unrestricted.logl"]],digits=3)))
+                            if (is.something(ff) && "logl" %in% names(ff))
+                              alist[[length(alist)+1]]<-c(info="Loglikelihood user model",value=round(ff[["logl"]],digits=3))
+                            if (is.something(ff) && "unrestricted.logl" %in% names(ff))
+                              alist[[length(alist)+1]]<-c(info="Loglikelihood unrestricted model",value=round(ff[["unrestricted.logl"]],digits=3))
                             alist[[length(alist)+1]]<-c(info="",value="")
                             
                             self$tab_info<-alist
@@ -477,6 +505,7 @@ Estimate <- R6::R6Class("Estimate",
                           },
                           buildSyntaxTables=function() {
                             coefs<-self$tab_coefficients
+                            loadings<-self$tab_loadings
                             covs<-self$tab_covariances
                             defs<-self$tab_defined
 
@@ -484,6 +513,12 @@ Estimate <- R6::R6Class("Estimate",
                             if (is.something(coefs) && nrow(coefs)>0) {
                               rows<-lapply(split(coefs, coefs$lhs), function(x) {
                                 paste0(x$lhs[[1]], " ~ ", paste(unique(x$rhs), collapse=" + "))
+                              })
+                              lines<-c(lines, unlist(rows, use.names=FALSE))
+                            }
+                            if (is.something(loadings) && nrow(loadings)>0) {
+                              rows<-lapply(split(loadings, loadings$lhs), function(x) {
+                                paste0(x$lhs[[1]], " =~ ", paste(unique(x$rhs), collapse=" + "))
                               })
                               lines<-c(lines, unlist(rows, use.names=FALSE))
                             }
@@ -549,7 +584,10 @@ Estimate <- R6::R6Class("Estimate",
                                 cluster=tob64(self$options$clusterVariable,self$vars),
                                 within=tob64(self$options$withinVariables,self$vars),
                                 between=tob64(self$options$betweenVariables,self$vars),
-                                pcurve_target=self$options$pcurve_target)
+                                pcurve_target=self$options$pcurve_target,
+                                parameter_estimates=self$report_parameter_estimates,
+                                fit_summary=self$report_fit_summary,
+                                fit_summary_type=self$report_fit_summary_type)
                             })
                             if (!isFALSE(report$error)) {
                               message<-paste("Intelligent report could not be generated:", report$error)
@@ -589,6 +627,7 @@ Estimate <- R6::R6Class("Estimate",
                             add_report_row("Model Fit", report$fit$text)
                             add_report_row("Detected Model", fromb64(report$topology$text, self$vars))
                             add_report_row("Direct Effects", report$paths$text, c("No direct paths were statistically significant", "No direct regression paths were estimated"))
+                            add_report_row("Measurement Model", report$measurement$text, c("No latent-variable loadings were estimated"))
                             add_report_row("Mediation", report$mediation$text, c("No indirect or defined effects were estimated"))
                             add_report_row("Moderation", report$moderation$text, c("No interaction terms were detected"))
                             add_report_row("Multigroup", report$multigroup$text, c("No multigroup regression paths were available"))

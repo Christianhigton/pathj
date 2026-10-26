@@ -131,6 +131,8 @@
 #' \code{as.data.frame(results$info)}
 #'
 #' @export
+#' @importFrom ggplot2 ggplot
+#' @importFrom semPlot semPaths
 pathj <- function(
   data,
   endogenous = NULL,

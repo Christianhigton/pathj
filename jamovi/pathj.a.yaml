@@ -422,6 +422,7 @@ options:
     - name: pcurve_ribbons
       title: Show 95% CI ribbons
       type: Bool
+      hidden: true
       default: true
 
     - name: diag_paths

@@ -23,6 +23,7 @@ Syntax <- R6::R6Class(
               lav_terms=NULL,
               lav_structure=NULL,
               tab_coefficients=NULL,
+              tab_loadings=NULL,
               tab_covariances=NULL,
               tab_intercepts=NULL,
               tab_defined=NULL,
@@ -338,10 +339,13 @@ Syntax <- R6::R6Class(
               ### tab_coefficients contains all regression coefficients
               
               self$tab_coefficients<-.lav_structure[.lav_structure$op=="~",]
+              self$tab_loadings<-.lav_structure[.lav_structure$op=="=~",]
               
               ### tab_r2 contains the r-squares for endogenous variables
               ####### this is weired, but it works fine with multigroups
-              r2test<-((.lav_structure$op=="~~") & (.lav_structure$lhs %in% self$options$endogenous) & (.lav_structure$lhs==.lav_structure$rhs))
+              endogenous_vars<-unique(c(self$options$endogenous,
+                                        .lav_structure$lhs[.lav_structure$op == "~"]))
+              r2test<-((.lav_structure$op=="~~") & (.lav_structure$lhs %in% endogenous_vars) & (.lav_structure$lhs==.lav_structure$rhs))
               self$tab_r2<-.lav_structure[r2test,c("lhs","lgroup")]
 
               ### tab_covariances contains variances and covariances

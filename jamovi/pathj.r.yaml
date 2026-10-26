@@ -1018,6 +1018,57 @@ items:
                       type: number
                       format: zto,pvalue
 
+          - name: loadings
+            title: Factor Loadings
+            type: Table
+            refs: lavaan
+            clearWith:
+                  - endogenousTerms
+                  - endogenous
+                  - covs
+                  - factors
+                  - ciType
+                  - constraints
+                  - data
+                  - multigroup
+                  - syntaxText
+            columns:
+                    - name: lgroup
+                      title: Group
+                      type: text
+                      visible: (multigroup)
+                      combineBelow: true
+                    - name: lhs
+                      title: Factor
+                      type: text
+                    - name: rhs
+                      title: Indicator
+                      type: text
+                    - name: est
+                      title: Estimate
+                      type: number
+                    - name: se
+                      title: SE
+                      type: number
+                    - name: ci.lower
+                      title: Lower
+                      type: number
+                      visible: (ci)
+                    - name: ci.upper
+                      title: Upper
+                      type: number
+                      visible: (ci)
+                    - name: std.all
+                      title: Standardized
+                      type: number
+                    - name: z
+                      title: z
+                      type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
+
 
           - name: correlations
             title: Variances and Covariances

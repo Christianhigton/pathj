@@ -661,7 +661,3 @@ children:
             label: Line width
             format: number
             enable: (pgraphs)
-          - type: CheckBox
-            name: pcurve_ribbons
-            label: Show 95% CI ribbons
-            enable: (pgraphs)

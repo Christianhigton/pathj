@@ -45,6 +45,51 @@ safe_fit_measures <- function(fit, measures) {
   vals
 }
 
+first_finite_measure <- function(values, names) {
+  for (name in names) {
+    value <- suppressWarnings(as.numeric(values[[name]]))
+    if (length(value) == 1L && is.finite(value))
+      return(list(value = value, name = name))
+  }
+  list(value = NA_real_, name = NA_character_)
+}
+
+preferred_fit_measures <- function(fit) {
+  requested <- c(
+    "chisq.scaled", "df.scaled", "pvalue.scaled", "chisq", "df", "pvalue",
+    "cfi.robust", "cfi.scaled", "cfi", "tli.robust", "tli.scaled", "tli",
+    "rmsea.robust", "rmsea.scaled", "rmsea",
+    "rmsea.ci.lower.robust", "rmsea.ci.lower.scaled", "rmsea.ci.lower",
+    "rmsea.ci.upper.robust", "rmsea.ci.upper.scaled", "rmsea.ci.upper",
+    "srmr", "aic", "bic"
+  )
+  raw <- safe_fit_measures(fit, requested)
+  chosen <- list(
+    chisq = first_finite_measure(raw, c("chisq.scaled", "chisq")),
+    df = first_finite_measure(raw, c("df.scaled", "df")),
+    pvalue = first_finite_measure(raw, c("pvalue.scaled", "pvalue")),
+    cfi = first_finite_measure(raw, c("cfi.robust", "cfi.scaled", "cfi")),
+    tli = first_finite_measure(raw, c("tli.robust", "tli.scaled", "tli")),
+    rmsea = first_finite_measure(raw, c("rmsea.robust", "rmsea.scaled", "rmsea")),
+    rmsea.ci.lower = first_finite_measure(raw, c("rmsea.ci.lower.robust", "rmsea.ci.lower.scaled", "rmsea.ci.lower")),
+    rmsea.ci.upper = first_finite_measure(raw, c("rmsea.ci.upper.robust", "rmsea.ci.upper.scaled", "rmsea.ci.upper")),
+    srmr = first_finite_measure(raw, "srmr"),
+    aic = first_finite_measure(raw, "aic"),
+    bic = first_finite_measure(raw, "bic")
+  )
+  sources <- vapply(chosen, `[[`, character(1), "name")
+  variant <- if (any(grepl("robust", sources), na.rm = TRUE)) "robust" else
+    if (any(grepl("scaled", sources), na.rm = TRUE)) "scaled" else "standard"
+  values <- vapply(chosen, `[[`, numeric(1), "value")
+  c(as.list(values), list(fit_variant = variant, measure_sources = sources))
+}
+
+report_parameters <- function(fit, parameter_estimates = NULL) {
+  if (is.data.frame(parameter_estimates))
+    return(parameter_estimates)
+  lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
+}
+
 model_identification <- function(fit) {
   df <- unname(safe_fit_measures(fit, "df")[["df"]])
   converged <- tryCatch(isTRUE(lavaan::lavInspect(fit, "converged")),
@@ -228,28 +273,42 @@ run_model <- function(model, data, group = NULL, ordered = NULL, estimator = NUL
 #' APA-style model fit report.
 #'
 #' @param fit A lavaan object.
+#' @param fit_summary Optional one-row fit summary override.
+#' @param fit_summary_type Label describing the supplied fit summary.
 #' @return A list with table and text.
 #' @export
-report_fit <- function(fit) {
-  measures <- c("chisq", "df", "pvalue", "cfi", "tli", "rmsea",
-                "rmsea.ci.lower", "rmsea.ci.upper", "srmr", "aic", "bic")
-  ff <- safe_fit_measures(fit, measures)
+report_fit <- function(fit, fit_summary = NULL, fit_summary_type = NULL) {
+  ff <- if (is.data.frame(fit_summary) && nrow(fit_summary) > 0L) {
+    row <- as.list(fit_summary[1, , drop = FALSE])
+    row$fit_variant <- fit_summary_type %||% row$fit_variant %||% "pooled"
+    row
+  } else preferred_fit_measures(fit)
+  fit_value <- function(name) {
+    value <- ff[[name]]
+    if (length(value) == 0L) NA_real_ else suppressWarnings(as.numeric(value[[1]]))
+  }
   tab <- data.frame(
-    chisq = ff[["chisq"]],
-    df = ff[["df"]],
-    pvalue = ff[["pvalue"]],
-    cfi = ff[["cfi"]],
-    tli = ff[["tli"]],
-    rmsea = ff[["rmsea"]],
-    rmsea.ci.lower = ff[["rmsea.ci.lower"]],
-    rmsea.ci.upper = ff[["rmsea.ci.upper"]],
-    srmr = ff[["srmr"]],
-    aic = ff[["aic"]],
-    bic = ff[["bic"]],
+    chisq = fit_value("chisq"),
+    df = fit_value("df"),
+    pvalue = fit_value("pvalue"),
+    cfi = fit_value("cfi"),
+    tli = fit_value("tli"),
+    rmsea = fit_value("rmsea"),
+    rmsea.ci.lower = fit_value("rmsea.ci.lower"),
+    rmsea.ci.upper = fit_value("rmsea.ci.upper"),
+    srmr = fit_value("srmr"),
+    aic = fit_value("aic"),
+    bic = fit_value("bic"),
+    fit_variant = as.character(ff$fit_variant %||% "standard"),
     stringsAsFactors = FALSE
   )
 
-  identification <- model_identification(fit)
+  identification <- if (is.data.frame(fit_summary) && nrow(fit_summary) > 0L) {
+    converged <- tryCatch(isTRUE(lavaan::lavInspect(fit, "converged")), error = function(e) FALSE)
+    status <- if (!is.finite(tab$df) || tab$df < 0 || !converged) "underidentified" else
+      if (tab$df == 0) "just_identified" else "overidentified"
+    list(status = status, df = tab$df, converged = converged)
+  } else model_identification(fit)
   tab$identification <- identification$status
   tab$fit_informative <- identical(identification$status, "overidentified")
 
@@ -269,7 +328,8 @@ report_fit <- function(fit) {
       "Global fit indices and parameter interpretations may be unreliable. Review model identification before interpreting the results. ",
       "Available numerical indices were ", indices)
   } else {
-    paste0("Model fit was evaluated using chi-square, CFI, TLI, RMSEA, and SRMR. The model fit statistics were ", indices)
+    paste0("Model fit was evaluated using ", tab$fit_variant,
+           " chi-square/fit indices where available. The model fit statistics were ", indices)
   }
 
   list(table = tab, text = text, identification = identification)
@@ -279,10 +339,11 @@ report_fit <- function(fit) {
 #'
 #' @param fit A lavaan object.
 #' @param include_nonsignificant Include non-significant paths in text.
+#' @param parameter_estimates Optional parameter table override.
 #' @return A list with table and text.
 #' @export
-report_paths <- function(fit, include_nonsignificant = FALSE) {
-  pe <- lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
+report_paths <- function(fit, include_nonsignificant = FALSE, parameter_estimates = NULL) {
+  pe <- report_parameters(fit, parameter_estimates)
   paths <- pe[pe$op == "~", , drop = FALSE]
   if (nrow(paths) == 0)
     return(list(table = paths, text = "No direct regression paths were estimated."))
@@ -323,13 +384,30 @@ report_paths <- function(fit, include_nonsignificant = FALSE) {
   list(table = tab, text = text)
 }
 
+report_loadings <- function(fit, parameter_estimates = NULL) {
+  pe <- report_parameters(fit, parameter_estimates)
+  loadings <- pe[pe$op == "=~", , drop = FALSE]
+  if (nrow(loadings) == 0L)
+    return(list(table = data.frame(), text = "No latent-variable loadings were estimated."))
+  keep <- intersect(c("lhs", "rhs", "group", "est", "se", "z", "pvalue",
+                      "ci.lower", "ci.upper", "std.all"), names(loadings))
+  tab <- loadings[, keep, drop = FALSE]
+  text <- paste0(
+    "A measurement model was estimated with ", length(unique(loadings$lhs)),
+    " latent factor", ifelse(length(unique(loadings$lhs)) == 1L, "", "s"),
+    " and ", nrow(loadings), " factor loadings. Interpret the loading estimates and confidence intervals; path-predictor claims are not applicable to a measurement-only model."
+  )
+  list(table = tab, text = text)
+}
+
 #' Mediation decomposition from lavaan defined parameters.
 #'
 #' @param fit A lavaan object.
+#' @param parameter_estimates Optional parameter table override.
 #' @return A list with table and text.
 #' @export
-report_mediation <- function(fit) {
-  pe <- lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
+report_mediation <- function(fit, parameter_estimates = NULL) {
+  pe <- report_parameters(fit, parameter_estimates)
   defs <- pe[pe$op == ":=", , drop = FALSE]
   if (nrow(defs) == 0)
     return(list(table = data.frame(), text = "No indirect or defined effects were estimated."))
@@ -339,7 +417,7 @@ report_mediation <- function(fit) {
     !grepl("total|^direct$|^direct_|^cp$", defs$lhs, ignore.case = TRUE)
   med <- defs[is_indirect, , drop = FALSE]
   if (nrow(med) == 0)
-    med <- defs
+    return(list(table = data.frame(), text = "No defined indirect effects were detected; other defined parameters are reported separately."))
 
   ci_available <- is.finite(med$ci.lower) & is.finite(med$ci.upper)
   ci_supported <- ci_available & (med$ci.lower > 0 | med$ci.upper < 0)
@@ -435,10 +513,11 @@ detect_interaction_terms <- function(paths) {
 #' Moderation report based on interaction terms in regression paths.
 #'
 #' @param fit A lavaan object.
+#' @param parameter_estimates Optional parameter table override.
 #' @return A list with table and text.
 #' @export
-report_moderation <- function(fit) {
-  pe <- lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
+report_moderation <- function(fit, parameter_estimates = NULL) {
+  pe <- report_parameters(fit, parameter_estimates)
   paths <- pe[pe$op == "~", , drop = FALSE]
   paths <- paths[detect_interaction_terms(paths), , drop = FALSE]
   if (nrow(paths) == 0)
@@ -683,7 +762,7 @@ diagnostic_row <- function(check, status, explanation, recommendation) {
 check_assumptions <- function(fit, data = NULL, cluster = NULL) {
   rows <- list()
   identification <- model_identification(fit)
-  ff <- safe_fit_measures(fit, c("cfi", "tli", "rmsea", "srmr"))
+  ff <- preferred_fit_measures(fit)
   ok_fit <- (is.na(ff[["cfi"]]) || ff[["cfi"]] >= .90) &&
     (is.na(ff[["rmsea"]]) || ff[["rmsea"]] <= .08) &&
     (is.na(ff[["srmr"]]) || ff[["srmr"]] <= .08)
@@ -753,11 +832,21 @@ check_assumptions <- function(fit, data = NULL, cluster = NULL) {
       normal_recommendation
     )
 
-    max_cor <- NA_real_
-    if (ncol(num) > 1) {
-      cc <- suppressWarnings(stats::cor(num, use = "pairwise.complete.obs"))
-      max_cor <- max(abs(cc[upper.tri(cc)]), na.rm = TRUE)
+    pe_paths <- lavaan::parameterestimates(fit)
+    pe_paths <- pe_paths[pe_paths$op == "~", c("lhs", "rhs"), drop = FALSE]
+    predictor_correlations <- numeric(0)
+    for (outcome in unique(pe_paths$lhs)) {
+      predictors <- unique(pe_paths$rhs[pe_paths$lhs == outcome])
+      predictors <- predictors[predictors %in% names(data) &
+                                 vapply(data[predictors], is.numeric, logical(1))]
+      if (length(predictors) < 2L)
+        next()
+      cc <- suppressWarnings(stats::cor(data[, predictors, drop = FALSE],
+                                        use = "pairwise.complete.obs"))
+      predictor_correlations <- c(predictor_correlations, abs(cc[upper.tri(cc)]))
     }
+    predictor_correlations <- predictor_correlations[is.finite(predictor_correlations)]
+    max_cor <- if (length(predictor_correlations)) max(predictor_correlations) else NA_real_
     max_vif <- max_vif_from_paths(fit, data)
     col_warn <- (!is.na(max_cor) && max_cor >= .85) || (!is.na(max_vif) && max_vif >= 5)
     rows[[length(rows) + 1]] <- diagnostic_row(
@@ -797,8 +886,8 @@ check_assumptions <- function(fit, data = NULL, cluster = NULL) {
     } else {
       rows[[length(rows) + 1]] <- diagnostic_row(
         "Independence",
-        "Met",
-        "No cluster variable was supplied for dependence screening.",
+        "Info",
+        "Independence was not assessed because no cluster variable was supplied.",
         "If data are clustered, provide the cluster variable and consider robust or multilevel methods."
       )
     }
@@ -844,14 +933,23 @@ calculate_icc <- function(data, cluster, variables) {
                         icc = NA_real_, interpretation = "ICC could not be estimated.",
                         stringsAsFactors = FALSE))
 
-    cluster_means <- stats::aggregate(y ~ cluster, d, mean)
-    between <- stats::var(cluster_means$y, na.rm = TRUE)
-    within_values <- stats::ave(d$y, d$cluster, FUN = function(x) x - mean(x, na.rm = TRUE))
-    within <- stats::var(within_values, na.rm = TRUE)
-    icc <- between / (between + within)
+    groups <- split(d$y, d$cluster)
+    sizes <- vapply(groups, length, integer(1))
+    k <- length(groups)
+    n <- sum(sizes)
+    grand_mean <- mean(d$y)
+    group_means <- vapply(groups, mean, numeric(1))
+    ss_between <- sum(sizes * (group_means - grand_mean)^2)
+    ss_within <- sum(vapply(groups, function(x) sum((x - mean(x))^2), numeric(1)))
+    ms_between <- ss_between / (k - 1)
+    ms_within <- if (n > k) ss_within / (n - k) else NA_real_
+    n0 <- (n - sum(sizes^2) / n) / (k - 1)
+    denominator <- ms_between + (n0 - 1) * ms_within
+    icc <- if (is.finite(denominator) && denominator != 0)
+      (ms_between - ms_within) / denominator else NA_real_
     interpretation <- if (is.na(icc)) {
       "ICC could not be estimated."
-    } else if (icc < .05) {
+    } else if (icc <= .05) {
       "Little clustering was detected for this variable."
     } else if (icc < .15) {
       "A modest share of variance was between clusters."
@@ -919,10 +1017,11 @@ generate_recommendations <- function(diagnostics) {
 #' Model insight engine for fitted SEM paths.
 #'
 #' @param fit A lavaan object.
+#' @param parameter_estimates Optional parameter table override.
 #' @return A list with strongest predictors, mediators, signed-association tables, and text.
 #' @export
-generate_model_insights <- function(fit) {
-  paths <- report_paths(fit, include_nonsignificant = TRUE)$table
+generate_model_insights <- function(fit, parameter_estimates = NULL) {
+  paths <- report_paths(fit, include_nonsignificant = TRUE, parameter_estimates = parameter_estimates)$table
   if (!is.something(paths) || nrow(paths) == 0)
     return(list(text = "No direct paths were available for insight generation."))
 
@@ -931,7 +1030,7 @@ generate_model_insights <- function(fit) {
   strongest <- paths[seq_len(min(3, nrow(paths))), , drop = FALSE]
   positive <- paths[!is.na(paths$beta) & paths$beta > 0 & paths$significant, , drop = FALSE]
   negative <- paths[!is.na(paths$beta) & paths$beta < 0 & paths$significant, , drop = FALSE]
-  med <- report_mediation(fit)$table
+  med <- report_mediation(fit, parameter_estimates = parameter_estimates)$table
 
   text <- paste0(
     "The strongest direct predictor was ", strongest$rhs[[1]], " predicting ",
@@ -1046,9 +1145,8 @@ compare_models <- function(...) {
   if (is.null(names(fits)) || any(names(fits) == ""))
     names(fits) <- paste0("Model ", seq_along(fits))
 
-  measures <- c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr", "aic", "bic")
   rows <- lapply(seq_along(fits), function(i) {
-    ff <- safe_fit_measures(fits[[i]], measures)
+    ff <- preferred_fit_measures(fits[[i]])
     identification <- model_identification(fits[[i]])$status
     data.frame(
       model = names(fits)[[i]],
@@ -1061,6 +1159,7 @@ compare_models <- function(...) {
       srmr = ff[["srmr"]],
       aic = ff[["aic"]],
       bic = ff[["bic"]],
+      fit_variant = ff[["fit_variant"]],
       identification = identification,
       fit_note = if (identification == "just_identified")
         "Global fit indices are not informative because df = 0."
@@ -1071,16 +1170,47 @@ compare_models <- function(...) {
     )
   })
   tab <- do.call(rbind, rows)
-  criterion <- if (any(!is.na(tab$bic))) "bic" else if (any(!is.na(tab$aic))) "aic" else "cfi"
-  if (criterion %in% c("bic", "aic")) {
-    best_i <- which.min(ifelse(is.na(tab[[criterion]]), Inf, tab[[criterion]]))
-  } else {
-    best_i <- which.max(ifelse(is.na(tab[[criterion]]), -Inf, tab[[criterion]]))
+  model_signature <- function(fit) {
+    n <- tryCatch(sum(unlist(lavaan::lavInspect(fit, "ntotal"))), error = function(e) NA_real_)
+    estimator <- tryCatch(as.character(fit@Options$estimator), error = function(e) NA_character_)
+    likelihood <- tryCatch(as.character(fit@Options$likelihood), error = function(e) NA_character_)
+    case_indices <- tryCatch(unlist(lavaan::lavInspect(fit, "case.idx")), error = function(e) NULL)
+    cases <- if (length(case_indices)) paste(case_indices, collapse = ",") else NA_character_
+    paste(n, estimator, likelihood, cases, sep = "\r")
   }
-  if (length(best_i) == 0 || !is.finite(tab[[criterion]][[best_i]]))
-    best_i <- 1
+  signatures <- vapply(fits, model_signature, character(1))
+  comparison_targets <- lapply(fits, function(fit) {
+    partable <- tryCatch(lavaan::parameterTable(fit), error = function(e) NULL)
+    if (!is.data.frame(partable)) return(character(0))
+    sort(unique(c(partable$lhs[partable$op == "~"],
+                  partable$rhs[partable$op == "=~"])))
+  })
+  target_data <- Map(function(fit, targets) {
+    observed <- tryCatch(lavaan::lavInspect(fit, "data"), error = function(e) NULL)
+    subset_targets <- function(x) {
+      if (is.null(x) || !length(targets) || !all(targets %in% colnames(x))) return(NULL)
+      x[, targets, drop = FALSE]
+    }
+    if (is.list(observed)) lapply(observed, subset_targets) else subset_targets(observed)
+  }, fits, comparison_targets)
+  comparable_targets <- length(fits) > 1L &&
+    all(vapply(comparison_targets[-1L], identical, logical(1), comparison_targets[[1L]])) &&
+    length(comparison_targets[[1L]]) > 0L
+  comparable_models <- comparable_targets && length(unique(signatures)) == 1L &&
+    all(vapply(target_data[-1L], identical, logical(1), target_data[[1L]]))
+  comparable_information <- function(measure) {
+    values <- tab[[measure]]
+    comparable_models && all(is.finite(values))
+  }
+  criterion <- if (comparable_information("bic")) "bic" else
+    if (comparable_information("aic")) "aic" else
+      if (comparable_models && all(tab$identification == "overidentified") && all(is.finite(tab$cfi))) "cfi" else NA_character_
+  best_i <- integer(0)
+  if (!is.na(criterion)) {
+    best_i <- if (criterion %in% c("bic", "aic")) which.min(tab[[criterion]]) else which.max(tab[[criterion]])
+  }
   tab$best_fit <- FALSE
-  tab$best_fit[best_i] <- TRUE
+  if (length(best_i)) tab$best_fit[best_i] <- TRUE
 
   nested <- NULL
   if (length(fits) >= 2) {
@@ -1091,8 +1221,11 @@ compare_models <- function(...) {
 
   text <- if (length(fits) == 1L) {
     "Fit and information criteria are shown for the current model; comparative model selection requires at least two fitted models."
+  } else if (!length(best_i)) {
+    "No defensible automatic winner was selected because the available models or fit criteria were not comparable and informative."
   } else {
-    paste0(tab$model[[best_i]], " had the strongest comparative support by lowest ",
+    direction <- if (criterion == "cfi") "highest" else "lowest"
+    paste0(tab$model[[best_i]], " had the strongest comparative support by ", direction, " ",
            toupper(criterion), ". Model selection should consider both statistical evidence and theoretical justification.")
   }
   if (any(tab$identification == "just_identified"))
@@ -1118,26 +1251,35 @@ compare_models <- function(...) {
 #' @param within Optional within-person or level-1 variable names.
 #' @param between Optional between-person or level-2 variable names.
 #' @param pcurve_target Effect family for the p-curve screen.
+#' @param parameter_estimates Optional parameter table, such as Rubin-pooled MI
+#'   estimates, used for parameter narratives instead of extracting one fit.
+#' @param fit_summary Optional one-row fit summary used for the fit narrative.
+#' @param fit_summary_type Label describing the supplied fit summary, for
+#'   example \code{"pooled MI (D4)"} or a descriptive across-imputation mean.
 #' @return A structured report list.
 #' @export
 generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", "advanced"),
                             cluster = NULL, within = NULL, between = NULL,
-                            pcurve_target = c("all", "direct", "mediation", "moderation", "multigroup", "multilevel")) {
+                            pcurve_target = c("all", "direct", "mediation", "moderation", "multigroup", "multilevel"),
+                            parameter_estimates = NULL, fit_summary = NULL,
+                            fit_summary_type = NULL) {
   teaching_mode <- match.arg(teaching_mode)
   pcurve_target <- match.arg(pcurve_target)
-  fit_report <- report_fit(fit)
+  fit_report <- report_fit(fit, fit_summary = fit_summary, fit_summary_type = fit_summary_type)
   report_warnings <- if (identical(fit_report$identification$status, "just_identified"))
     saturated_model_warning() else character(0)
   topology <- detect_mediation_topology(fit)
   conditional_effects <- conditional_process_table(fit, topology, data = data)
   moderated_index <- conditional_process_index(fit, topology)
-  paths <- report_paths(fit, include_nonsignificant = teaching_mode == "advanced")
-  mediation <- report_mediation(fit)
-  moderation <- report_moderation(fit)
+  paths <- report_paths(fit, include_nonsignificant = teaching_mode == "advanced",
+                        parameter_estimates = parameter_estimates)
+  measurement <- report_loadings(fit, parameter_estimates = parameter_estimates)
+  mediation <- report_mediation(fit, parameter_estimates = parameter_estimates)
+  moderation <- report_moderation(fit, parameter_estimates = parameter_estimates)
   multigroup <- report_multigroup(fit)
   multilevel <- report_multilevel(data = data, cluster = cluster, within = within, between = between)
   diagnostics <- check_assumptions(fit, data = data, cluster = cluster)
-  insights <- generate_model_insights(fit)
+  insights <- generate_model_insights(fit, parameter_estimates = parameter_estimates)
   mi <- diagnose_modification_indices(fit)
   pcurve <- p_curve_analysis(fit, target = pcurve_target, within = within, between = between)
 
@@ -1155,6 +1297,7 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
   text <- paste(c(
     fit_report$text,
     paths$text,
+    if (nrow(measurement$table) > 0L) measurement$text else NULL,
     topology$text,
     mediation$text,
     moderation$text,
@@ -1189,6 +1332,7 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
     warnings = report_warnings,
     fit = fit_report,
     paths = paths,
+    measurement = measurement,
     topology = topology,
     conditional_effects = conditional_effects,
     moderated_index = moderated_index,
