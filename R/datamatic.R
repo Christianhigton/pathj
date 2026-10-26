@@ -41,7 +41,7 @@ Datamatic <- R6::R6Class(
       names(data64)<-tob64(names(data))
       for (cont in self$continuous) {
         cont64<-tob64(cont)
-        if (class(data64[[cont64]]) == "factor")
+        if (inherits(data64[[cont64]], "factor"))
               self$warnings<-list(topic="main",message=DATA_WARNS[["fac_to_cont"]])
         data64[[cont64]] <- private$.continuous_value(data64[[cont64]],self$continuous_scale[[cont]])
       }

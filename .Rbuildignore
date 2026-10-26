@@ -6,6 +6,12 @@ extdata$
 jamovi$
 local$
 ^.*Rcheck$
-^\\.DS_Store$
-^Rplots\\.pdf$
-^SMaple ouput\\.pdf$
+^\.DS_Store$
+^Rplots\.pdf$
+^SMaple ouput\.pdf$
+^SEMJTEST$
+^\.github$
+^docs$
+^PATHJTEST_GITHUB_COMMENT\.md$
+^PATHJTEST_MERGE_BACK\.md$
+^prompt\.txt$

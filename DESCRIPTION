@@ -10,7 +10,8 @@ Description: Path analysis based on lavaan, with jamovi output style and functio
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Imports: jmvcore (>= 0.8.0),  lavaan, glue, semPlot, ggplot2, stringr
+Imports: jmvcore (>= 0.8.0), lavaan (>= 0.7-2), glue, semPlot, ggplot2, stringr
+Remotes: cran/lavaan@0.7-2
 Suggests: mice, naniar, lavaan.mi, testthat, covr
 Depends: R (>= 3.5.0)
 Exports: pathj
