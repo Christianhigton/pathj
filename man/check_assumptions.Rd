@@ -14,7 +14,7 @@ check_assumptions(fit, data = NULL, cluster = NULL)
 \item{cluster}{Optional cluster variable name for independence screening.}
 }
 \value{
-A data frame of checks, statuses, explanations, and recommendations.
+A data frame of checks, statuses, display results, explanations, and recommendations.
 }
 \description{
 Assumption checks and recommendations for a fitted SEM.

@@ -21,24 +21,25 @@ testthat::test_that("df = 0 is reported as just-identified rather than good fit"
   out <- report_fit(fit)
   testthat::expect_equal(out$table$df, 0)
   testthat::expect_equal(out$identification$status, "just_identified")
-  testthat::expect_match(out$text, "not informative", ignore.case = TRUE)
+  testthat::expect_match(out$text, "not be meaningfully evaluated", ignore.case = TRUE)
   testthat::expect_false(grepl("good fit|excellent fit", out$text, ignore.case = TRUE))
 
   diagnostic <- check_assumptions(fit, d)
-  global <- diagnostic[diagnostic$check == "Global model fit", ]
+  global <- diagnostic[diagnostic$check == "Model fit", ]
   testthat::expect_equal(global$status, "Warning")
-  testthat::expect_match(global$explanation, "Not evaluable")
-  testthat::expect_match(global$recommendation, "standardized path estimates")
-  testthat::expect_match(global$recommendation, "bootstrap confidence intervals")
-  testthat::expect_match(global$recommendation, "R-squared")
-  testthat::expect_match(global$recommendation, "AIC/BIC only")
-  testthat::expect_match(out$text, "Perfect global fit is guaranteed")
-  testthat::expect_match(out$text, "chi-square, CFI, TLI, RMSEA, and SRMR are not informative")
+  testthat::expect_equal(global$result, "Not assessable (saturated model)")
+  testthat::expect_match(global$explanation, "zero degrees of freedom")
+  testthat::expect_match(global$recommendation, "individual parameter estimates")
+  testthat::expect_match(global$recommendation, "do not use global fit indices")
+  testthat::expect_true(grepl("saturated (df = 0)", out$text, fixed = TRUE))
+  testthat::expect_match(out$text, "reflect model saturation")
 
   automatic <- generate_report(fit, data = d)
   testthat::expect_length(automatic$warnings, 1L)
   testthat::expect_match(automatic$warnings, "saturated.*df = 0", ignore.case = TRUE)
-  testthat::expect_match(automatic$text, "Perfect global fit is guaranteed")
+  testthat::expect_match(pathj:::saturated_model_notice(), "Saturated Model Detected", fixed = TRUE)
+  testthat::expect_match(automatic$text, "Global model fit could therefore not be meaningfully evaluated")
+  testthat::expect_gt(nrow(automatic$paths$table), 0L)
 })
 
 testthat::test_that("df > 0 retains ordinary global-fit evaluation", {
@@ -49,8 +50,69 @@ testthat::test_that("df > 0 retains ordinary global-fit evaluation", {
   testthat::expect_equal(out$identification$status, "overidentified")
   testthat::expect_length(generate_report(fit, data = d)$warnings, 0L)
   global <- check_assumptions(fit, d)
-  global <- global[global$check == "Global model fit", ]
+  global <- global[global$check == "Model fit", ]
   testthat::expect_true(global$status %in% c("Met", "Warning"))
+  testthat::expect_false(grepl("saturat", out$text, ignore.case = TRUE))
+})
+
+testthat::test_that("negative df is not by itself classified as underidentified", {
+  testthat::expect_equal(
+    pathj:::classify_model_identification(-1, converged = TRUE,
+                                          information_ok = TRUE,
+                                          standard_errors_ok = TRUE),
+    "estimation_problem"
+  )
+  testthat::expect_equal(
+    pathj:::classify_model_identification(-1, converged = TRUE,
+                                          information_ok = FALSE,
+                                          standard_errors_ok = FALSE),
+    "underidentified"
+  )
+  testthat::expect_equal(
+    pathj:::classify_model_identification(0, converged = FALSE,
+                                          information_ok = TRUE,
+                                          standard_errors_ok = TRUE),
+    "estimation_problem"
+  )
+})
+
+testthat::test_that("nonconvergence takes precedence over a zero df value", {
+  d <- make_mediation_data()
+  not_fitted <- lavaan::sem("m ~ x\ny ~ m + x", data = d, do.fit = FALSE)
+  identification <- pathj:::model_identification(not_fitted, df = 0)
+  testthat::expect_equal(identification$status, "estimation_problem")
+  testthat::expect_false(identification$converged)
+  testthat::expect_false(identical(identification$status, "just_identified"))
+})
+
+testthat::test_that("saturated narratives handle unavailable fit indices", {
+  d <- make_mediation_data()
+  fit <- run_model(mediation_model, d, estimator = "MLR")
+  unavailable <- data.frame(
+    chisq = 0, df = 0, pvalue = NaN, cfi = NaN, tli = NA_real_,
+    rmsea = NaN, rmsea.ci.lower = NaN, rmsea.ci.upper = NA_real_,
+    srmr = NaN, aic = NA_real_, bic = NA_real_
+  )
+  out <- report_fit(fit, fit_summary = unavailable,
+                    fit_summary_type = "test summary")
+  testthat::expect_equal(out$identification$status, "just_identified")
+  testthat::expect_true(all(is.na(out$table[c("pvalue", "cfi", "tli", "rmsea",
+                                               "rmsea.ci.lower", "rmsea.ci.upper", "srmr")])))
+  testthat::expect_false(grepl("NaN", out$text, fixed = TRUE))
+  testthat::expect_true(grepl("saturated (df = 0)", out$text, fixed = TRUE))
+})
+
+testthat::test_that("model comparison does not treat saturation as superior global fit", {
+  d <- make_mediation_data()
+  saturated <- run_model("m ~ x\ny ~ m + x", d, estimator = "MLR")
+  overidentified <- run_model("m ~ x\ny ~ m", d, estimator = "MLR")
+  comparison <- compare_models(saturated = saturated,
+                               overidentified = overidentified)
+  saturated_row <- comparison$table[comparison$table$model == "saturated", ]
+  testthat::expect_equal(saturated_row$identification, "just_identified")
+  testthat::expect_match(saturated_row$fit_note, "do not demonstrate theoretical adequacy")
+  testthat::expect_match(comparison$text, "not statistical evidence of superior theoretical fit")
+  testthat::expect_match(comparison$text, "parsimony and theoretical justification")
 })
 
 testthat::test_that("unstable and ordinary mediated proportions are distinguished", {

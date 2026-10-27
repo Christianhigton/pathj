@@ -1612,7 +1612,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Status",
                                     `type`="text"),
                                 list(
-                                    `name`="status",
+                                    `name`="result",
                                     `title`="Result",
                                     `type`="text"),
                                 list(
@@ -1850,7 +1850,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `type`="text"),
                                 list(
                                     `name`="best_fit",
-                                    `title`="Best Fit",
+                                    `title`="Preferred by Criterion",
                                     `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,

@@ -90,28 +90,112 @@ report_parameters <- function(fit, parameter_estimates = NULL) {
   lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
 }
 
-model_identification <- function(fit) {
-  df <- unname(safe_fit_measures(fit, "df")[["df"]])
+classify_model_identification <- function(df, converged, information_ok = NA,
+                                          standard_errors_ok = NA) {
+  identification_problem <- isFALSE(information_ok) || isFALSE(standard_errors_ok)
+  if (!isTRUE(converged) || length(df) != 1L || !is.finite(df))
+    return("estimation_problem")
+  if (identification_problem)
+    return("underidentified")
+  if (df == 0)
+    return("just_identified")
+  if (df > 0)
+    return("overidentified")
+
+  # Negative df are a warning sign, but are not by themselves proof that the
+  # fitted object is underidentified. Preserve that distinction unless an
+  # information-matrix or standard-error diagnostic also indicates failure.
+  "estimation_problem"
+}
+
+model_identification <- function(fit, df = NULL) {
+  if (is.null(df))
+    df <- unname(safe_fit_measures(fit, "df")[["df"]])
+  df <- if (length(df) == 1L) suppressWarnings(as.numeric(df[[1]])) else NA_real_
   converged <- tryCatch(isTRUE(lavaan::lavInspect(fit, "converged")),
                         error = function(e) FALSE)
-  if (!is.finite(df) || df < 0 || !converged) {
-    status <- "underidentified"
-  } else if (df == 0) {
-    status <- "just_identified"
-  } else {
-    status <- "overidentified"
-  }
-  list(status = status, df = df, converged = converged)
+
+  information_ok <- tryCatch({
+    information <- lavaan::lavInspect(fit, "information")
+    if (!is.matrix(information) || nrow(information) == 0L)
+      NA
+    else
+      qr(information)$rank == ncol(information)
+  }, error = function(e) NA)
+
+  se_requested <- tryCatch(!identical(tolower(as.character(fit@Options$se)), "none"),
+                           error = function(e) TRUE)
+  standard_errors_ok <- if (!se_requested) NA else tryCatch({
+    partable <- lavaan::parameterTable(fit)
+    free <- partable$free > 0L
+    if (!any(free)) NA else all(is.finite(partable$se[free]))
+  }, error = function(e) NA)
+
+  post_check <- tryCatch(isTRUE(lavaan::lavInspect(fit, "post.check")),
+                         error = function(e) NA)
+  status <- classify_model_identification(
+    df = df,
+    converged = converged,
+    information_ok = information_ok,
+    standard_errors_ok = standard_errors_ok
+  )
+  reason <- switch(
+    status,
+    just_identified = "The successfully estimated model has zero degrees of freedom.",
+    overidentified = "The successfully estimated model has positive degrees of freedom.",
+    underidentified = "Identification diagnostics indicate a singular information matrix or unavailable standard errors.",
+    estimation_problem = if (!converged)
+      "The model did not converge."
+    else if (!is.finite(df))
+      "Model degrees of freedom were unavailable."
+    else if (df < 0)
+      "Negative degrees of freedom require identification review; this classification is not based on df alone."
+    else
+      "The model could not be classified from the available estimation diagnostics."
+  )
+  list(
+    status = status,
+    df = df,
+    converged = converged,
+    information_ok = information_ok,
+    standard_errors_ok = standard_errors_ok,
+    post_check = post_check,
+    reason = reason
+  )
 }
 
 saturated_model_warning <- function() {
   paste0(
-    "The model is saturated (just-identified; df = 0). Perfect global fit is guaranteed, ",
-    "so chi-square, CFI, TLI, RMSEA, and SRMR are not informative and do not test whether the model fits well. ",
-    "Interpret the unstandardized and standardized path estimates, standard errors, confidence intervals, ",
-    "indirect effects (preferably with bootstrap confidence intervals), and R-squared instead. ",
-    "AIC and BIC, when available, may be used only to compare models fitted to the same data with the same estimator and likelihood; they are not absolute fit measures."
+    "This model is saturated (just-identified), with zero degrees of freedom (df = 0). ",
+    "It reproduces the observed covariance structure exactly, resulting in perfect or near-perfect global fit indices by construction. ",
+    "Consequently, global model fit cannot be meaningfully evaluated using chi-square, CFI, TLI, RMSEA, or SRMR. ",
+    "Although individual path coefficients can still be estimated and interpreted, the model's global fit cannot provide evidence supporting its theoretical structure. ",
+    "Consider evaluating a theoretically justified, more restrictive model with positive degrees of freedom."
   )
+}
+
+saturated_model_notice <- function() {
+  paste0("Saturated Model Detected\n\n", saturated_model_warning())
+}
+
+available_fit_indices <- function(tab) {
+  parts <- character(0)
+  if (is.finite(tab$chisq) && is.finite(tab$df)) {
+    chi <- paste0("\u03c7\u00b2(", apa_num(tab$df, 0), ") = ", apa_num(tab$chisq))
+    if (is.finite(tab$pvalue)) chi <- paste0(chi, ", ", apa_p(tab$pvalue))
+    parts <- c(parts, chi)
+  }
+  if (is.finite(tab$cfi)) parts <- c(parts, paste0("CFI = ", apa_num(tab$cfi)))
+  if (is.finite(tab$tli)) parts <- c(parts, paste0("TLI = ", apa_num(tab$tli)))
+  if (is.finite(tab$rmsea)) {
+    rmsea <- paste0("RMSEA = ", apa_num(tab$rmsea))
+    if (is.finite(tab$rmsea.ci.lower) && is.finite(tab$rmsea.ci.upper))
+      rmsea <- paste0(rmsea, " [", apa_num(tab$rmsea.ci.lower), ", ",
+                      apa_num(tab$rmsea.ci.upper), "]")
+    parts <- c(parts, rmsea)
+  }
+  if (is.finite(tab$srmr)) parts <- c(parts, paste0("SRMR = ", apa_num(tab$srmr)))
+  parts
 }
 
 # A mediated proportion is descriptive only when the component effects operate
@@ -285,7 +369,9 @@ report_fit <- function(fit, fit_summary = NULL, fit_summary_type = NULL) {
   } else preferred_fit_measures(fit)
   fit_value <- function(name) {
     value <- ff[[name]]
-    if (length(value) == 0L) NA_real_ else suppressWarnings(as.numeric(value[[1]]))
+    if (length(value) == 0L) return(NA_real_)
+    value <- suppressWarnings(as.numeric(value[[1]]))
+    if (length(value) != 1L || !is.finite(value)) NA_real_ else value
   }
   tab <- data.frame(
     chisq = fit_value("chisq"),
@@ -303,28 +389,29 @@ report_fit <- function(fit, fit_summary = NULL, fit_summary_type = NULL) {
     stringsAsFactors = FALSE
   )
 
-  identification <- if (is.data.frame(fit_summary) && nrow(fit_summary) > 0L) {
-    converged <- tryCatch(isTRUE(lavaan::lavInspect(fit, "converged")), error = function(e) FALSE)
-    status <- if (!is.finite(tab$df) || tab$df < 0 || !converged) "underidentified" else
-      if (tab$df == 0) "just_identified" else "overidentified"
-    list(status = status, df = tab$df, converged = converged)
-  } else model_identification(fit)
+  identification <- model_identification(fit, df = tab$df)
   tab$identification <- identification$status
   tab$fit_informative <- identical(identification$status, "overidentified")
 
-  indices <- paste0(
-    "chi-square(", apa_num(tab$df, 0), ") = ", apa_num(tab$chisq), ", ",
-    apa_p(tab$pvalue), ", CFI = ", apa_num(tab$cfi),
-    ", TLI = ", apa_num(tab$tli), ", RMSEA = ", apa_num(tab$rmsea),
-    " [", apa_num(tab$rmsea.ci.lower), ", ", apa_num(tab$rmsea.ci.upper),
-    "], and SRMR = ", apa_num(tab$srmr), ".")
+  available <- available_fit_indices(tab)
+  indices <- if (length(available))
+    paste0(paste(available, collapse = ", "), ".")
+  else
+    "No finite global fit indices were available."
   text <- if (identical(identification$status, "just_identified")) {
     paste0(
-      "Model identification: ", saturated_model_warning(), " ",
-      "For transparency, the numerical indices were ", indices)
-  } else if (identical(identification$status, "underidentified")) {
+      "The specified path model was saturated (df = 0). Consequently, the model reproduced the observed covariance structure exactly",
+      if (length(available)) paste0(", yielding ", indices) else paste0(". ", indices), " ",
+      if (length(available))
+        "These indices reflect model saturation rather than evidence of excellent theoretical fit. "
+      else
+        "Any perfect global fit values associated with this model would reflect saturation rather than evidence of excellent theoretical fit. ",
+      "Global model fit could therefore not be meaningfully evaluated. A model chi-square test with zero degrees of freedom cannot provide a meaningful test of overall misfit; ",
+      "incremental fit indices such as CFI and TLI do not establish theoretical adequacy; and RMSEA confidence intervals and associated p-values may be undefined or uninformative. ",
+      "Individual regression paths and their uncertainty can still be interpreted.")
+  } else if (identification$status %in% c("underidentified", "estimation_problem")) {
     paste0(
-      "Model identification warning: the model appears underidentified or did not converge. ",
+      "Model identification or estimation warning: ", identification$reason, " ",
       "Global fit indices and parameter interpretations may be unreliable. Review model identification before interpreting the results. ",
       "Available numerical indices were ", indices)
   } else {
@@ -742,10 +829,12 @@ max_vif_from_paths <- function(fit, data) {
   if (length(vifs) == 0) NA_real_ else max(vifs, na.rm = TRUE)
 }
 
-diagnostic_row <- function(check, status, explanation, recommendation) {
+diagnostic_row <- function(check, status, explanation, recommendation,
+                           result = status) {
   data.frame(
     check = check,
     status = status,
+    result = result,
     explanation = explanation,
     recommendation = recommendation,
     stringsAsFactors = FALSE
@@ -757,34 +846,45 @@ diagnostic_row <- function(check, status, explanation, recommendation) {
 #' @param fit A lavaan object.
 #' @param data Optional original data frame for distribution, missingness, and VIF diagnostics.
 #' @param cluster Optional cluster variable name for independence screening.
-#' @return A data frame of checks, statuses, explanations, and recommendations.
+#' @return A data frame of checks, statuses, display results, explanations, and recommendations.
 #' @export
 check_assumptions <- function(fit, data = NULL, cluster = NULL) {
   rows <- list()
   identification <- model_identification(fit)
   ff <- preferred_fit_measures(fit)
-  ok_fit <- (is.na(ff[["cfi"]]) || ff[["cfi"]] >= .90) &&
+  fit_available <- any(is.finite(unlist(ff[c("cfi", "rmsea", "srmr")])))
+  ok_fit <- fit_available &&
+    (is.na(ff[["cfi"]]) || ff[["cfi"]] >= .90) &&
     (is.na(ff[["rmsea"]]) || ff[["rmsea"]] <= .08) &&
     (is.na(ff[["srmr"]]) || ff[["srmr"]] <= .08)
   if (identical(identification$status, "just_identified")) {
     rows[[length(rows) + 1]] <- diagnostic_row(
-      "Global model fit", "Warning", "Not evaluable: the model is saturated (just-identified; df = 0), so perfect fit is guaranteed.",
-      paste0(
-        "Do not interpret chi-square, CFI, TLI, RMSEA, or SRMR. Use unstandardized and standardized path estimates, ",
-        "standard errors, confidence intervals, indirect effects (preferably with bootstrap confidence intervals), and R-squared. ",
-        "Use AIC/BIC only for comparable models fitted to the same data with the same estimator and likelihood."))
-  } else if (identical(identification$status, "underidentified")) {
+      "Model fit", "Warning",
+      "The model has zero degrees of freedom. Perfect fit indices arise by construction and do not establish theoretical model fit.",
+      "Interpret individual parameter estimates, but do not use global fit indices as evidence of model adequacy. Consider a theoretically justified overidentified model.",
+      result = "Not assessable (saturated model)")
+  } else if (identification$status %in% c("underidentified", "estimation_problem")) {
     rows[[length(rows) + 1]] <- diagnostic_row(
-      "Global model fit", "Violated",
-      "The model appears underidentified or did not converge; global fit is not interpretable.",
-      "Resolve model identification and convergence before interpreting fit or parameters.")
+      "Model fit", "Violated",
+      paste0(identification$reason, " Global fit is not interpretable."),
+      "Resolve model identification and convergence before interpreting fit or parameters.",
+      result = "Not assessable (identification or estimation problem)")
   } else {
     rows[[length(rows) + 1]] <- diagnostic_row(
-      "Global model fit", ifelse(ok_fit, "Met", "Warning"),
-      paste0("CFI = ", apa_num(ff[["cfi"]]), ", RMSEA = ", apa_num(ff[["rmsea"]]),
-             ", SRMR = ", apa_num(ff[["srmr"]]), "."),
-      ifelse(ok_fit, "Report fit indices and proceed with substantive interpretation.",
-             "Inspect residuals, theory, and modification indices before changing the model."))
+      "Model fit", ifelse(ok_fit, "Met", "Warning"),
+      if (fit_available)
+        paste0("CFI = ", apa_num(ff[["cfi"]]), ", RMSEA = ", apa_num(ff[["rmsea"]]),
+               ", SRMR = ", apa_num(ff[["srmr"]]), ".")
+      else
+        "No finite CFI, RMSEA, or SRMR value was available.",
+      if (ok_fit)
+        "Report fit indices and proceed with substantive interpretation."
+      else if (!fit_available)
+        "Do not characterize global fit until valid fit indices are available."
+      else
+        "Inspect residuals, theory, and modification indices before changing the model.",
+      result = if (ok_fit) "Met" else if (!fit_available)
+        "Not assessable (fit indices unavailable)" else "Needs review")
   }
 
   rows[[length(rows) + 1]] <- diagnostic_row(
@@ -1162,8 +1262,9 @@ compare_models <- function(...) {
       fit_variant = ff[["fit_variant"]],
       identification = identification,
       fit_note = if (identification == "just_identified")
-        "Global fit indices are not informative because df = 0."
-      else if (identification == "underidentified")
+        paste0("The model exactly reproduces the observed moments because df = 0; ",
+               "CFI, TLI, RMSEA, SRMR, and chi-square do not demonstrate theoretical adequacy.")
+      else if (identification %in% c("underidentified", "estimation_problem"))
         "Model identification/convergence must be resolved before fit is interpreted."
       else "Global fit indices are available for evaluation.",
       stringsAsFactors = FALSE
@@ -1229,7 +1330,12 @@ compare_models <- function(...) {
            toupper(criterion), ". Model selection should consider both statistical evidence and theoretical justification.")
   }
   if (any(tab$identification == "just_identified"))
-    text <- paste0(text, " Just-identified models have df = 0; their global fit indices are not substantively interpretable.")
+    text <- paste0(
+      text,
+      " Just-identified models exactly reproduce the observed moments because df = 0; this is not statistical evidence of superior theoretical fit. ",
+      "Global fit indices must not be used to prefer them. AIC and BIC may still compare relative information loss and penalized complexity only when models use the same data, estimator, and likelihood. ",
+      "Final selection should also consider parsimony and theoretical justification."
+    )
   if (is.something(nested) && is.data.frame(nested) && "Pr(>Chisq)" %in% names(nested)) {
     p <- nested[["Pr(>Chisq)"]][length(nested[["Pr(>Chisq)"]])]
     if (!is.na(p)) {

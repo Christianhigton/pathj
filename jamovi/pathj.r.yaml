@@ -644,7 +644,7 @@ items:
                     - name: status_icon
                       title: Status
                       type: text
-                    - name: status
+                    - name: result
                       title: Result
                       type: text
                     - name: explanation
@@ -832,7 +832,7 @@ items:
                       title: Fit Interpretation
                       type: text
                     - name: best_fit
-                      title: Best Fit
+                      title: Preferred by Criterion
                       type: text
 
           - name: pcurve

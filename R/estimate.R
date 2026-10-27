@@ -314,8 +314,16 @@ Estimate <- R6::R6Class("Estimate",
                                     for (nm in c("chisq", "df", "pvalue", "cfi", "tli", "rmsea",
                                                  "rmsea.ci.lower", "rmsea.ci.upper", "srmr", "aic", "bic"))
                                       if (nm %in% names(preferred_ff)) ff[[nm]]<-preferred_ff[[nm]]
+                                    for (nm in intersect(names(ff), c(
+                                      "chisq", "df", "pvalue", "cfi", "tli", "rmsea",
+                                      "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue",
+                                      "srmr", "aic", "bic"))) {
+                                      value<-if (length(ff[[nm]]) == 1L)
+                                        suppressWarnings(as.numeric(ff[[nm]][[1]])) else NA_real_
+                                      if (length(value) != 1L || !is.finite(value)) ff[[nm]]<-NA_real_
+                                    }
                                     alist<-list()
-                                    if (ff[["df"]]>0)
+                                    if (length(ff[["df"]]) == 1L && is.finite(ff[["df"]]) && ff[["df"]] >= 0)
                                         alist[[1]]<-list(label="User Model",
                                                chisq=ff[["chisq"]],
                                                df=ff[["df"]],
@@ -324,10 +332,17 @@ Estimate <- R6::R6Class("Estimate",
                                     
                                     self$tab_fitindices<-as.list(ff)
 
-                                    fit_df<-suppressWarnings(as.numeric(ff[["df"]]))
-                                    if (length(fit_df) == 1L && is.finite(fit_df) && fit_df == 0) {
-                                      saturation_warning<-saturated_model_warning()
-                                      self$warnings<-list(topic="main", message=saturation_warning)
+                                    fit_df<-if (length(ff[["df"]]) == 1L)
+                                      suppressWarnings(as.numeric(ff[["df"]][[1]])) else NA_real_
+                                    identification<-model_identification(self$model, df=fit_df)
+                                    if (identical(identification$status, "just_identified")) {
+                                      saturation_warning<-paste0(
+                                        saturated_model_warning(), " Perfect global fit is expected; ",
+                                        "chi-square with zero degrees of freedom cannot test overall misfit, ",
+                                        "incremental indices do not establish theoretical adequacy, and RMSEA intervals or p-values may be undefined. ",
+                                        "Individual regression paths and their uncertainty remain available for interpretation.")
+                                      self$warnings<-list(topic="main", message=saturated_model_notice())
+                                      self$warnings<-list(topic="tab_fittest", message=saturation_warning)
                                       self$warnings<-list(topic="tab_fitindices", message=saturation_warning)
                                     }
                                     
@@ -667,12 +682,12 @@ Estimate <- R6::R6Class("Estimate",
 
                             self$tab_assumptions<-self$decodeReportTable(report$diagnostics)
                             if (is.something(self$tab_assumptions)) {
-                              for (nm in c("check","status","explanation","recommendation"))
+                              for (nm in c("check","status","result","explanation","recommendation"))
                                 if (!nm %in% names(self$tab_assumptions)) self$tab_assumptions[[nm]]<-NA_character_
                               self$tab_assumptions$status_icon<-ifelse(self$tab_assumptions$status=="Met", "OK",
                                                                        ifelse(self$tab_assumptions$status=="Info", "Info",
                                                                               ifelse(self$tab_assumptions$status=="Violated", "Violated", "Warning")))
-                              self$tab_assumptions<-self$tab_assumptions[,c("check","status_icon","status","explanation","recommendation"),drop=FALSE]
+                              self$tab_assumptions<-self$tab_assumptions[,c("check","status_icon","result","explanation","recommendation"),drop=FALSE]
                             }
 
                             recs<-report$recommendations

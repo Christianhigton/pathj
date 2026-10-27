@@ -261,6 +261,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
 
              ## fit test
              j.fill_table(self$results$fit$main,lav_machine$tab_fit,append=T)
+             j.add_warnings(self$results$fit$main,lav_machine,"tab_fittest")
 
              ## diagnostics: modification indices
              j.fill_table(self$results$diagnostics$modindices, lav_machine$tab_mi, append=TRUE)
