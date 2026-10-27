@@ -35,6 +35,24 @@ datasets:
       - Mediation
       - Conditional mediation
       - Moderation
+  - name: workplace_wellbeing
+    path: workplace_wellbeing.csv
+    description: >-
+      Synthetic repeated-measures workplace data for demonstrating multilevel
+      path analysis, mediation, moderation, and group comparisons.
+    tags:
+      - Multilevel
+      - Mediation
+      - Moderation
+  - name: workplace_wellbeing_missing
+    path: workplace_wellbeing_missing.csv
+    description: >-
+      Missing-data version of the synthetic workplace wellbeing demonstration
+      data for FIML, multiple imputation, and missingness diagnostics.
+    tags:
+      - Missing data
+      - FIML
+      - Multiple imputation
 usesNative: true
 minApp: 1.8.0
 

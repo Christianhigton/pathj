@@ -14,6 +14,10 @@ paths is documented in [docs/syntax-import.md](docs/syntax-import.md).
 
 Help and examples can be found at [PATHj page](https://pathj.github.io/)
 
+Synthetic datasets for teaching multilevel paths, mediation, moderation,
+group comparisons, and missing-data handling are described in
+[docs/demo-data.md](docs/demo-data.md).
+
 # Install in jamovi
 
 Please install [jamovi](https://www.jamovi.org/download.html) and run it. Select the jamovi modules library and install PATHj from there
