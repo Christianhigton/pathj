@@ -26,6 +26,37 @@ Tests use lavaan 0.7-2 from `build/R4.5.0-arm64-macos` with R 4.4.3
 
 | 16 | Yes | MI output included regressions into exogenous covariates and repeated pair suggestions. Filter exogenous targets, group pair alternatives within group/block/level, and retain the largest-MI specification and its EPC without summing. | R/intelligent_reporting.R, R/estimate.R, R/pathj.b.R, R/pathj.h.R, jamovi/pathj.r.yaml; workplace test | Model A has no exogenous regression targets or duplicate group/pair rows; synthetic alternatives retain MI/EPC and remain separate by group. |
 
+| 17 | Yes (missing capability/empty section) | Automatic IEs had no group contrasts; conditional-process output requires moderation rather than grouping alone. Add DIE definitions matched by full pathway, in group-1-minus-group-2 order, with native lavaan SE/CI; explain the conditional section and point to IE/DIE parameters. | R/syntax.R, R/intelligent_reporting.R, R/estimate.R, R/pathj.b.R; workplace test | Model B has six contrasts. Estimates equal group differences; SEs equal sqrt(SE1²+SE2²) for these independent unconstrained groups; both CI endpoints match lavaan's delta method. |
+
+## Verification and remaining uncertainty
+
+The full `testthat::test_local()` suite passed after all changes, as did R/YAML
+parsing and `git diff --check`. Both workplace models were also compared with
+the pre-change saved lavaan objects: every existing estimate, SE, z, p, CI,
+standardized coefficient and fit measure agreed within 1e-10. The R² interval
+correction affects the derived display interval, not fitted coefficients.
+
+The specific IE11 row shift was not reproduced through the R entry point;
+total descriptions containing bare IE labels were reproduced. The exact
+reported tiny R² (9.30e-6) differed from this checkout's complete-data fixture
+(about 2.50e-5), but the invalid interval reproduced. Item 7 was already guarded.
+Logical NaN flags were verified through their jmvcore serialization cause;
+the complete jamovi GUI was not run. Diagram checks used semPlot's renderer
+at the native output size, rather than a live jamovi window. Exported syntax
+previews remain group-collapsed; export deduplication does not change fitted
+parameter labels.
+
+P values in jamovi display-table `asDF` columns are deliberately formatted
+strings. Numeric p values remain available from lavaan and the report APIs.
+No module binary was rebuilt or installed. Existing untracked Windows-build
+files were left untouched.
+
+To run with the bundled pure-R lavaan 0.7-2 on a host that otherwise has an older
+lavaan, place a symlink to `build/R4.5.0-arm64-macos/lavaan` in a temporary R
+library, prepend that library to `.libPaths()`, then run
+`testthat::test_local('.', reporter='summary', stop_on_failure=TRUE)`.
+Do not relax the package's lavaan version requirement.
+
 ## Diagram manual check
 
 In jamovi, fit A and B above, enable the diagram, turn abbreviation off, and

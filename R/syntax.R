@@ -707,7 +707,32 @@ Syntax <- R6::R6Class(
                   stringsAsFactors=FALSE
                 ))
               }
-              private$.lav_indirect<-paste(c(indirect_synt,total_synt),collapse = " ; ")
+              contrast_synt<-character()
+              if (length(unique(indirect_meta$group))>1L) {
+                # Match the entire pathway, not its position in a group.
+                used<-c(indirect_meta$label,total_meta$label,
+                        private$.lav_structure$lhs[private$.lav_structure$op==":="])
+                next_id<-1L
+                for (path in unique(indirect_meta$pathway)) {
+                  matched<-indirect_meta[indirect_meta$pathway==path,,drop=FALSE]
+                  matched<-matched[order(matched$group),,drop=FALSE]
+                  if (nrow(matched)<2L) next
+                  for (pair in utils::combn(seq_len(nrow(matched)),2L,simplify=FALSE)) {
+                    first<-matched[pair[1],]; second<-matched[pair[2],]
+                    label<-paste0("DIE",next_id)
+                    while (label %in% used) {
+                      next_id<-next_id+1L
+                      label<-paste0("DIE",next_id)
+                    }
+                    contrast_synt<-c(contrast_synt,paste0(label,":=",first$label,"-",second$label))
+                    self$defined_descriptions[[label]]<-paste0(
+                      "Indirect difference (B): ",path," (",first$lgroup," - ",second$lgroup,")")
+                    used<-c(used,label)
+                    next_id<-next_id+1L
+                  }
+                }
+              }
+              private$.lav_indirect<-paste(c(indirect_synt,total_synt,contrast_synt),collapse = " ; ")
               self$effect_decomp_structure<-rbind(indirect_meta,total_meta)
               self$indirect_names<-as.list(paths_plain)
               if (is.something(self$options$multigroup))

@@ -658,6 +658,8 @@ Estimate <- R6::R6Class("Estimate",
                               if (length(ordered_vars)>0) paste0("; ordered variables: ", paste(fromb64(ordered_vars,self$vars), collapse=", ")) else "",
                               ". Missing data method: ", self$missing_info$method_label, "."
                             ))
+                            if (nrow(report$conditional_effects)==0L)
+                              add_report_row("Conditional Indirect Effects", conditional_indirect_note())
                             add_report_row("Model Insights", report$insights$text)
                             add_report_row("Modification Indices", report$modification_indices$text)
                             add_report_row("P-Curve", report$p_curve$text)

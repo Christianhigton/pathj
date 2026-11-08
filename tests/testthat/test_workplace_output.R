@@ -153,3 +153,25 @@ testthat::test_that("MI alternatives retain the representative statistic and gro
   testthat::expect_equal(out$epc[out$group==1],.2)
   testthat::expect_match(out$alternatives[out$group==1], "stress ~ wellbeing; wellbeing ~~ stress",fixed=TRUE)
 })
+
+testthat::test_that("item 17: group indirect differences have lavaan delta intervals", {
+  m <- workplace_result("B")
+  pe <- lavaan::parameterEstimates(m$model,ci=TRUE)
+  contrasts <- pe[grepl("^DIE[0-9]+$",pe$lhs) & pe$op == ":=", ]
+  testthat::expect_equal(nrow(contrasts), 6L)
+  for (i in seq_len(nrow(contrasts))) {
+    labels <- strsplit(contrasts$rhs[i],"-",fixed=TRUE)[[1]]
+    first <- pe[pe$op == ":=" & pe$lhs == labels[1], ]
+    second <- pe[pe$op == ":=" & pe$lhs == labels[2], ]
+    testthat::expect_equal(contrasts$est[i],first$est-second$est,tolerance=1e-8)
+    # These unconstrained groups are independent; this supplies an external
+    # check of lavaan's delta-method contrast variance, including its CI.
+    se <- sqrt(first$se^2+second$se^2)
+    testthat::expect_equal(contrasts$se[i],se,tolerance=1e-6)
+    testthat::expect_equal(contrasts$ci.lower[i],contrasts$est[i]-qnorm(.975)*se,tolerance=1e-6)
+    testthat::expect_equal(contrasts$ci.upper[i],contrasts$est[i]+qnorm(.975)*se,tolerance=1e-6)
+  }
+  notes <- vapply(m$intelligent$conditionalEffects$notes,function(note) note$note,character(1))
+  testthat::expect_match(paste(notes,collapse=" "),"moderator")
+  testthat::expect_match(paste(notes,collapse=" "),"DIE")
+})

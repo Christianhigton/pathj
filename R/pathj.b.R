@@ -277,6 +277,8 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              j.fill_table(self$results$intelligent$apaText, lav_machine$tab_report_text, append=TRUE)
              j.fill_table(self$results$intelligent$modelClassification, lav_machine$tab_topology, append=TRUE)
              j.fill_table(self$results$intelligent$conditionalEffects, lav_machine$tab_conditional_effects, append=TRUE)
+             if (isTRUE(self$options$intelligentReport) && nrow(lav_machine$tab_conditional_effects)==0L)
+                 self$results$intelligent$conditionalEffects$setNote("applicability", conditional_indirect_note())
              j.fill_table(self$results$intelligent$moderatedIndex, lav_machine$tab_moderated_index, append=TRUE)
              if (isTRUE(self$options$reportParagraph) && is.something(lav_machine$tab_report_html))
                  self$results$intelligent$reportParagraph$setContent(lav_machine$tab_report_html)

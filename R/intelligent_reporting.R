@@ -1385,6 +1385,12 @@ compare_models <- function(...) {
   list(table = tab, nested = nested, text = text)
 }
 
+conditional_indirect_note <- function() {
+  paste("This section probes indirect effects at moderator values and requires a supported moderated-mediation structure.",
+        "No supported moderator structure was detected. For multigroup models, indirect effects are in Defined Parameters (IE);",
+        "when indirect effects are requested, matching between-group differences are reported there as DIE with confidence intervals.")
+}
+
 #' Complete intelligent SEM report.
 #'
 #' @param fit A lavaan object.
