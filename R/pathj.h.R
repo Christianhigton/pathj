@@ -1722,6 +1722,14 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Group 2",
                                     `type`="text"),
                                 list(
+                                    `name`="group_1_est",
+                                    `title`="Group 1 B",
+                                    `type`="number"),
+                                list(
+                                    `name`="group_2_est",
+                                    `title`="Group 2 B",
+                                    `type`="number"),
+                                list(
                                     `name`="group_1_beta",
                                     `title`="Group 1 \u03B2",
                                     `type`="number"),
@@ -1745,7 +1753,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `format`="zto,pvalue"),
                                 list(
                                     `name`="difference",
-                                    `title`="Difference",
+                                    `title`="Difference (B)",
                                     `type`="number"),
                                 list(
                                     `name`="z",

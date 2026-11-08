@@ -705,6 +705,7 @@ compare_groups <- function(fit, group_labels = NULL) {
         path = paste(parts[[1]], "~", parts[[2]]),
         group_1 = group_labels[[g1$group]], group_1_n = nobs[[g1$group]],
         group_2 = group_labels[[g2$group]], group_2_n = nobs[[g2$group]],
+        group_1_est = g1$est, group_2_est = g2$est,
         group_1_beta = g1$std.all, group_1_pvalue = g1$pvalue,
         group_2_beta = g2$std.all, group_2_pvalue = g2$pvalue,
         difference = diff, z = z, pvalue = p,

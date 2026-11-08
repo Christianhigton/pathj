@@ -93,3 +93,10 @@ testthat::test_that("item 10: p-value screen makes no evidential claim", {
   testthat::expect_match(text, "dependent|independent")
   testthat::expect_match(text, "descriptive", ignore.case=TRUE)
 })
+
+testthat::test_that("item 11: multigroup comparison exposes B and text significance", {
+  tab <- workplace_result("B")$intelligent$groupComparison$asDF
+  testthat::expect_true(all(c("group_1_est", "group_2_est") %in% names(tab)))
+  testthat::expect_equal(tab$difference, tab$group_1_est - tab$group_2_est)
+  testthat::expect_identical(tab$significant, ifelse(tab$pvalue < .05, "TRUE", "FALSE"))
+})

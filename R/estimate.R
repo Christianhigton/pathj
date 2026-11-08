@@ -705,6 +705,10 @@ Estimate <- R6::R6Class("Estimate",
                             )
 
                             self$tab_group_comparison<-self$decodeReportTable(report$multigroup$table)
+                            if (nrow(self$tab_group_comparison)>0)
+                              self$tab_group_comparison$significant<-ifelse(
+                                is.finite(self$tab_group_comparison$pvalue),
+                                ifelse(self$tab_group_comparison$pvalue < .05, "TRUE", "FALSE"), "")
                             self$tab_mediation_decomp<-self$mediationDecompositionTable()
                             self$tab_insights<-self$decodeReportTable(self$insightsTable(report$insights))
                             self$tab_pcurve<-report$p_curve$summary
