@@ -9,3 +9,4 @@ Tests use lavaan 0.7-2 from `build/R4.5.0-arm64-macos` with R 4.4.3
 | Item | Reproduced | Cause and resolution | Files | Verification |
 | --- | --- | --- | --- | --- |
 | 1 | Partial | IE11 shift did not occur through the R entry point; totals retained bare IE references, and descriptions were initialized by row position. Build named descriptions with the definitions and rejoin by lhs after fitting. | R/syntax.R, R/estimate.R; workplace test/helper | Model B has 12 IEs and 8 TEs; check IE11 pathway and TE1 description, including group. |
+| 2 | Yes | Constraint-count df was zero, so real group statistics were replaced with 0 and p=1. Show standard chi-square contributions with group names; leave df/p blank. Omit group rows for robust/scaled tests, whose corrections need not decompose. | R/estimate.R; workplace test | Model A contributions sum to user chi-square (tolerance 1e-7); no group df/p. |

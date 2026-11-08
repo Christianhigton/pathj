@@ -377,8 +377,9 @@ Estimate <- R6::R6Class("Estimate",
                                     
                             
                                     if (is.something(self$multigroup)) {
-                                       alist[[length(alist)+1]]<-list(label="Groups statistics",chisq="",df="",pvalue="",..space..=2)
                                        multitests<-self$multitest()
+                                       if (length(multitests)>0)
+                                         alist[[length(alist)+1]]<-list(label="Group chi-square contributions",chisq="",df="",pvalue="",..space..=2)
                                        for (r in seq_along(multitests))
                                             alist[[length(alist)+1]]<-multitests[[r]]
                                     }
@@ -861,34 +862,15 @@ Estimate <- R6::R6Class("Estimate",
                           
                           multitest=function() {
                             
-                            tab<-self$structure
+                            # Group contributions have no separate df or p test. Robust
+                            # corrections need not decompose additively, so omit those rows.
+                            ff<-preferred_fit_measures(self$model)
+                            if (!identical(unname(ff$measure_sources[["chisq"]]), "chisq")) return(list())
                             gstat<-self$model@test$standard$stat.group
-                            ### compute df for each group ###
-                            sel<-grep("==|<|>",private$.lav_structure$op)
-                            con<-private$.lav_structure[sel,]
-                            con$lhs<-gsub(".","",con$lhs,fixed=T)
-                            con$rhs<-gsub(".","",con$rhs,fixed=T)
-                            fixed<-unique(c(con$lhs,con$rhs))
-                            g<-tab[tab$label %in% fixed,"group"]
-                            df<-table(g)
-                            groups<-1:self$multigroup$nlevels
-                            dfs<-sapply(groups, function(g) ifelse(hasName(df,g),df[[as.character(g)]],0)) 
-                            lapply(groups, function(g) {
-                              df<-dfs[g]
-                              if (df>0) {
-                                chisq=gstat[g]
-                                pvalue=pchisq(gstat[g], df=dfs[g], lower.tail=FALSE)
-                              } else {
-                                chisq=0
-                                pvalue=1
-                              }
-                              list(
-                                  label=paste("Group",g),
-                                  chisq=chisq,
-                                  df=df,
-                                  pvalue=pvalue,
-                                  ..space..=2
-                              )
+                            lapply(seq_len(self$multigroup$nlevels), function(g) {
+                              list(label=paste0("Group: ",self$multigroup$levels[g]),
+                                   chisq=gstat[g], df=NA_real_, pvalue=NA_real_,
+                                   ..space..=2)
                             })
                                                         
                           },
