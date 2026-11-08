@@ -1201,7 +1201,7 @@ items:
                     - name: pvalue
                       title: "p"
                       type: number
-                      format: zto
+                      format: zto,pvalue
 
           - name: defined
             title: Defined Parameters

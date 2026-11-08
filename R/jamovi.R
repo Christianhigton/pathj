@@ -63,6 +63,17 @@ bogusfromb64<-function(obj,ref=NULL) fromb64(obj,ref=ref)
 
 ######### tables #########
 
+# Format only result cells. Engine tables and report APIs retain numeric p.
+j.apa_pvalues <- function(row) {
+  for (nm in grep("(^|[._])pvalue$|^p$", names(row), value=TRUE)) {
+    value <- row[[nm]]
+    if (is.numeric(value) && length(value)==1L)
+      row[[nm]] <- if (!is.finite(value)) NA_character_ else
+        sub("^p[ =]*", "", apa_p(value))
+  }
+  row
+}
+
 j.init_table<-function(table,obj,ci=FALSE,ciroot="",ciformat="{}% Confidence Intervals",ciwidth,indent=NULL,spaceby=NULL) {
 
   if (is.null(obj)) 
@@ -77,11 +88,11 @@ j.init_table<-function(table,obj,ci=FALSE,ciroot="",ciformat="{}% Confidence Int
   }
   if (square)
      for (i in seq_len(nrow(obj))) {
-         table$addRow(rowKey=i,as.list(obj[i,,drop=FALSE]))
+         table$addRow(rowKey=i,j.apa_pvalues(as.list(obj[i,,drop=FALSE])))
      }
   else
     for (i in seq_along(obj)) 
-      table$addRow(rowKey=i,obj[[i]])
+      table$addRow(rowKey=i,j.apa_pvalues(obj[[i]]))
 
   if (!is.null(indent)) {
     trows<-1:i
@@ -105,7 +116,7 @@ j.init_table_append<-function(table, obj, indent=NULL) {
   
   last <- table$rowCount
   for (i in seq_along(obj)) 
-    table$addRow(rowKey=last+i, obj[[i]])
+    table$addRow(rowKey=last+i, j.apa_pvalues(obj[[i]]))
   
   if (!is.null(indent)) {
     trows <- 1:i
@@ -150,8 +161,8 @@ j.fill_table<-function(table,obj, fixNA=TRUE, append=FALSE, spaceby=NULL, start=
   last <- start-1
   if (append)  last<-table$rowCount
   
-  FUNC<-function(i,w) table$setRow(rowNo=i,w)
-  if (append)   FUNC<-function(i,w) table$addRow(rowKey=i,w)
+  FUNC<-function(i,w) table$setRow(rowNo=i,j.apa_pvalues(w))
+  if (append)   FUNC<-function(i,w) table$addRow(rowKey=i,j.apa_pvalues(w))
 
   square<-(length(dim(obj))>1)
   if (square)

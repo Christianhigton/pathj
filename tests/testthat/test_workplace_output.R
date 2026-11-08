@@ -98,7 +98,7 @@ testthat::test_that("item 11: multigroup comparison exposes B and text significa
   tab <- workplace_result("B")$intelligent$groupComparison$asDF
   testthat::expect_true(all(c("group_1_est", "group_2_est") %in% names(tab)))
   testthat::expect_equal(tab$difference, tab$group_1_est - tab$group_2_est)
-  testthat::expect_identical(tab$significant, ifelse(tab$pvalue < .05, "TRUE", "FALSE"))
+  testthat::expect_identical(tab$significant, ifelse(compare_groups(workplace_result("B")$model)$table$pvalue < .05, "TRUE", "FALSE"))
 })
 
 testthat::test_that("item 12: model-info notes keep variable names on one line", {
@@ -107,4 +107,13 @@ testthat::test_that("item 12: model-info notes keep variable names on one line",
   testthat::expect_match(text, "exogenous variable")
   testthat::expect_match(text, "resilience")
   testthat::expect_false(grepl("[\r\n]", text))
+})
+
+testthat::test_that("item 13: narrative and displayed p values use APA notation", {
+  testthat::expect_identical(apa_p(.425), "p = .425")
+  testthat::expect_identical(apa_p(0), "p < .001")
+  testthat::expect_identical(apa_p(.001), "p = .001")
+  tab <- workplace_result("B")$models$coefficients$asDF
+  testthat::expect_true(all(grepl("^(< \\.001|\\.[0-9]{3}|1\\.000)$", tab$pvalue)))
+  testthat::expect_false(any(grepl("p = 0\\.", workplace_result("B")$intelligent$apaText$asDF$text)))
 })

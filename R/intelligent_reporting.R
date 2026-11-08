@@ -3,7 +3,7 @@ apa_p <- function(p) {
     return("p = NA")
   if (p < .001)
     return("p < .001")
-  paste0("p = ", formatC(p, digits = 3, format = "f"))
+  paste0("p = ", sub("^0\\.", ".", formatC(p, digits = 3, format = "f")))
 }
 
 apa_num <- function(x, digits = 3) {

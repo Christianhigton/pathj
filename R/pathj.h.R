@@ -2277,7 +2277,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `name`="pvalue",
                                     `title`="p",
                                     `type`="number",
-                                    `format`="zto"))))
+                                    `format`="zto,pvalue"))))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="defined",

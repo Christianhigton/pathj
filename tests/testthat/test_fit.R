@@ -23,7 +23,7 @@ obj<-mod$fit$main$asDF
 testthat::test_that("fit table",{
   testthat::expect_equal(obj$chisq[1],4.8817,tolerance = tol)        
   testthat::expect_equal(obj$df[2],9,tolerance = tol)        
-  testthat::expect_equal(obj$pvalue[2],0,tolerance = tol)        
+  testthat::expect_identical(obj$pvalue[2],"< .001")        
 }
 )
 
