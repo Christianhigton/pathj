@@ -70,3 +70,9 @@ testthat::test_that("item 7: inapplicable mediated proportions remain blank", {
   testthat::expect_true(is.na(mediation_proportion(.2, -.2, 1e-10)$value))
   testthat::expect_equal(mediation_proportion(.2, .3, .5)$value, 40)
 })
+
+testthat::test_that("item 8: single-model reports omit model selection", {
+  m <- workplace_result("A")
+  testthat::expect_false("Model Selection" %in% m$intelligent$apaText$asDF$section)
+  testthat::expect_equal(nrow(m$intelligent$modelComparison$asDF), 0L)
+})

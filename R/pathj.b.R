@@ -291,7 +291,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                  self$results$intelligent$groupComparison$setVisible(FALSE)
              }
              j.fill_table(self$results$intelligent$insights, lav_machine$tab_insights, append=TRUE)
-             j.fill_table(self$results$intelligent$modelComparison, lav_machine$tab_model_comparison, append=TRUE)
+             self$results$intelligent$modelComparison$setVisible(FALSE)
              j.fill_table(self$results$intelligent$pcurve, lav_machine$tab_pcurve, append=TRUE)
              j.fill_table(self$results$intelligent$lavaanSyntax, lav_machine$tab_lavaan_syntax, append=TRUE)
              j.fill_table(self$results$intelligent$mermaidSyntax, lav_machine$tab_mermaid_syntax, append=TRUE)

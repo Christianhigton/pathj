@@ -709,12 +709,9 @@ Estimate <- R6::R6Class("Estimate",
                             self$tab_insights<-self$decodeReportTable(self$insightsTable(report$insights))
                             self$tab_pcurve<-report$p_curve$summary
 
-                            cmp<-compare_models(Current=self$model)
-                            self$tab_model_comparison<-cmp$table
-                            self$tab_report_text<-rbind(
-                              self$tab_report_text,
-                              self$decodeReportTable(data.frame(section="Model Selection", text=cmp$text, stringsAsFactors=FALSE))
-                            )
+                            # This analysis fits one model. Comparative selection is
+                            # available only through compare_models() with multiple fits.
+                            self$tab_model_comparison<-data.frame()
                           },
                           decodeReportTable=function(tab) {
                             if (!is.something(tab) || nrow(tab)==0)
