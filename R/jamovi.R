@@ -180,6 +180,13 @@ j.fill_table<-function(table,obj, fixNA=TRUE, append=FALSE, spaceby=NULL, start=
   table$setVisible(TRUE)
 }
 
+# jmvcore's translator treats square brackets as translation markup and drops
+# the following text. External engine warnings must use plain punctuation.
+plain_engine_note <- function(x) {
+  x <- chartr("[]", "()", x)
+  trimws(gsub("[[:space:]]+", " ", x))
+}
+
 j.add_warnings<-function(atable,adispatch,atopic=NULL) {
   # Normalize and attach warnings/errors as UTF-8 strings to a table
   if (is.null(atopic)) atopic<-atable$name
@@ -192,7 +199,7 @@ j.add_warnings<-function(atable,adispatch,atopic=NULL) {
   w <- unlist(w, use.names = FALSE)
   w <- as.character(w)
   w[is.na(w)] <- ""
-  w <- vapply(w, enc2utf8, FUN.VALUE = character(1))
+  w <- plain_engine_note(vapply(w, enc2utf8, FUN.VALUE = character(1)))
   w <- w[nchar(w) > 0]
 
   if (length(w) == 0)

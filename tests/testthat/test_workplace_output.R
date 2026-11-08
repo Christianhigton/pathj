@@ -100,3 +100,11 @@ testthat::test_that("item 11: multigroup comparison exposes B and text significa
   testthat::expect_equal(tab$difference, tab$group_1_est - tab$group_2_est)
   testthat::expect_identical(tab$significant, ifelse(tab$pvalue < .05, "TRUE", "FALSE"))
 })
+
+testthat::test_that("item 12: model-info notes keep variable names on one line", {
+  notes <- vapply(workplace_result("B")$info$notes, function(note) note$note, character(1))
+  text <- paste(notes, collapse=" ")
+  testthat::expect_match(text, "exogenous variable")
+  testthat::expect_match(text, "resilience")
+  testthat::expect_false(grepl("[\r\n]", text))
+})

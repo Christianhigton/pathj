@@ -231,7 +231,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 notes <- unlist(notes, use.names = FALSE)
                 notes <- as.character(notes)
                 notes[is.na(notes)] <- ""
-                notes <- vapply(notes, enc2utf8, FUN.VALUE = character(1))
+                notes <- plain_engine_note(vapply(notes, enc2utf8, FUN.VALUE = character(1)))
                 notes <- notes[nchar(notes) > 0]
                 for (i in seq_along(notes))
                       self$results$info$setNote(paste0("n",i), notes[[i]])
