@@ -95,7 +95,7 @@ Estimate <- R6::R6Class("Estimate",
                             }
 
                             model_vars<-model_variable_names(private$.lav_structure, group_var)
-                            display_vars<-fromb64(model_vars,self$vars)
+                            display_vars<-fromb64(model_vars,unique(c(self$vars,self$options$multigroup)))
                             type_vars<-intersect(tob64(unique(c(self$options$endogenous, self$options$covs, self$options$syntaxVars)), self$vars), names(data))
                             syntax_source <- self$options$syntaxSource
                             if (is.null(syntax_source))

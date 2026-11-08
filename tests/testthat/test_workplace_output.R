@@ -33,3 +33,12 @@ testthat::test_that("item 4: indirect narrative pairs B with its confidence inte
   expected <- paste0("B = ", apa_num(r$indirect), ", 95% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper), "], beta = ", apa_num(r$beta))
   testthat::expect_match(out$text, expected, fixed=TRUE)
 })
+
+testthat::test_that("item 5: missing summary contains data variables only", {
+  d <- read.csv(testthat::test_path("..", "..", "data", "workplace_wellbeing.csv"))
+  tab <- workplace_result("B")$diagnostics$missingSummary$asDF
+  expected <- c("sleep_quality", "stress", "support_person", "wellbeing", "resilience", "workload", "condition")
+  testthat::expect_setequal(as.character(tab$variable), expected)
+  pt <- lavaan::lavaanify("y ~ a*x\nIE1 := a*a")
+  testthat::expect_setequal(model_variable_names(pt), c("x", "y"))
+})

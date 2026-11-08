@@ -19,7 +19,14 @@ mi_strategy_label <- function(strategy) {
 }
 
 model_variable_names <- function(lav_structure, group = NULL) {
-  vars <- unique(c(lav_structure$lhs, lav_structure$rhs))
+  # Definitions, equality constraints and threshold labels are parameters,
+  # not columns in the analysis data.
+  observed_ops <- lav_structure$op %in% c("~", "~~", "~1", "|", "=~", "<~")
+  structure <- lav_structure[observed_ops, , drop = FALSE]
+  lhs <- structure$lhs[structure$op %in% c("~", "~~", "~1", "|")]
+  rhs <- structure$rhs[structure$op %in% c("~", "~~", "=~", "<~")]
+  latent <- lav_structure$lhs[lav_structure$op %in% c("=~", "<~")]
+  vars <- setdiff(unique(c(lhs, rhs)), latent)
   vars <- vars[!is.na(vars) & vars != "" & vars != "1"]
   if (is.something(group))
     vars <- unique(c(vars, group))
