@@ -42,3 +42,22 @@ testthat::test_that("item 5: missing summary contains data variables only", {
   pt <- lavaan::lavaanify("y ~ a*x\nIE1 := a*a")
   testthat::expect_setequal(model_variable_names(pt), c("x", "y"))
 })
+
+testthat::test_that("item 6: covariance exports are unique and IE labels match fitted paths", {
+  m <- workplace_result("B")
+  for (nm in c("lavaanSyntax", "mermaidSyntax", "mplusSyntax", "openmxSyntax")) {
+    code <- as.character(m$intelligent[[nm]]$asDF$code)
+    testthat::expect_equal(anyDuplicated(code[nzchar(code)]), 0L, info=nm)
+  }
+  # Exports are assembled after fitting: check the group-2 IE against the fit.
+  fit <- m$model
+  pt <- lavaan::parameterTable(fit)
+  pe <- lavaan::parameterEstimates(fit)
+  for (name in paste0("IE", 7:12)) {
+    def <- pt[pt$op == ":=" & pt$lhs == name, ]
+    labs <- strsplit(def$rhs, "*", fixed=TRUE)[[1]]
+    paths <- pe[pe$label %in% labs & pe$op == "~", ]
+    testthat::expect_true(all(paths$group == 2L))
+    testthat::expect_equal(prod(paths$est), pe$est[pe$lhs == name & pe$op == ":="], tolerance=1e-8)
+  }
+})

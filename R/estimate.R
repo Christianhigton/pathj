@@ -543,7 +543,7 @@ Estimate <- R6::R6Class("Estimate",
                             if (is.something(covs) && nrow(covs)>0) {
                               cov_rows<-covs[covs$lhs != covs$rhs, , drop=FALSE]
                               if (nrow(cov_rows)>0)
-                                lines<-c(lines, paste0(cov_rows$lhs, " ~~ ", cov_rows$rhs))
+                                lines<-c(lines, unique(paste0(cov_rows$lhs, " ~~ ", cov_rows$rhs)))
                             }
                             if (is.something(defs) && nrow(defs)>0)
                               lines<-c(lines, paste0(defs$lhs, " := ", defs$rhs))
