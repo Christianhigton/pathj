@@ -105,6 +105,7 @@ Estimate <- R6::R6Class("Estimate",
                             data_types<-detect_variable_types(data[, type_vars, drop=FALSE])
                             if (nrow(data_types)>0)
                               data_types$variable<-fromb64(data_types$variable,self$vars)
+                            data_types$ordered<-ifelse(is.na(data_types$ordered), "", ifelse(data_types$ordered, "TRUE", "FALSE"))
                             self$tab_variable_types<-data_types
 
                             ordered_vars<-character(0)

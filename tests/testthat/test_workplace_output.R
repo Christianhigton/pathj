@@ -117,3 +117,11 @@ testthat::test_that("item 13: narrative and displayed p values use APA notation"
   testthat::expect_true(all(grepl("^(< \\.001|\\.[0-9]{3}|1\\.000)$", tab$pvalue)))
   testthat::expect_false(any(grepl("p = 0\\.", workplace_result("B")$intelligent$apaText$asDF$text)))
 })
+
+testthat::test_that("item 14: Ordered is explicit text for jamovi cells", {
+  tab <- workplace_result("B")$intelligent$variableTypes$asDF
+  testthat::expect_identical(tab$ordered, rep("FALSE", nrow(tab)))
+  # Type detection itself stays logical for estimator selection.
+  types <- detect_variable_types(data.frame(binary=rep(0:1,5),continuous=seq_len(10)))
+  testthat::expect_identical(types$ordered, c(TRUE,FALSE))
+})
