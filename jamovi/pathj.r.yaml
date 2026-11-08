@@ -850,7 +850,7 @@ items:
                       title: Significant
                       type: integer
                     - name: prop_p_lt_025
-                      title: "p < .025"
+                      title: "Proportion of significant p < .025"
                       type: number
 
           - name: lavaanSyntax

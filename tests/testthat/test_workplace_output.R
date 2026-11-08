@@ -86,3 +86,10 @@ testthat::test_that("item 9: direct effects and insights identify each group", {
   }
   testthat::expect_setequal(as.character(m$intelligent$insights$asDF$lgroup), c("Control", "Training"))
 })
+
+testthat::test_that("item 10: p-value screen makes no evidential claim", {
+  text <- p_curve_analysis(workplace_result("A")$model)$text
+  testthat::expect_false(grepl("evidential value", text, fixed=TRUE))
+  testthat::expect_match(text, "dependent|independent")
+  testthat::expect_match(text, "descriptive", ignore.case=TRUE)
+})

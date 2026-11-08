@@ -1872,7 +1872,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `type`="integer"),
                                 list(
                                     `name`="prop_p_lt_025",
-                                    `title`="p < .025",
+                                    `title`="Proportion of significant p < .025",
                                     `type`="number"))))
                         self$add(jmvcore::Table$new(
                             options=options,

@@ -1235,10 +1235,11 @@ p_curve_analysis <- function(fit, target = c("all", "direct", "mediation", "mode
   text <- if (length(sig) < 3) {
     paste0("Too few significant p-values were available for an informative p-curve screen of ", label, ".")
   } else if (summary$prop_p_lt_025 > .50) {
-    paste0("The significant p-values for ", label, " show a right-skewed pattern consistent with evidential value, but this is only a descriptive screen.")
+    paste0("The significant p-values for ", label, " show a right-skewed pattern in this descriptive screen.")
   } else {
-    paste0("The significant p-values for ", label, " do not show a clear right-skewed pattern; interpret evidential value cautiously.")
+    paste0("The significant p-values for ", label, " do not show a clear right-skewed pattern in this descriptive screen.")
   }
+  text <- paste0(text, " Effects from the same fitted model may be dependent and include derived effects. This descriptive screen does not establish independent evidence or correct for selective reporting.")
   list(p_values = p, summary = summary, text = text)
 }
 
