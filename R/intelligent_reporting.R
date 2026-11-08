@@ -571,9 +571,9 @@ report_mediation <- function(fit, parameter_estimates = NULL) {
   effect_text <- paste(vapply(seq_len(nrow(tab)), function(i) {
     r <- tab[i, ]
     paste0(
-      "The indirect effect ", r$effect, " was beta = ", apa_num(r$beta),
+      "The indirect effect ", r$effect, " was B = ", apa_num(r$indirect),
       ", 95% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper),
-      "], ", apa_p(r$pvalue), ". ",
+      "], beta = ", apa_num(r$beta), ", ", apa_p(r$pvalue), ". ",
       if (!is.na(r$direct) && r$direct * r$indirect < 0)
         "The direct and indirect effects had opposite signs, an inconsistent mediation or suppression-type pattern. "
       else "",

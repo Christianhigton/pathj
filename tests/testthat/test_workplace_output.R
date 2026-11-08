@@ -24,3 +24,12 @@ testthat::test_that("item 3: Fisher R2 intervals include near-zero estimates", {
   testthat::expect_lt(tiny$r2, .0001)
   testthat::expect_equal(tiny$ci.lower, 0)
 })
+
+testthat::test_that("item 4: indirect narrative pairs B with its confidence interval", {
+  d <- read.csv(testthat::test_path("..", "..", "data", "workplace_wellbeing.csv"))
+  fit <- run_model("stress ~ a*workload\nsleep_quality ~ b*stress\nIE1 := a*b", d, estimator="ML")
+  out <- report_mediation(fit)
+  r <- out$table[1, ]
+  expected <- paste0("B = ", apa_num(r$indirect), ", 95% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper), "], beta = ", apa_num(r$beta))
+  testthat::expect_match(out$text, expected, fixed=TRUE)
+})
