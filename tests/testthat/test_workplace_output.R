@@ -61,3 +61,12 @@ testthat::test_that("item 6: covariance exports are unique and IE labels match f
     testthat::expect_equal(prod(paths$est), pe$est[pe$lhs == name & pe$op == ":="], tolerance=1e-8)
   }
 })
+
+testthat::test_that("item 7: inapplicable mediated proportions remain blank", {
+  a <- workplace_result("A")$intelligent$mediationDecomp$asDF
+  testthat::expect_true(all(is.na(a$direct)))
+  testthat::expect_true(all(is.na(a$percent_mediated)))
+  testthat::expect_true(is.na(mediation_proportion(.2, -.1, .1)$value))
+  testthat::expect_true(is.na(mediation_proportion(.2, -.2, 1e-10)$value))
+  testthat::expect_equal(mediation_proportion(.2, .3, .5)$value, 40)
+})
