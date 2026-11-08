@@ -770,6 +770,10 @@ items:
             title: Model Insights
             type: Table
             columns:
+                    - name: lgroup
+                      title: Group
+                      type: text
+                      visible: (multigroup)
                     - name: insight
                       title: Insight
                       type: text

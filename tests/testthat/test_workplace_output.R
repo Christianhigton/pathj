@@ -76,3 +76,13 @@ testthat::test_that("item 8: single-model reports omit model selection", {
   testthat::expect_false("Model Selection" %in% m$intelligent$apaText$asDF$section)
   testthat::expect_equal(nrow(m$intelligent$modelComparison$asDF), 0L)
 })
+
+testthat::test_that("item 9: direct effects and insights identify each group", {
+  m <- workplace_result("A")
+  for (section in c("Direct Effects", "Model Insights")) {
+    text <- m$intelligent$apaText$asDF$text[m$intelligent$apaText$asDF$section == section]
+    testthat::expect_match(text, "In Control,", fixed=TRUE)
+    testthat::expect_match(text, "In Training,", fixed=TRUE)
+  }
+  testthat::expect_setequal(as.character(m$intelligent$insights$asDF$lgroup), c("Control", "Training"))
+})

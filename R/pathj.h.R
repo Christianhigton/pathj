@@ -1770,6 +1770,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Model Insights",
                             columns=list(
                                 list(
+                                    `name`="lgroup",
+                                    `title`="Group",
+                                    `type`="text",
+                                    `visible`="(multigroup)"),
+                                list(
                                     `name`="insight",
                                     `title`="Insight",
                                     `type`="text"),

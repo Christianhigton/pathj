@@ -435,6 +435,9 @@ report_paths <- function(fit, include_nonsignificant = FALSE, parameter_estimate
   if (nrow(paths) == 0)
     return(list(table = paths, text = "No direct regression paths were estimated."))
 
+  labels <- lavaan::lavInspect(fit, "group.label")
+  paths$lgroup <- if (length(labels) > 1L) labels[paths$group] else ""
+  prefixes <- ifelse(nzchar(paths$lgroup), paste0("In ", paths$lgroup, ", "), "")
   paths$beta <- if ("std.all" %in% names(paths)) paths$std.all else paths$est
   paths$effect_size <- effect_size_label(paths$beta)
   paths$significant <- !is.na(paths$pvalue) & paths$pvalue < .05
@@ -447,7 +450,8 @@ report_paths <- function(fit, include_nonsignificant = FALSE, parameter_estimate
     paste0(paths$rhs, " was not a statistically significant predictor of ", paths$lhs, ".")
   )
 
-  keep <- intersect(c("lhs", "rhs", "group", "est", "se", "z", "pvalue",
+  paths$interpretation <- paste0(prefixes, paths$interpretation)
+  keep <- intersect(c("lhs", "rhs", "group", "lgroup", "est", "se", "z", "pvalue",
                       "ci.lower", "ci.upper", "beta", "effect_size",
                       "significant", "direction", "interpretation"), names(paths))
   tab <- paths[, keep, drop = FALSE]
@@ -459,6 +463,7 @@ report_paths <- function(fit, include_nonsignificant = FALSE, parameter_estimate
     text <- paste(vapply(seq_len(nrow(text_rows)), function(i) {
       r <- text_rows[i, ]
       paste0(
+        if (nzchar(r$lgroup)) paste0("In ", r$lgroup, ", ") else "",
         "Higher ", r$rhs, " values were associated with ",
         ifelse(r$beta < 0, "lower", "higher"), " ", r$lhs,
         " values, beta = ", apa_num(r$beta),
@@ -1133,8 +1138,12 @@ generate_model_insights <- function(fit, parameter_estimates = NULL) {
   med <- report_mediation(fit, parameter_estimates = parameter_estimates)$table
 
   text <- paste0(
-    "The strongest direct predictor was ", strongest$rhs[[1]], " predicting ",
-    strongest$lhs[[1]], " (beta = ", apa_num(strongest$beta[[1]]), "). ",
+    paste(vapply(split(paths, paths$lgroup), function(group_paths) {
+      r <- group_paths[1, ]
+      paste0(if (nzchar(r$lgroup)) paste0("In ", r$lgroup, ", ") else "",
+             "the strongest direct predictor was ", r$rhs, " predicting ",
+             r$lhs, " (beta = ", apa_num(r$beta), ").")
+    }, character(1)), collapse=" "), " ",
     if (nrow(positive) > 0) "Positive coefficients indicate that higher predictor values were associated with higher outcome values; their desirability cannot be inferred without knowing the outcome coding. " else "",
     if (nrow(negative) > 0) "Negative coefficients indicate that higher predictor values were associated with lower outcome values; the practical meaning depends on how the outcome is coded. " else "",
     if (is.something(med) && nrow(med) > 0 && any(med$significant))

@@ -802,11 +802,12 @@ Estimate <- R6::R6Class("Estimate",
                             add_rows<-function(tab, label) {
                               if (!is.something(tab) || nrow(tab)==0)
                                 return(NULL)
-                              tab<-tab[,intersect(c("lhs","rhs","beta","effect_size","pvalue"),names(tab)),drop=FALSE]
-                              for (nm in c("lhs","rhs","beta","effect_size","pvalue"))
+                              tab<-tab[,intersect(c("lgroup","lhs","rhs","beta","effect_size","pvalue"),names(tab)),drop=FALSE]
+                              for (nm in c("lgroup","lhs","rhs","beta","effect_size","pvalue"))
                                 if (!nm %in% names(tab)) tab[[nm]]<-NA
                               data.frame(
                                 insight=label,
+                                lgroup=tab$lgroup,
                                 outcome=tab$lhs,
                                 predictor=tab$rhs,
                                 beta=tab$beta,
