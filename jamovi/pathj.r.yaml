@@ -441,6 +441,9 @@ items:
                     - name: sepc.all
                       title: "SEPC"
                       type: number
+                    - name: alternatives
+                      title: Alternative specifications
+                      type: text
 
           - name: missingSummary
             title: Recognised Missing Data Summary

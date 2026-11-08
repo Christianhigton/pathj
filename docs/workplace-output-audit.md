@@ -24,6 +24,8 @@ Tests use lavaan 0.7-2 from `build/R4.5.0-arm64-macos` with R 4.4.3
 | 14 | Yes | Logical Ordered values serialize as NOT_A_NUMBER in jmvcore text cells. Convert to TRUE/FALSE strings only in the display table. | R/estimate.R; workplace test | Model B Ordered cells are character FALSE; raw binary/continuous detection remains logical TRUE/FALSE for estimation. |
 | 15 | Yes | Per-node automatic font fitting shrank long names; fixed-height boxes and large centred edge labels crowded intervening nodes. Wrap full names, keep a common font size, grow node height for wrapped lines, reduce edge-label size and move labels away from intervening node centres. | R/plotter.R, R/pathj.b.R; workplace test | Rendered and visually inspected Model B before/after at 1000×750 and native 700×500; names fit, fonts agree and labels clear boxes in these configurations. Character-preservation test includes a long unbroken name. |
 
+| 16 | Yes | MI output included regressions into exogenous covariates and repeated pair suggestions. Filter exogenous targets, group pair alternatives within group/block/level, and retain the largest-MI specification and its EPC without summing. | R/intelligent_reporting.R, R/estimate.R, R/pathj.b.R, R/pathj.h.R, jamovi/pathj.r.yaml; workplace test | Model A has no exogenous regression targets or duplicate group/pair rows; synthetic alternatives retain MI/EPC and remain separate by group. |
+
 ## Diagram manual check
 
 In jamovi, fit A and B above, enable the diagram, turn abbreviation off, and

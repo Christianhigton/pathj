@@ -266,6 +266,9 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
              ## diagnostics: modification indices
              j.fill_table(self$results$diagnostics$modindices, lav_machine$tab_mi, append=TRUE)
              j.add_warnings(self$results$diagnostics$modindices, lav_machine, "modindices")
+             if (isTRUE(self$options$modindices))
+                 self$results$diagnostics$modindices$setNote("alternatives",
+                   "Alternative specifications for each variable pair are grouped. MI and EPC refer to the listed specification with the largest MI; they are not sums. Regressions into exogenous covariates are excluded.")
              j.fill_table(self$results$diagnostics$missingSummary, lav_machine$tab_missing_summary, append=TRUE)
              j.fill_table(self$results$diagnostics$missingPatterns, lav_machine$tab_missing_patterns, append=TRUE)
              self$results$diagnostics$mcar$deleteRows()

@@ -1358,7 +1358,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="sepc.all",
                                     `title`="SEPC",
-                                    `type`="number"))))
+                                    `type`="number"),
+                                list(
+                                    `name`="alternatives",
+                                    `title`="Alternative specifications",
+                                    `type`="text"))))
                         self$add(jmvcore::Table$new(
                             options=options,
                             name="missingSummary",

@@ -1158,6 +1158,31 @@ generate_model_insights <- function(fit, parameter_estimates = NULL) {
        positive_associations = positive, negative_associations = negative, text = text)
 }
 
+# Group alternative specifications for a variable pair within each group/block.
+# MI/EPC remain those of the largest-MI specification; they are never summed.
+screen_modification_indices <- function(mi, paths) {
+  paths <- paths[paths$op == "~", , drop=FALSE]
+  exogenous <- setdiff(paths$rhs, paths$lhs)
+  mi <- mi[!(mi$op == "~" & mi$lhs %in% exogenous), , drop=FALSE]
+  mi$alternatives <- character(nrow(mi))
+  if (!nrow(mi)) return(mi)
+  pair <- vapply(seq_len(nrow(mi)), function(i) {
+    if (mi$op[i] %in% c("~", "~~"))
+      paste(sort(c(mi$lhs[i],mi$rhs[i])),collapse="\r") else
+      paste(mi$lhs[i],mi$op[i],mi$rhs[i],sep="\r")
+  }, character(1))
+  context <- lapply(intersect(c("group","block","level"),names(mi)), function(nm) mi[[nm]])
+  key <- do.call(paste,c(list(pair),context,sep="\r"))
+  rows <- lapply(unique(key), function(k) {
+    candidates <- mi[key==k,,drop=FALSE]
+    best <- candidates[which.max(candidates$mi),,drop=FALSE]
+    best$alternatives <- paste(unique(paste(candidates$lhs,candidates$op,candidates$rhs)),collapse="; ")
+    best
+  })
+  out <- do.call(rbind,rows)
+  out[order(-out$mi),,drop=FALSE]
+}
+
 #' Modification-index diagnostics.
 #'
 #' @param fit A lavaan object.
@@ -1170,13 +1195,14 @@ diagnose_modification_indices <- function(fit, threshold = 10) {
     return(list(table = data.frame(), text = paste("Modification indices could not be computed:", mi$error)))
   tab <- mi$obj
   tab <- tab[!is.na(tab$mi) & tab$mi >= threshold, , drop = FALSE]
+  tab <- screen_modification_indices(tab, lavaan::parameterEstimates(fit))
   if (nrow(tab) > 0)
     tab <- tab[order(-tab$mi), , drop = FALSE]
   text <- if (nrow(tab) == 0) {
     paste0("No modification indices exceeded ", threshold, ".")
   } else {
-    paste0(nrow(tab), " modification indices exceeded ", threshold,
-           ". Treat these as diagnostics only; model changes should be theory-driven.")
+    paste0(nrow(tab), " variable-pair suggestions exceeded ", threshold,
+           ". Alternatives for a pair are grouped; MI and EPC describe the largest-MI specification, not their sum. Regressions into exogenous covariates are excluded. Treat suggestions as diagnostics only; model changes should be theory-driven.")
   }
   list(table = tab, text = text)
 }

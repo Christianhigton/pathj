@@ -132,3 +132,24 @@ testthat::test_that("item 15: wrapped diagram labels retain all name characters"
   testthat::expect_equal(gsub("[ _\n]", "", labels), gsub("_", "", names))
   testthat::expect_true(all(nchar(unlist(strsplit(labels,"\n",fixed=TRUE))) <= 12))
 })
+
+testthat::test_that("item 16: MI suggestions exclude exogenous outcomes and group alternatives", {
+  m <- workplace_result("A")
+  tab <- m$diagnostics$modindices$asDF
+  exogenous <- c("support_person", "resilience", "workload")
+  testthat::expect_false(any(tab$op == "~" & tab$lhs %in% exogenous))
+  pairs <- vapply(seq_len(nrow(tab)), function(i) paste(sort(c(tab$lhs[i],tab$rhs[i])),collapse="~"), character(1))
+  testthat::expect_equal(anyDuplicated(paste(tab$lgroup,pairs)), 0L)
+  testthat::expect_true("alternatives" %in% names(tab))
+})
+
+testthat::test_that("MI alternatives retain the representative statistic and group", {
+  mi <- data.frame(lhs=c("stress","wellbeing","support_person","wellbeing"),
+    op=c("~","~~","~","~~"), rhs=c("wellbeing","stress","resilience","stress"),
+    group=c(1,1,1,2), mi=c(11,15,50,17), epc=c(.1,.2,.3,.4))
+  paths <- data.frame(lhs=c("stress","stress"),op="~",rhs=c("support_person","resilience"))
+  out <- screen_modification_indices(mi,paths)
+  testthat::expect_equal(sort(out$mi),c(15,17))
+  testthat::expect_equal(out$epc[out$group==1],.2)
+  testthat::expect_match(out$alternatives[out$group==1], "stress ~ wellbeing; wellbeing ~~ stress",fixed=TRUE)
+})

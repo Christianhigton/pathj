@@ -10,6 +10,7 @@ modindices_message_table <- function(message) {
     mi = NA_real_,
     epc = NA_real_,
     sepc.all = NA_real_,
+    alternatives = "",
     stringsAsFactors = FALSE
   )
 }
@@ -460,7 +461,7 @@ Estimate <- R6::R6Class("Estimate",
                               self$tab_mi<-modindices_message_table("Modification indices were not computed.")
                               mires <- try_hard({ lavaan::modindices(self$model) })
                               if (isFALSE(mires$error)) {
-                                mi <- mires$obj
+                                mi <- screen_modification_indices(mires$obj, lavaan::parameterEstimates(self$model))
                                 if (nrow(mi)==0) {
                                   self$tab_mi<-modindices_message_table("No fixed parameters are available for modification indices.")
                                 } else {
@@ -482,8 +483,9 @@ Estimate <- R6::R6Class("Estimate",
                                     # decode names
                                     mi$lhs <- fromb64(mi$lhs, self$vars)
                                     mi$rhs <- fromb64(mi$rhs, self$vars)
+                                    mi$alternatives <- fromb64(mi$alternatives, self$vars)
                                     # keep relevant columns if present
-                                    keep <- c("lgroup","lhs","op","rhs","mi","epc","sepc.all")
+                                    keep <- c("lgroup","lhs","op","rhs","mi","epc","sepc.all","alternatives")
                                     for (col in setdiff(keep, names(mi)))
                                       mi[[col]] <- if (col %in% c("mi", "epc", "sepc.all")) NA_real_ else ""
                                     cols <- intersect(keep, names(mi))
