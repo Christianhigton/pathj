@@ -16,3 +16,11 @@ testthat::test_that("item 2: group contributions sum to the user chi-square", {
   testthat::expect_true(all(is.na(groups$df)))
   testthat::expect_true(all(is.na(groups$pvalue)))
 })
+
+testthat::test_that("item 3: Fisher R2 intervals include near-zero estimates", {
+  tab <- workplace_result("B")$models$r2$asDF
+  testthat::expect_true(all(tab$ci.lower <= tab$r2 & tab$r2 <= tab$ci.upper))
+  tiny <- tab[tab$lgroup == "Control" & tab$lhs == "wellbeing", ]
+  testthat::expect_lt(tiny$r2, .0001)
+  testthat::expect_equal(tiny$ci.lower, 0)
+})

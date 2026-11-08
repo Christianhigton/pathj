@@ -891,22 +891,18 @@ Estimate <- R6::R6Class("Estimate",
                             
                             if (self$options$r2ci=="fisher") {
                               ### https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3821705/
-                              N<-lavaan::lavInspect(self$model,"ntotal")
+                              ns<-unlist(lavaan::lavInspect(self$model,"nobs"))
+                              N<-if ("group" %in% names(end)) ns[end$group] else rep(ns[1], nrow(end))
                               r<-sqrt(end$r2)
-                              f<-.5 * log((1 + r)/(1 - r))
-                              zr<-f*sqrt((N-3))
-                              z0<-qnorm((1-self$ciwidth)/2,lower.tail = F)
-                              
-                              lower<-zr-z0
-                              upper<-zr+z0
-                              flower<-lower/sqrt(N-3)
-                              fupper<-upper/sqrt(N-3)
-                              rupper<-(exp(2*fupper)-1)/(1+exp(2*fupper))
-                              rupper<-rupper^2
-                              rlower<-(exp(2*flower)-1)/(1+exp(2*flower))
-                              rlower<-rlower^2
-                              end$ci.upper<-rupper
-                              end$ci.lower<-rlower
+                              f<-atanh(r)
+                              halfwidth<-qnorm((1+self$ciwidth)/2)/sqrt(pmax(N-3, 0))
+                              # The magnitude r is nonnegative. Clip before squaring;
+                              # squaring a negative lower bound excludes small R2.
+                              end$ci.lower<-pmax(0, tanh(f-halfwidth))^2
+                              end$ci.upper<-tanh(f+halfwidth)^2
+                              invalid<-!is.finite(N) | N<=3
+                              end$ci.lower[invalid]<-NA_real_
+                              end$ci.upper[invalid]<-NA_real_
                               ####
                             }
                             self$tab_r2<-end
