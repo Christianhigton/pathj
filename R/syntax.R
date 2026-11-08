@@ -43,6 +43,7 @@ Syntax <- R6::R6Class(
               import=NULL,
               effect_decomp_structure=NULL,
               indirect_names=NULL,
+              defined_descriptions=NULL,
               initialize=function(options,datamatic) {
                 syntax_source <- options$syntaxSource
                 if (is.null(syntax_source))
@@ -382,7 +383,9 @@ Syntax <- R6::R6Class(
                       .structure<-.lav_structure[.lav_structure$op %in% c("~","~~","~1"),]
                       for (i in seq_along(dp$rhs)) {
                             r<-dp$rhs[i]
-                            if (r %in% names(self$indirect_names))
+                            if (dp$lhs[i] %in% names(self$defined_descriptions))
+                                 r<-self$defined_descriptions[[dp$lhs[i]]]
+                            else if (r %in% names(self$indirect_names))
                                  r<-self$indirect_names[[r]]
                             else {
                                 for (j in 1:nrow(.structure)) {
@@ -670,6 +673,10 @@ Syntax <- R6::R6Class(
                 stringsAsFactors=FALSE
               )
 
+              descriptions<-paths_plain
+              if (is.something(self$multigroup))
+                descriptions<-paste0("(", descriptions, ")", SUB[unlist(groupslist)])
+              self$defined_descriptions<-as.list(stats::setNames(descriptions, plabs))
               total_meta<-data.frame()
               total_synt<-character()
               pairs<-unique(indirect_meta[,c("predictor","outcome","group","lgroup"),drop=FALSE])
@@ -686,6 +693,9 @@ Syntax <- R6::R6Class(
                   parts<-c(direct$label[[1]], parts)
                 te_label<-paste0("TE",i)
                 total_synt[[length(total_synt)+1]]<-paste(te_label,paste(parts,collapse="+"),sep=":=")
+                self$defined_descriptions[[te_label]]<-paste0(
+                  "Total: ", pair$predictor, " \U21d2 ", pair$outcome,
+                  if (is.something(self$multigroup)) paste0(" (", pair$lgroup, ")") else "")
                 total_meta<-rbind(total_meta,data.frame(
                   label=te_label,
                   effect="Total",

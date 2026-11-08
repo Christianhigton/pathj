@@ -288,7 +288,9 @@ Estimate <- R6::R6Class("Estimate",
                             self$tab_covariances$type<-ifelse(self$tab_covariances$endo,"Residuals","Variables")
                             
                             ## collect defined parameters table
+                            descriptions<-stats::setNames(self$tab_defined$desc, self$tab_defined$lhs)
                             self$tab_defined<-.lav_params[.lav_params$op==":=",]
+                            self$tab_defined$desc<-unname(descriptions[self$tab_defined$lhs])
                             if (nrow(self$tab_defined)==0) self$tab_defined<-NULL
                             
                             # prepare and comput R2 and collect a table for them
