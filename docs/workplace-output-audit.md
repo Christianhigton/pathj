@@ -22,3 +22,14 @@ Tests use lavaan 0.7-2 from `build/R4.5.0-arm64-macos` with R 4.4.3
 | 12 | Yes | jmvcore translation treats square brackets in lavaan warnings as markup and discards text from the first bracket onward, including variable names. Convert brackets to parentheses and collapse whitespace before attaching engine notes. | R/jamovi.R, R/pathj.b.R; workplace test | Model B Models Info note contains resilience and the complete explanation on one line. |
 | 13 | Yes | Narrative formatter retained leading zeros; intercept p lacked pvalue formatting; default table formatting also retains zeros. Format p cells at the jamovi boundary as APA text, with numeric engine/report values retained. | R/intelligent_reporting.R, R/jamovi.R, R/pathj.h.R, jamovi/pathj.r.yaml; workplace and fit tests | Test .425, .001 and 0; every Model B path p is APA text; narrative has no p=0.xxx. Display-table asDF p columns are now strings; use the fitted model/report API for numeric p. |
 | 14 | Yes | Logical Ordered values serialize as NOT_A_NUMBER in jmvcore text cells. Convert to TRUE/FALSE strings only in the display table. | R/estimate.R; workplace test | Model B Ordered cells are character FALSE; raw binary/continuous detection remains logical TRUE/FALSE for estimation. |
+| 15 | Yes | Per-node automatic font fitting shrank long names; fixed-height boxes and large centred edge labels crowded intervening nodes. Wrap full names, keep a common font size, grow node height for wrapped lines, reduce edge-label size and move labels away from intervening node centres. | R/plotter.R, R/pathj.b.R; workplace test | Rendered and visually inspected Model B before/after at 1000×750 and native 700×500; names fit, fonts agree and labels clear boxes in these configurations. Character-preservation test includes a long unbroken name. |
+
+## Diagram manual check
+
+In jamovi, fit A and B above, enable the diagram, turn abbreviation off, and
+use the default tree/rectangle layout at its native 700×500 size. Check both
+groups: complete support_person and sleep_quality labels, a common font size,
+and edge values outside boxes. Repeat with small/large label settings and
+rotations. Very dense custom layouts may still need rotation, abbreviation,
+or the existing label-offset control; the placement heuristic does not claim
+to solve arbitrary graph layouts.

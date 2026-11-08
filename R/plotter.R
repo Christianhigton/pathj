@@ -1,3 +1,31 @@
+diagram_node_labels <- function(labels, width=12L) {
+  vapply(labels, function(label) {
+    words <- strwrap(gsub("_", " ", label, fixed=TRUE), width=width)
+    lines <- unlist(lapply(words, function(word) {
+      if (nchar(word)<=width) return(word)
+      starts <- seq.int(1L,nchar(word),by=width)
+      substring(word,starts,pmin(starts+width-1L,nchar(word)))
+    }), use.names=FALSE)
+    paste(lines,collapse="\n")
+  }, character(1), USE.NAMES=FALSE)
+}
+
+# Prefer edge midpoints; move labels away from intervening node centres.
+diagram_edge_label_positions <- function(graph) {
+  coords <- graph$layout
+  edges <- graph$Edgelist
+  vapply(seq_along(edges$from), function(i) {
+    from <- edges$from[i]; to <- edges$to[i]
+    if (from==to) return(.5)
+    for (position in c(.5,.25,.75,.15,.85)) {
+      point <- (1-position)*coords[from,]+position*coords[to,]
+      blocked <- abs(coords[,1]-point[1]) < .20 & abs(coords[,2]-point[2]) < .16
+      if (!any(blocked)) return(position)
+    }
+    .5
+  }, numeric(1))
+}
+
 Plotter <- R6::R6Class(
   "Plotter",
   cloneable=FALSE,
@@ -80,6 +108,8 @@ Plotter <- R6::R6Class(
         if (self$options$diag_abbrev!="0")
             nodeLabels<-abbreviate(nodeLabels,minlength = as.numeric(self$options$diag_abbrev),strict = T)
         
+        nodeLabels<-diagram_node_labels(nodeLabels)
+        label_lines<-max(lengths(strsplit(nodeLabels,"\n",fixed=TRUE)))
         size<-12
         if (self$options$diag_labsize=="small") size<-8
         if (self$options$diag_labsize=="large") size<-18
@@ -108,10 +138,15 @@ Plotter <- R6::R6Class(
                       ,nodeLabels=nodeLabels
                       ,whatLabels=labs
                       ,sizeMan = size
-                      ,sizeMan2=size/2
+                      ,sizeMan2=size/2*max(1,label_lines/2)
                       , curve=1
                       , shapeMan=self$options$diag_shape
-                      ,edge.label.cex =1.3)
+                      ,edge.label.cex =.85
+                      ,label.cex=switch(self$options$diag_labsize, small=.8, large=1.1, vlarge=1.25, .95)
+                      ,label.scale=FALSE
+                      ,nCharNodes=0
+                      ,edge.label.position=.5
+                      ,edge.label.bg="white")
         
 
         
@@ -141,6 +176,10 @@ Plotter <- R6::R6Class(
                       curve=options$curve,
                       shapeMan=options$shapeMan,
                       edge.label.cex =options$edge.label.cex,
+                      label.cex=options$label.cex, label.scale=options$label.scale,
+                      nCharNodes=options$nCharNodes,
+                      edge.label.position=options$edge.label.position,
+                      edge.label.bg=options$edge.label.bg,
                       DoNotPlot=TRUE)
 
       })

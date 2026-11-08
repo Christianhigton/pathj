@@ -125,3 +125,10 @@ testthat::test_that("item 14: Ordered is explicit text for jamovi cells", {
   types <- detect_variable_types(data.frame(binary=rep(0:1,5),continuous=seq_len(10)))
   testthat::expect_identical(types$ordered, c(TRUE,FALSE))
 })
+
+testthat::test_that("item 15: wrapped diagram labels retain all name characters", {
+  names <- c("support_person", "sleep_quality", "a_very_long_variable_name", "averylongunbrokenvariablename")
+  labels <- diagram_node_labels(names)
+  testthat::expect_equal(gsub("[ _\n]", "", labels), gsub("_", "", names))
+  testthat::expect_true(all(nchar(unlist(strsplit(labels,"\n",fixed=TRUE))) <= 12))
+})

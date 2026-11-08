@@ -350,6 +350,10 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                               curve=options$curve,
                               shapeMan=options$shapeMan,
                               edge.label.cex =options$edge.label.cex,
+                              label.cex=options$label.cex, label.scale=options$label.scale,
+                              nCharNodes=options$nCharNodes,
+                              edge.label.position=options$edge.label.position,
+                              edge.label.bg=options$edge.label.bg,
                               doNotPlot=TRUE,
                               style = "ram")
             
@@ -379,6 +383,8 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             sp$graphAttributes$Edges$lty[sp$Edgelist$bidirectional]<-2
             sp$graphAttributes$Edges$curve[sp$Edgelist$bidirectional]<-.6
             
+            if (!self$options$diag_offset_labs)
+                sp$graphAttributes$Edges$edge.label.position<-diagram_edge_label_positions(sp)
             plot(sp)
             
        #     }
