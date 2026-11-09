@@ -10,20 +10,130 @@ diagram_node_labels <- function(labels, width=12L) {
   }, character(1), USE.NAMES=FALSE)
 }
 
-# Prefer edge midpoints; move labels away from intervening node centres.
-diagram_edge_label_positions <- function(graph) {
+diagram_boxes_overlap <- function(box, others, gap=0) {
+  if (!nrow(others)) return(logical())
+  box[1] < others[,2]+gap & box[2] > others[,1]-gap &
+    box[3] < others[,4]+gap & box[4] > others[,3]-gap
+}
+
+# Work in physical inches, so collision checks use the rendered text size.
+diagram_place_labels <- function(anchors, widths, heights, nodes, bounds, gap=.035) {
+  positions <- anchors
+  boxes <- matrix(NA_real_,nrow(anchors),4)
+  placed <- matrix(numeric(),0,4)
+  offsets <- as.matrix(expand.grid(x=(-8:8)*.07,y=(-8:8)*.07))
+  offsets <- offsets[order(rowSums(offsets^2)),,drop=FALSE]
+  # Place longer labels first: they have fewer usable gaps between nodes.
+  for (i in order(widths*heights,decreasing=TRUE)) {
+    candidates <- sweep(offsets,2,anchors[i,],"+")
+    candidate_boxes <- cbind(candidates[,1]-widths[i]/2,
+                             candidates[,1]+widths[i]/2,
+                             candidates[,2]-heights[i]/2,
+                             candidates[,2]+heights[i]/2)
+    penalties <- vapply(seq_len(nrow(candidates)),function(j) {
+      box <- candidate_boxes[j,]
+      outside <- box[1]<bounds[1] | box[2]>bounds[2] |
+        box[3]<bounds[3] | box[4]>bounds[4]
+      1000*outside+100*sum(diagram_boxes_overlap(box,nodes,gap))+
+        100*sum(diagram_boxes_overlap(box,placed,gap))+
+        sum((candidates[j,]-anchors[i,])^2)
+    },numeric(1))
+    chosen <- which.min(penalties)
+    positions[i,] <- candidates[chosen,]
+    boxes[i,] <- candidate_boxes[chosen,]
+    placed <- rbind(placed,boxes[i,])
+  }
+  list(positions=positions,boxes=boxes,anchors=anchors,nodes=nodes)
+}
+
+# A small bow can still run through an intervening node in a tree layout.
+diagram_route_edges <- function(graph) {
   coords <- graph$layout
   edges <- graph$Edgelist
-  vapply(seq_along(edges$from), function(i) {
+  for (i in seq_along(edges$from)) {
     from <- edges$from[i]; to <- edges$to[i]
-    if (from==to) return(.5)
-    for (position in c(.5,.25,.75,.15,.85)) {
-      point <- (1-position)*coords[from,]+position*coords[to,]
-      blocked <- abs(coords[,1]-point[1]) < .20 & abs(coords[,2]-point[2]) < .16
-      if (!any(blocked)) return(position)
+    delta <- coords[to,]-coords[from,]
+    if (!sum(delta^2)) next
+    fraction <- as.vector(sweep(coords,2,coords[from,],"-") %*% delta)/sum(delta^2)
+    projected <- outer(fraction,delta)+matrix(coords[from,],nrow(coords),2,byrow=TRUE)
+    intervenes <- fraction>.05 & fraction<.95 &
+      abs(projected[,1]-coords[,1])<.20 & abs(projected[,2]-coords[,2])<.16
+    if (any(intervenes)) {
+      old <- graph$graphAttributes$Edges$curve[i]
+      graph$graphAttributes$Edges$curve[i] <- if (old<0) min(old,-3) else max(old,3)
     }
-    .5
-  }, numeric(1))
+  }
+  graph
+}
+
+plot_path_diagram <- function(graph) {
+  graph <- diagram_route_edges(graph)
+  edge <- graph$graphAttributes$Edges
+  if (is.logical(edge$labels) || !any(nzchar(as.character(edge$labels)))) {
+    graph$graphAttributes$Edges$labels <- rep("",length(graph$Edgelist$from))
+    plot(graph)
+    return(invisible(NULL))
+  }
+  # qgraph's postExpression runs after its geometry has been resolved on the
+  # actual device. Use those anchors, including curves and residual loops,
+  # rather than trying to predict their locations from node centres.
+  hook <- new.env(parent=emptyenv())
+  hook$placement <- NULL
+  hook$draw <- function(layout, midpoints, indices, widths, heights, shapes,
+                        labels, cex, font) {
+    if (!length(indices)) return()
+    node_xy <- cbind(graphics::grconvertX(layout[,1],"user","inches"),
+                     graphics::grconvertY(layout[,2],"user","inches"))
+    # qgraph node dimensions are in units of 7/2.16 * csi/17.5 inches.
+    # widths/heights already include qgraph's device normalization.
+    radius <- 7/2.16*graphics::par("csi")/17.5
+    heights[shapes %in% c("circle","square")] <- widths[shapes %in% c("circle","square")]
+    nodes <- cbind(node_xy[,1]-radius*widths,node_xy[,1]+radius*widths,
+                   node_xy[,2]-radius*heights,node_xy[,2]+radius*heights)
+    anchors <- cbind(graphics::grconvertX(midpoints[indices,1],"user","inches"),
+                     graphics::grconvertY(midpoints[indices,2],"user","inches"))
+    cex <- rep(cex,length.out=length(labels))[indices]
+    font <- rep(font,length.out=length(labels))[indices]
+    labs <- labels[indices]
+    w <- vapply(seq_along(indices),function(i)
+      graphics::strwidth(labs[[i]],units="inches",cex=cex[i],font=font[i]),numeric(1))+.04
+    h <- vapply(seq_along(indices),function(i)
+      graphics::strheight(labs[[i]],units="inches",cex=cex[i],font=font[i]),numeric(1))+.04
+    usr <- graphics::par("usr")
+    bounds <- c(graphics::grconvertX(usr[1:2],"user","inches"),
+                graphics::grconvertY(usr[3:4],"user","inches"))
+    placement <- diagram_place_labels(anchors,w,h,nodes,bounds)
+    placement$labels <- labs
+    placement$indices <- indices
+    hook$placement <- placement
+    xy <- placement$positions
+    x <- graphics::grconvertX(xy[,1],"inches","user")
+    y <- graphics::grconvertY(xy[,2],"inches","user")
+    colors <- edge$label.color
+    if (is.null(colors)) colors <- edge$color
+    colors <- rep(colors,length.out=length(labels))[indices]
+    moved <- rowSums((xy-anchors)^2)>.04^2
+    # Short leader lines keep displaced labels attached to their own paths.
+    graphics::segments(midpoints[indices[moved],1],midpoints[indices[moved],2],
+                       x[moved],y[moved],col=colors[moved],lwd=.6)
+    boxes <- placement$boxes
+    graphics::rect(graphics::grconvertX(boxes[,1],"inches","user"),
+                   graphics::grconvertY(boxes[,3],"inches","user"),
+                   graphics::grconvertX(boxes[,2],"inches","user"),
+                   graphics::grconvertY(boxes[,4],"inches","user"),
+                   col="white",border=NA)
+    for (i in seq_along(indices))
+      graphics::text(x[i],y[i],labs[[i]],cex=cex[i],font=font[i],col=colors[i])
+  }
+  graph$graphAttributes$Edges$label.color <- rep("transparent",length(edge$labels))
+  graph$graphAttributes$Edges$label.bg <- rep(NA_character_,length(edge$labels))
+  callback <- paste0("attr(postExpression, 'pathj_hook')$draw(layout, cbind(midX,midY), ",
+    "edgesort2[plotEdgeLabel[edgesort2]], vsize, vsize2, shape, ",
+    "edge.labels, edge.label.cex, edge.label.font)")
+  graph$plotOptions$postExpression <- structure(
+    paste(c(graph$plotOptions$postExpression,callback),collapse="\n"),pathj_hook=hook)
+  plot(graph)
+  invisible(hook$placement)
 }
 
 Plotter <- R6::R6Class(
@@ -227,4 +337,4 @@ Plotter <- R6::R6Class(
 
   ) # end of private
 ) # end of class
-    
+

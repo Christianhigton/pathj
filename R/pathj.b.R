@@ -388,9 +388,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             sp$graphAttributes$Edges$lty[sp$Edgelist$bidirectional]<-2
             sp$graphAttributes$Edges$curve[sp$Edgelist$bidirectional]<-.6
             
-            if (!self$options$diag_offset_labs)
-                sp$graphAttributes$Edges$edge.label.position<-diagram_edge_label_positions(sp)
-            plot(sp)
+            plot_path_diagram(sp)
             
        #     }
       #      )
