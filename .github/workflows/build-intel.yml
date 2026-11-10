@@ -22,10 +22,13 @@ jobs:
 
       - name: Install jmvtools
         run: |
-          Rscript -e 'install.packages(c("jmvtools", "semPlot"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+          Rscript -e 'install.packages(c("jmvtools", "semPlot", "remotes"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
 
       - name: Build and verify Intel module
         run: Rscript scripts/build_intel_jmo.R
+
+      - name: Smoke-test the packaged module
+        run: Rscript scripts/smoke_module.R pathj_1.1.7.9013_intel.jmo
 
       - name: Upload Intel module
         uses: actions/upload-artifact@v4

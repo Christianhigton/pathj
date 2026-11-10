@@ -53,7 +53,7 @@ jobs:
       - name: Install build tools using bundled R
         shell: pwsh
         run: |
-          & $env:PATHJ_RSCRIPT -e 'install.packages("jmvtools", repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+          & $env:PATHJ_RSCRIPT -e 'install.packages(c("jmvtools", "remotes"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
           if ($LASTEXITCODE -ne 0) { throw 'Installing jmvtools failed' }
 
       - name: Build and verify Windows module
