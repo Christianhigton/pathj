@@ -224,3 +224,14 @@ j.add_warnings<-function(atable,adispatch,atopic=NULL) {
 
   atable$setVisible(TRUE)
 }
+
+
+# Round sub-display-precision comparison cells only; statistical APIs retain
+# their full precision and p values are never rounded here.
+j.comparison_display <- function(tab) {
+  for (name in intersect(c("difference", "z"), names(tab))) {
+    tiny <- is.finite(tab[[name]]) & abs(tab[[name]]) < .0005
+    tab[[name]][tiny] <- 0
+  }
+  tab
+}

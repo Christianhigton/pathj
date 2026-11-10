@@ -291,7 +291,7 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                  is.data.frame(lav_machine$tab_group_comparison) &&
                  nrow(lav_machine$tab_group_comparison) > 0 &&
                  is.something(self$options$multigroup)) {
-                 j.fill_table(self$results$intelligent$groupComparison, lav_machine$tab_group_comparison, append=TRUE)
+                 j.fill_table(self$results$intelligent$groupComparison, j.comparison_display(lav_machine$tab_group_comparison), append=TRUE)
              } else {
                  self$results$intelligent$groupComparison$setVisible(FALSE)
              }

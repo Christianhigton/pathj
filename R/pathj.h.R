@@ -1734,15 +1734,15 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="group_1_est",
                                     `title`="Group 1 B",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="group_2_est",
                                     `title`="Group 2 B",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="group_1_beta",
                                     `title`="Group 1 \u03B2",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="group_1_pvalue",
                                     `title`="Group 1 p",
@@ -1751,7 +1751,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="group_2_beta",
                                     `title`="Group 2 \u03B2",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="group_2_n",
                                     `title`="Group 2 N",
@@ -1764,11 +1764,11 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                 list(
                                     `name`="difference",
                                     `title`="Difference (B)",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="z",
                                     `title`="z",
-                                    `type`="number"),
+                                    `type`="number", `format`="zto"),
                                 list(
                                     `name`="pvalue",
                                     `title`="p",

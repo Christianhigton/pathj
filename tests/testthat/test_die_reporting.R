@@ -120,3 +120,15 @@ testthat::test_that("DIE item 9: equal paths suppress degenerate differences", {
   testthat::expect_equal(index$note,constrained_difference_note())
   testthat::expect_false(grepl("Moderated mediation:",report_mediation(m$model)$text,fixed=TRUE))
 })
+
+testthat::test_that("DIE item 10: constrained comparisons are hidden and tiny display cells are zero", {
+  m <- die_result(equal=TRUE)
+  testthat::expect_equal(nrow(m$intelligent$groupComparison$asDF),0L)
+  testthat::expect_equal(nrow(compare_groups(m$model)$table),0L)
+  raw <- data.frame(difference=c(1e-16,-1e-16,.2),z=c(8.43e-8,-8.43e-8,2),pvalue=c(.001,.1,.03))
+  displayed <- j.comparison_display(raw)
+  testthat::expect_equal(displayed$difference,c(0,0,.2))
+  testthat::expect_equal(displayed$z,c(0,0,2))
+  testthat::expect_equal(displayed$pvalue,raw$pvalue)
+  testthat::expect_equal(raw$z[1],8.43e-8)
+})

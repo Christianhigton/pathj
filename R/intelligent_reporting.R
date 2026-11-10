@@ -645,6 +645,8 @@ report_moderation <- function(fit, parameter_estimates = NULL) {
 #' @return A list with table and text.
 #' @export
 compare_groups <- function(fit, group_labels = NULL) {
+  if (regressions_constrained_equal(fit))
+    return(list(table = data.frame(), text = constrained_difference_note()))
   pe <- lavaan::parameterestimates(fit, standardized = TRUE)
   paths <- pe[pe$op == "~" & !is.na(pe$group), , drop = FALSE]
   if (nrow(paths) == 0 || length(unique(paths$group)) < 2)

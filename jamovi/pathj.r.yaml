@@ -751,12 +751,15 @@ items:
                     - name: group_1_est
                       title: Group 1 B
                       type: number
+                      format: zto
                     - name: group_2_est
                       title: Group 2 B
                       type: number
+                      format: zto
                     - name: group_1_beta
                       title: Group 1 β
                       type: number
+                      format: zto
                     - name: group_1_pvalue
                       title: Group 1 p
                       type: number
@@ -764,6 +767,7 @@ items:
                     - name: group_2_beta
                       title: Group 2 β
                       type: number
+                      format: zto
                     - name: group_2_n
                       title: Group 2 N
                       type: integer
@@ -774,9 +778,11 @@ items:
                     - name: difference
                       title: Difference (B)
                       type: number
+                      format: zto
                     - name: z
                       title: z
                       type: number
+                      format: zto
                     - name: pvalue
                       title: p
                       type: number
