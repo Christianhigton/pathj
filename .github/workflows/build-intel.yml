@@ -20,6 +20,11 @@ jobs:
         with:
           r-version: "4.5.0"
 
+      - name: Install graphics runtime for PDF export checks
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: brew install --cask xquartz
+
       - name: Install jmvtools
         run: |
           Rscript -e 'install.packages(c("jmvtools", "semPlot", "remotes"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
@@ -28,7 +33,10 @@ jobs:
         run: Rscript scripts/build_intel_jmo.R
 
       - name: Smoke-test the packaged module
-        run: Rscript scripts/smoke_module.R pathj_1.1.7.9013_intel.jmo
+        run: |
+          for module in pathj_*_intel.jmo; do
+            Rscript scripts/smoke_module.R "$module"
+          done
 
       - name: Upload Intel module
         uses: actions/upload-artifact@v4
