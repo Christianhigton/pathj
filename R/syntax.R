@@ -732,7 +732,26 @@ Syntax <- R6::R6Class(
                   }
                 }
               }
-              private$.lav_indirect<-paste(c(indirect_synt,total_synt,contrast_synt),collapse = " ; ")
+              total_contrast_synt<-character()
+              next_id<-1L
+              for (path in unique(total_meta$pathway)) {
+                matched<-total_meta[total_meta$pathway==path,,drop=FALSE]
+                matched<-matched[order(matched$group),,drop=FALSE]
+                if (nrow(matched)<2L) next
+                for (pair in utils::combn(seq_len(nrow(matched)),2L,simplify=FALSE)) {
+                  first<-matched[pair[1],]; second<-matched[pair[2],]
+                  label<-paste0("DTE",next_id)
+                  while (label %in% private$.lav_structure$lhs) {
+                    next_id<-next_id+1L
+                    label<-paste0("DTE",next_id)
+                  }
+                  total_contrast_synt<-c(total_contrast_synt,paste0(label,":=",first$label,"-",second$label))
+                  self$defined_descriptions[[label]]<-paste0(
+                    "Total effect difference (B): ",path," (",first$lgroup," - ",second$lgroup,")")
+                  next_id<-next_id+1L
+                }
+              }
+              private$.lav_indirect<-paste(c(indirect_synt,total_synt,contrast_synt,total_contrast_synt),collapse = " ; ")
               self$effect_decomp_structure<-rbind(indirect_meta,total_meta)
               self$indirect_names<-as.list(paths_plain)
               if (is.something(self$options$multigroup))
