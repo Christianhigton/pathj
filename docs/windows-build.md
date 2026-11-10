@@ -15,7 +15,7 @@ if (!(Test-Path $rscript)) {
 }
 $env:R_LIBS_USER = Join-Path $env:LOCALAPPDATA 'pathj-build-library'
 New-Item -ItemType Directory -Force $env:R_LIBS_USER | Out-Null
-& $rscript -e 'install.packages("jmvtools", repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+& $rscript -e 'install.packages(c("jmvtools", "remotes"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
 if ($LASTEXITCODE -ne 0) { throw 'Installing jmvtools failed' }
 & $rscript scripts/build_windows_jmo.R
 if ($LASTEXITCODE -ne 0) { throw 'Building PATHj failed' }
