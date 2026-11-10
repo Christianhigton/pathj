@@ -48,3 +48,11 @@ testthat::test_that("DIE item 4: labels and direction note name actual groups", 
   notes <- paste(vapply(m$models$defined$notes,function(x)x$note,character(1)),collapse=" ")
   testthat::expect_match(notes,effect_difference_note(),fixed=TRUE)
 })
+
+testthat::test_that("DIE item 5: differences omit beta while IE beta is unchanged", {
+  tab <- die_result()$models$defined$asDF
+  testthat::expect_true(all(is.na(tab$std.all[grepl("^D(IE|TE)",tab$lhs)])))
+  pe <- lavaan::parameterEstimates(die_result()$model,standardized=TRUE)
+  testthat::expect_equal(tab$std.all[tab$lhs=="IE7"],pe$std.all[pe$lhs=="IE7"])
+  testthat::expect_match(effect_difference_note(),"β not reported for differences",fixed=TRUE)
+})
