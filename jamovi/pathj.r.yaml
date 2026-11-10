@@ -604,6 +604,9 @@ items:
             type: Table
             visible: (intelligentReport)
             columns:
+                    - name: route
+                      title: Route
+                      type: text
                     - name: index
                       title: Index
                       type: number
@@ -616,6 +619,10 @@ items:
                     - name: ci.upper
                       title: Upper
                       type: number
+                    - name: pvalue
+                      title: p
+                      type: number
+                      format: zto,pvalue
                     - name: note
                       title: Note
                       type: text

@@ -221,6 +221,7 @@ Estimate <- R6::R6Class("Estimate",
                             
                             ## ask for the paramters estimates
                             self$model<-results$obj
+                            attr(self$model, "pathj_defined_descriptions")<-self$defined_descriptions
                             if (self$missing_info$method == "mi") {
                               mi_params<-lapply(mi_models, function(model) {
                                 lavaan::parameterestimates(

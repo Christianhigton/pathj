@@ -1563,6 +1563,7 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                             title="Index of Moderated Mediation",
                             visible="(intelligentReport)",
                             columns=list(
+                                list(`name`="route", `title`="Route", `type`="text"),
                                 list(
                                     `name`="index",
                                     `title`="Index",
@@ -1579,6 +1580,8 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `name`="ci.upper",
                                     `title`="Upper",
                                     `type`="number"),
+                                list(
+                                    `name`="pvalue", `title`="p", `type`="number", `format`="zto,pvalue"),
                                 list(
                                     `name`="note",
                                     `title`="Note",

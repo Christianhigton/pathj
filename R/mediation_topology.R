@@ -197,7 +197,36 @@ conditional_process_table <- function(fit, topology, data = NULL) {
              stringsAsFactors = FALSE)
 }
 
-conditional_process_index <- function(fit, topology) {
+# Use the same defined-parameter estimates as the main output.
+multigroup_effect_differences <- function(fit, parameter_estimates = NULL, prefix = "DIE") {
+  pe <- if (is.null(parameter_estimates)) lavaan::parameterEstimates(fit, ci = TRUE) else parameter_estimates
+  rows <- pe[pe$op == ":=" & grepl(paste0("^", prefix, "[0-9]+$"), pe$lhs), , drop = FALSE]
+  descriptions <- attr(fit, "pathj_defined_descriptions")
+  rows$route <- rows$rhs
+  if (length(descriptions)) {
+    matched <- unname(unlist(descriptions[rows$lhs]))
+    ok <- !is.na(matched) & nzchar(matched)
+    rows$route[ok] <- matched[ok]
+  }
+  rows
+}
+
+conditional_process_index <- function(fit, topology, parameter_estimates = NULL) {
+  groups <- lavaan::lavInspect(fit, "ngroups")
+  if (groups > 1L) {
+    diffs <- multigroup_effect_differences(fit, parameter_estimates)
+    note <- if (groups == 2L)
+      "Index of moderated mediation for a two-group moderator = difference in indirect effects (first group minus second group); see DIE rows in Defined Parameters."
+    else "Pairwise indices of moderated mediation are differences in indirect effects for each group pair; see DIE rows in Defined Parameters."
+    if (nrow(diffs))
+      return(data.frame(route = diffs$route, index = diffs$est, se = diffs$se,
+                        ci.lower = diffs$ci.lower, ci.upper = diffs$ci.upper,
+                        pvalue = diffs$pvalue, note = note, stringsAsFactors = FALSE))
+    return(data.frame(route = "", index = NA_real_, se = NA_real_, ci.lower = NA_real_,
+                      ci.upper = NA_real_, pvalue = NA_real_,
+                      note = "No matching indirect-effect differences were defined; request Indirect Effects.",
+                      stringsAsFactors = FALSE))
+  }
   out <- data.frame(index = NA_real_, se = NA_real_, ci.lower = NA_real_,
                     ci.upper = NA_real_, note = "Not defined for this model topology.",
                     stringsAsFactors = FALSE)
