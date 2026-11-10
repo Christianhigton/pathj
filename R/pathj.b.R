@@ -319,7 +319,8 @@ pathjClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
             j.fill_table(self$results$models$defined,lav_machine$tab_defined)
             j.add_warnings(self$results$models$defined,lav_machine,"defined")
             if (any(grepl("^D(IE|TE)[0-9]+$", lav_machine$tab_defined$lhs)))
-                self$results$models$defined$setNote("differences", effect_difference_note(self$options$se, self$options$bootci, self$options$ciWidth/100))
+                self$results$models$defined$setNote("differences", effect_difference_note(self$options$se, self$options$bootci, self$options$ciWidth/100,
+                    sum(grepl("^DIE[0-9]+$",lav_machine$tab_defined$lhs))))
             j.fill_table(self$results$models$effects,lav_machine$tab_effects, append=TRUE)
             
             if (self$options$showintercepts)

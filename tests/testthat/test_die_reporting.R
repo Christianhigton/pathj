@@ -46,7 +46,7 @@ testthat::test_that("DIE item 4: labels and direction note name actual groups", 
   testthat::expect_equal(tab$desc[tab$lhs=="DIE7"],
     "Δ indirect (B): night_phone ⇒ sleep_quality ⇒ exam_score (Control − Digital curfew)")
   notes <- paste(vapply(m$models$defined$notes,function(x)x$note,character(1)),collapse=" ")
-  testthat::expect_match(notes,effect_difference_note(),fixed=TRUE)
+  testthat::expect_match(notes,effect_difference_note(n_die=8L),fixed=TRUE)
 })
 
 testthat::test_that("DIE item 5: differences omit beta while IE beta is unchanged", {
@@ -77,4 +77,11 @@ testthat::test_that("DIE item 6: bootstrap selections propagate to the index", {
   }
   testthat::expect_match(effect_difference_note(),"delta method")
   testthat::expect_match(effect_difference_note(),"bootstrap CIs are recommended")
+})
+
+
+testthat::test_that("DIE item 7: caution starts above three contrasts", {
+  testthat::expect_false(grepl("Several differences",effect_difference_note(n_die=3L)))
+  testthat::expect_match(effect_difference_note(n_die=4L),
+    "Several differences are tested; interpret unpredicted differences with caution.",fixed=TRUE)
 })

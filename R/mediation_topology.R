@@ -273,7 +273,7 @@ conditional_process_index <- function(fit, topology, parameter_estimates = NULL)
 }
 
 
-effect_difference_note <- function(se = "standard", bootci = "perc", level = .95) {
+effect_difference_note <- function(se = "standard", bootci = "perc", level = .95, n_die = 0L) {
   paste("DIE = indirect effect in the first group minus the same indirect effect in the second group.",
         "A negative value means the effect is more negative (or less positive) in the first group.",
         paste0("A ", 100*level, "% CI that excludes zero indicates moderated mediation for that route."),
@@ -282,5 +282,6 @@ effect_difference_note <- function(se = "standard", bootci = "perc", level = .95
           paste0("DIE/DTE confidence intervals use bootstrap (", bootci, ") at ", 100*level, "%.")
         else paste0("DIE/DTE confidence intervals use the delta method at ", 100*level, "%."),
         if (se == "standard")
-          "Differences of indirect effects are often non-normal; bootstrap CIs are recommended.")
+          "Differences of indirect effects are often non-normal; bootstrap CIs are recommended.",
+        if (n_die > 3L) "Several differences are tested; interpret unpredicted differences with caution.")
 }
