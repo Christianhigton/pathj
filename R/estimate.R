@@ -223,6 +223,7 @@ Estimate <- R6::R6Class("Estimate",
                             self$model<-results$obj
                             attr(self$model, "pathj_defined_descriptions")<-self$defined_descriptions
                             attr(self$model, "pathj_effect_structure")<-self$effect_decomp_structure
+                            attr(self$model, "pathj_equal_regressions")<-"regressions" %in% unlist(self$options$group.equal)
                             attr(self$model, "pathj_bootci")<-self$options$bootci
                             attr(self$model, "pathj_ci_level")<-self$ciwidth
                             if (self$missing_info$method == "mi") {
@@ -299,6 +300,8 @@ Estimate <- R6::R6Class("Estimate",
                             self$tab_defined$desc<-unname(descriptions[self$tab_defined$lhs])
                             differences<-grepl("^D(IE|TE)[0-9]+$",self$tab_defined$lhs)
                             self$tab_defined$std.all[differences]<-NA_real_
+                            if (regressions_constrained_equal(self$model))
+                              self$tab_defined<-self$tab_defined[!differences,,drop=FALSE]
                             if (nrow(self$tab_defined)==0) self$tab_defined<-NULL
                             
                             # prepare and comput R2 and collect a table for them

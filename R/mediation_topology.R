@@ -201,6 +201,7 @@ conditional_process_table <- function(fit, topology, data = NULL) {
 multigroup_effect_differences <- function(fit, parameter_estimates = NULL, prefix = "DIE") {
   pe <- report_parameters(fit, parameter_estimates)
   rows <- pe[pe$op == ":=" & grepl(paste0("^", prefix, "[0-9]+$"), pe$lhs), , drop = FALSE]
+  if (regressions_constrained_equal(fit)) rows <- rows[FALSE, , drop=FALSE]
   descriptions <- attr(fit, "pathj_defined_descriptions")
   rows$route <- rows$rhs
   if (length(descriptions)) {
@@ -214,6 +215,9 @@ multigroup_effect_differences <- function(fit, parameter_estimates = NULL, prefi
 conditional_process_index <- function(fit, topology, parameter_estimates = NULL) {
   groups <- lavaan::lavInspect(fit, "ngroups")
   if (groups > 1L) {
+    if (regressions_constrained_equal(fit))
+      return(data.frame(route = "", index = NA_real_, se = NA_real_, ci.lower = NA_real_,
+                        ci.upper = NA_real_, pvalue = NA_real_, note = constrained_difference_note()))
     diffs <- multigroup_effect_differences(fit, parameter_estimates)
     note <- if (groups == 2L)
       "Index of moderated mediation for a two-group moderator = difference in indirect effects (first group minus second group); see DIE rows in Defined Parameters."
@@ -225,7 +229,7 @@ conditional_process_index <- function(fit, topology, parameter_estimates = NULL)
                         pvalue = diffs$pvalue, note = note, stringsAsFactors = FALSE)
       if (groups > 2L) {
         meta <- attr(fit, "pathj_effect_structure")
-        meta <- meta[meta$effect == "Indirect", , drop = FALSE]
+        if (is.data.frame(meta)) meta <- meta[meta$effect == "Indirect", , drop = FALSE]
         for (path in unique(meta$pathway)) {
           labels <- meta$label[meta$pathway == path]
           if (length(labels) != groups) next
@@ -306,4 +310,34 @@ report_effect_differences <- function(fit, parameter_estimates = NULL) {
   # No main-predictor selector exists: include every total-effect contrast.
   if (nrow(dte)) text <- paste(text, "Total-effect differences:", paste0(describe(dte), "."))
   trimws(text)
+}
+
+
+constrained_difference_note <- function() {
+  "Regression paths are constrained equal across groups, so differences are zero by design."
+}
+
+regressions_constrained_equal <- function(fit) {
+  if (lavaan::lavInspect(fit, "ngroups") < 2L) return(FALSE)
+  if (isTRUE(attr(fit, "pathj_equal_regressions"))) return(TRUE)
+  if ("regressions" %in% lavaan::lavInspect(fit, "options")$group.equal) return(TRUE)
+  # PATHj's lavaanified syntax encodes GUI equality as explicit constraints.
+  # Inspect equality links, never the numerical closeness of fitted estimates.
+  pt <- lavaan::parameterTable(fit)
+  paths <- pt[pt$op == "~", , drop=FALSE]
+  if (!nrow(paths)) return(FALSE)
+  eq <- pt[pt$op == "==", c("lhs", "rhs"), drop=FALSE]
+  eq <- rbind(eq, data.frame(lhs=pt$plabel[nzchar(pt$label)], rhs=pt$label[nzchar(pt$label)]))
+  groups <- lavaan::lavInspect(fit, "ngroups")
+  keys <- paste(paths$lhs, paths$rhs, sep="\r")
+  all(vapply(split(paths, keys), function(rows) {
+    if (nrow(rows) != groups) return(FALSE)
+    linked <- rows$plabel[1]
+    repeat {
+      expanded <- unique(c(linked, eq$rhs[eq$lhs %in% linked], eq$lhs[eq$rhs %in% linked]))
+      if (length(expanded) == length(linked)) break
+      linked <- expanded
+    }
+    all(rows$plabel %in% linked)
+  }, logical(1)))
 }

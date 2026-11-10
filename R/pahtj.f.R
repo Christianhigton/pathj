@@ -130,6 +130,7 @@
 #'
 #' \code{as.data.frame(results$info)}
 #'
+#' @param group.equal Parameter families constrained equal across groups, such as \code{"regressions"}.
 #' @export
 #' @importFrom ggplot2 ggplot
 #' @importFrom semPlot semPaths
@@ -195,7 +196,8 @@ pathj <- function(
   syntaxVars = NULL,
   syntaxText = "",
   syntaxApply = FALSE,
-  formula) {
+  formula,
+  group.equal = NULL) {
   
   if ( ! requireNamespace("jmvcore", quietly=TRUE))
     stop("pathj requires jmvcore to be installed (restart may be required)")
@@ -259,6 +261,7 @@ pathj <- function(
     factors = factors,
     covs = covs,
     multigroup = multigroup,
+    group.equal = group.equal,
     clusterVariable = clusterVariable,
     withinVariables = withinVariables,
     betweenVariables = betweenVariables,

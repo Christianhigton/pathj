@@ -65,10 +65,12 @@ pathj(
   syntaxVars = NULL,
   syntaxText = "",
   syntaxApply = FALSE,
-  formula
+  formula,
+  group.equal = NULL
 )
 }
 \arguments{
+\item{group.equal}{Parameter families constrained equal across groups, such as \code{"regressions"}.}
 \item{data}{the data as a data frame}
 
 \item{endogenous}{a vector of strings naming the mediators from \code{data}}

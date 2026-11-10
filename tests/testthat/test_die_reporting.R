@@ -105,3 +105,18 @@ testthat::test_that("DIE item 8: narrative reports CI-supported DIEs and all DTE
   altered$pvalue[changed] <- .001
   testthat::expect_match(report_mediation(fit,altered)$text,"8 of 8 indirect-effect differences",fixed=TRUE)
 })
+
+testthat::test_that("DIE item 9: equal paths suppress degenerate differences", {
+  m <- die_result(equal=TRUE)
+  testthat::expect_true(regressions_constrained_equal(m$model))
+  testthat::expect_false(regressions_constrained_equal(die_result()$model))
+  f <- m$model; attr(f,"pathj_equal_regressions") <- NULL
+  testthat::expect_true(regressions_constrained_equal(f))
+  tab <- m$models$defined$asDF
+  testthat::expect_false(any(grepl("^D(IE|TE)",tab$lhs)))
+  testthat::expect_equal(sum(grepl("^IE",tab$lhs)),16L)
+  index <- m$intelligent$moderatedIndex$asDF
+  testthat::expect_true(all(is.na(index$index)))
+  testthat::expect_equal(index$note,constrained_difference_note())
+  testthat::expect_false(grepl("Moderated mediation:",report_mediation(m$model)$text,fixed=TRUE))
+})

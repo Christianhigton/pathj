@@ -14,7 +14,8 @@ die_result <- local({
       cache[[key]] <- pathj::pathj(data=d, formula=list(
         "night_phone ~ fomo + loneliness", "sleep_quality ~ night_phone",
         "exam_anxiety ~ sleep_quality + loneliness", "exam_score ~ exam_anxiety + sleep_quality"),
-        multigroup="condition", missing="fiml", indirect=TRUE, intelligentReport=TRUE)
+        multigroup="condition", missing="fiml", indirect=TRUE, intelligentReport=TRUE,
+        group.equal=if(equal) "regressions" else NULL)
     }
     cache[[key]]
   }
