@@ -726,7 +726,7 @@ Syntax <- R6::R6Class(
                     }
                     contrast_synt<-c(contrast_synt,paste0(label,":=",first$label,"-",second$label))
                     self$defined_descriptions[[label]]<-paste0(
-                      "Indirect difference (B): ",path," (",first$lgroup," - ",second$lgroup,")")
+                      "Δ indirect (B): ",path," (",first$lgroup," − ",second$lgroup,")")
                     used<-c(used,label)
                     next_id<-next_id+1L
                   }

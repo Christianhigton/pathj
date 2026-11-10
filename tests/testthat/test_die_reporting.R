@@ -39,3 +39,12 @@ testthat::test_that("DIE item 3: all group pairs and route omnibus tests", {
   testthat::expect_equal(omnibus$wald[1],independent$stat)
   testthat::expect_equal(omnibus$pvalue[1],independent$p.value)
 })
+
+testthat::test_that("DIE item 4: labels and direction note name actual groups", {
+  m <- die_result()
+  tab <- m$models$defined$asDF
+  testthat::expect_equal(tab$desc[tab$lhs=="DIE7"],
+    "Δ indirect (B): night_phone ⇒ sleep_quality ⇒ exam_score (Control − Digital curfew)")
+  notes <- paste(vapply(m$models$defined$notes,function(x)x$note,character(1)),collapse=" ")
+  testthat::expect_match(notes,effect_difference_note(),fixed=TRUE)
+})

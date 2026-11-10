@@ -271,3 +271,10 @@ conditional_process_index <- function(fit, topology, parameter_estimates = NULL)
   out$note <- paste0("Index of moderated mediation for moderator ", w, ". Confidence intervals require bootstrap results when available.")
   out
 }
+
+
+effect_difference_note <- function() {
+  paste("DIE = indirect effect in the first group minus the same indirect effect in the second group.",
+        "A negative value means the effect is more negative (or less positive) in the first group.",
+        "A 95% CI that excludes zero indicates moderated mediation for that route.")
+}
