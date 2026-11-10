@@ -218,10 +218,31 @@ conditional_process_index <- function(fit, topology, parameter_estimates = NULL)
     note <- if (groups == 2L)
       "Index of moderated mediation for a two-group moderator = difference in indirect effects (first group minus second group); see DIE rows in Defined Parameters."
     else "Pairwise indices of moderated mediation are differences in indirect effects for each group pair; see DIE rows in Defined Parameters."
-    if (nrow(diffs))
-      return(data.frame(route = diffs$route, index = diffs$est, se = diffs$se,
+    if (nrow(diffs)) {
+      out <- data.frame(route = diffs$route, index = diffs$est, se = diffs$se,
                         ci.lower = diffs$ci.lower, ci.upper = diffs$ci.upper,
-                        pvalue = diffs$pvalue, note = note, stringsAsFactors = FALSE))
+                        wald = NA_real_, df = NA_real_,
+                        pvalue = diffs$pvalue, note = note, stringsAsFactors = FALSE)
+      if (groups > 2L) {
+        meta <- attr(fit, "pathj_effect_structure")
+        meta <- meta[meta$effect == "Indirect", , drop = FALSE]
+        for (path in unique(meta$pathway)) {
+          labels <- meta$label[meta$pathway == path]
+          if (length(labels) != groups) next
+          constraints <- paste(labels[1], "==", labels[-1], collapse = "; ")
+          wt <- tryCatch(lavaan::lavTestWald(fit, constraints), error = function(e) NULL)
+          out <- rbind(out, data.frame(route = path, index = NA_real_, se = NA_real_,
+            ci.lower = NA_real_, ci.upper = NA_real_,
+            wald = if (is.null(wt)) NA_real_ else wt$stat,
+            df = if (is.null(wt)) NA_real_ else wt$df,
+            pvalue = if (is.null(wt)) NA_real_ else wt$p.value,
+            note = if (is.null(wt)) "Omnibus Wald test unavailable: contrast covariance is singular."
+              else "Omnibus Wald test: H0 is equal indirect effects across all groups.",
+            stringsAsFactors = FALSE))
+        }
+      }
+      return(out)
+    }
     return(data.frame(route = "", index = NA_real_, se = NA_real_, ci.lower = NA_real_,
                       ci.upper = NA_real_, pvalue = NA_real_,
                       note = "No matching indirect-effect differences were defined; request Indirect Effects.",

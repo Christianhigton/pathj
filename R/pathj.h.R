@@ -1581,6 +1581,9 @@ pathjResults <- if (requireNamespace("jmvcore", quietly=TRUE)) R6::R6Class(
                                     `title`="Upper",
                                     `type`="number"),
                                 list(
+                                    `name`="wald", `title`="Wald χ²", `type`="number"),
+                                list(`name`="df", `title`="df", `type`="integer"),
+                                list(
                                     `name`="pvalue", `title`="p", `type`="number", `format`="zto,pvalue"),
                                 list(
                                     `name`="note",

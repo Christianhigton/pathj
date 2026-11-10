@@ -26,3 +26,16 @@ testthat::test_that("DIE item 2: DTEs match totals and preserve existing effects
   defs <- m$models$defined$asDF
   testthat::expect_true(min(which(grepl("^DTE",defs$lhs))) > max(which(grepl("^DIE",defs$lhs))))
 })
+
+testthat::test_that("DIE item 3: all group pairs and route omnibus tests", {
+  m <- die_result(groups=3L)
+  pe <- lavaan::parameterEstimates(m$model)
+  testthat::expect_equal(sum(grepl("^DIE",pe$lhs)),24L)
+  tab <- conditional_process_index(m$model,detect_mediation_topology(m$model))
+  omnibus <- tab[is.finite(tab$wald),]
+  testthat::expect_equal(nrow(omnibus),8L)
+  testthat::expect_equal(omnibus$df,rep(2,8))
+  independent <- lavaan::lavTestWald(m$model,"IE1 == IE9; IE1 == IE17")
+  testthat::expect_equal(omnibus$wald[1],independent$stat)
+  testthat::expect_equal(omnibus$pvalue[1],independent$p.value)
+})

@@ -619,6 +619,12 @@ items:
                     - name: ci.upper
                       title: Upper
                       type: number
+                    - name: wald
+                      title: Wald χ²
+                      type: number
+                    - name: df
+                      title: df
+                      type: integer
                     - name: pvalue
                       title: p
                       type: number
