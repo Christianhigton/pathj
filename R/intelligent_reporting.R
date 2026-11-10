@@ -502,6 +502,7 @@ report_loadings <- function(fit, parameter_estimates = NULL) {
 #' @export
 report_mediation <- function(fit, parameter_estimates = NULL) {
   pe <- report_parameters(fit, parameter_estimates)
+  ci_label <- paste0(100*(attr(fit, "pathj_ci_level") %||% .95), "% CI")
   defs <- pe[pe$op == ":=", , drop = FALSE]
   if (nrow(defs) == 0)
     return(list(table = data.frame(), text = "No indirect or defined effects were estimated."))
@@ -558,7 +559,7 @@ report_mediation <- function(fit, parameter_estimates = NULL) {
     }
     fmt_path <- function(label, row) {
       if (nrow(row) == 0L) return(paste0(label, " was not estimable"))
-      paste0(label, " = ", apa_num(row$est[[1]]), ", 95% CI [",
+      paste0(label, " = ", apa_num(row$est[[1]]), ", ", ci_label, " [",
              apa_num(row$ci.lower[[1]]), ", ", apa_num(row$ci.upper[[1]]), "], ",
              apa_p(row$pvalue[[1]]))
     }
@@ -579,7 +580,7 @@ report_mediation <- function(fit, parameter_estimates = NULL) {
     r <- tab[i, ]
     paste0(
       "The indirect effect ", r$effect, " was B = ", apa_num(r$indirect),
-      ", 95% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper),
+      ", ", ci_label, " [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper),
       "], beta = ", apa_num(r$beta), ", ", apa_p(r$pvalue), ". ",
       if (!is.na(r$direct) && r$direct * r$indirect < 0)
         "The direct and indirect effects had opposite signs, an inconsistent mediation or suppression-type pattern. "
@@ -591,6 +592,8 @@ report_mediation <- function(fit, parameter_estimates = NULL) {
     )
   }, FUN.VALUE = character(1)), collapse = " ")
   text <- paste(c(simple_details, effect_text)[nzchar(c(simple_details, effect_text))], collapse = " ")
+  differences <- report_effect_differences(fit, pe)
+  if (nzchar(differences)) text <- paste(text, differences)
 
   list(table = tab, text = text)
 }

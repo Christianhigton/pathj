@@ -85,3 +85,23 @@ testthat::test_that("DIE item 7: caution starts above three contrasts", {
   testthat::expect_match(effect_difference_note(n_die=4L),
     "Several differences are tested; interpret unpredicted differences with caution.",fixed=TRUE)
 })
+
+testthat::test_that("DIE item 8: narrative reports CI-supported DIEs and all DTEs", {
+  fit <- die_result()$model
+  text <- report_mediation(fit)$text
+  die <- multigroup_effect_differences(fit)
+  supported <- die$ci.lower > 0 | die$ci.upper < 0
+  testthat::expect_match(text,"Moderated mediation:",fixed=TRUE)
+  for (i in which(supported)) {
+    testthat::expect_match(text,paste0(die$lhs[i]," ("),fixed=TRUE)
+    testthat::expect_match(text,paste0("B = ",apa_num(die$est[i]),", 95% CI [",
+      apa_num(die$ci.lower[i]),", ",apa_num(die$ci.upper[i]),"], ",apa_p(die$pvalue[i])),fixed=TRUE)
+  }
+  testthat::expect_match(text,paste0(sum(!supported)," of 8 indirect-effect differences"),fixed=TRUE)
+  testthat::expect_match(text,"DTE3 (",fixed=TRUE)
+  altered <- report_parameters(fit)
+  changed <- grepl("^DIE",altered$lhs)
+  altered$ci.lower[changed] <- -1; altered$ci.upper[changed] <- 1
+  altered$pvalue[changed] <- .001
+  testthat::expect_match(report_mediation(fit,altered)$text,"8 of 8 indirect-effect differences",fixed=TRUE)
+})

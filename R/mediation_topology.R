@@ -285,3 +285,25 @@ effect_difference_note <- function(se = "standard", bootci = "perc", level = .95
           "Differences of indirect effects are often non-normal; bootstrap CIs are recommended.",
         if (n_die > 3L) "Several differences are tested; interpret unpredicted differences with caution.")
 }
+
+
+report_effect_differences <- function(fit, parameter_estimates = NULL) {
+  die <- multigroup_effect_differences(fit, parameter_estimates)
+  dte <- multigroup_effect_differences(fit, parameter_estimates, "DTE")
+  if (!nrow(die) && !nrow(dte)) return("")
+  level <- 100*(attr(fit, "pathj_ci_level") %||% .95)
+  describe <- function(rows) paste(vapply(seq_len(nrow(rows)), function(i) {
+    r <- rows[i, ]
+    paste0(r$lhs, " (", r$route, "): B = ", apa_num(r$est), ", ", level,
+           "% CI [", apa_num(r$ci.lower), ", ", apa_num(r$ci.upper), "], ", apa_p(r$pvalue))
+  }, character(1)), collapse = "; ")
+  available <- is.finite(die$ci.lower) & is.finite(die$ci.upper)
+  supported <- available & (die$ci.lower > 0 | die$ci.upper < 0)
+  text <- if (nrow(die)) paste0("Moderated mediation: ",
+    if (any(supported)) paste0(describe(die[supported, , drop=FALSE]), ". ") else "",
+    sum(available & !supported), " of ", nrow(die), " indirect-effect differences had CIs that did not exclude zero.",
+    if (any(!available)) paste0(" CIs were unavailable for ", sum(!available), " differences.") else "") else ""
+  # No main-predictor selector exists: include every total-effect contrast.
+  if (nrow(dte)) text <- paste(text, "Total-effect differences:", paste0(describe(dte), "."))
+  trimws(text)
+}
