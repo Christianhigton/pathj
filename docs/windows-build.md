@@ -27,8 +27,13 @@ are Windows x64 DLLs. Install that file using jamovi's module menu, **Sideload**
 Open PATHj and run an analysis to check it in the target Windows installation;
 archive validation alone does not confirm runtime compatibility.
 
-The `Build Windows jamovi module` GitHub Actions workflow performs the same
-build on a native Windows runner using the portable Windows jamovi 2.7.26
-distribution. It checks DLL architecture, then loads the package from the
-finished archive, runs the workplace example and exports both group diagrams.
-Its downloadable artifact is named `pathj-windows`.
+The `Build Windows jamovi module` GitHub Actions workflow builds on a native
+Windows runner with R 4.5.0 and Rtools45, matching jamovi 2.7's R ABI. This
+avoids relying on the unavailable `dl.jamovi.org` download host. The explicit
+`PATHJ_MATCHED_R=true` CI mode requires exactly R 4.5.0; ordinary manual builds
+continue to require jamovi's bundled R.
+
+The workflow checks DLL architecture, loads the package from the finished
+archive, runs the workplace example and exports both group diagrams. Its
+artifact is named `pathj-windows`. These native-R checks do not replace a live
+jamovi GUI installation check.

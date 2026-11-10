@@ -30,30 +30,28 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Download and unpack Windows jamovi
+      - name: Prepare a Windows build host matching jamovi's R ABI
         shell: pwsh
         run: |
-          $archive = Join-Path $env:RUNNER_TEMP 'jamovi.zip'
-          $destination = Join-Path $env:RUNNER_TEMP 'jamovi'
-          curl.exe --fail --location --retry 3 --output $archive "https://dl.jamovi.org/jamovi-${env:JAMOVI_VERSION}-win-x64.zip"
-          if ($LASTEXITCODE -ne 0) { throw 'Downloading jamovi failed' }
-          Expand-Archive -LiteralPath $archive -DestinationPath $destination
-          $rscript = Get-ChildItem $destination -Recurse -Filter Rscript.exe |
-            Where-Object { $_.FullName -match '[\\/]Frameworks[\\/]R[\\/]bin[\\/](x64[\\/])?Rscript.exe$' } |
-            Select-Object -First 1
-          if (!$rscript) { throw 'The downloaded archive contains no bundled Rscript.exe' }
-          $jamoviHome = $rscript.FullName -replace '[\\/]Frameworks[\\/]R[\\/]bin[\\/](x64[\\/])?Rscript.exe$', ''
+          $rHome = (& Rscript -e 'cat(R.home())').Trim()
+          $jamoviHome = Join-Path $env:RUNNER_TEMP 'pathj-build-host'
+          New-Item -ItemType Directory -Force (Join-Path $jamoviHome 'Frameworks') | Out-Null
+          New-Item -ItemType Directory -Force (Join-Path $jamoviHome 'bin') | Out-Null
+          New-Item -ItemType Junction -Path (Join-Path $jamoviHome 'Frameworks/R') -Target $rHome | Out-Null
+          $rscript = (Get-Command Rscript.exe).Source
+          Copy-Item $rscript (Join-Path $jamoviHome 'bin/jamovi.exe')
           $library = Join-Path $env:RUNNER_TEMP 'pathj-build-library'
           New-Item -ItemType Directory -Force $library | Out-Null
           "JAMOVI_HOME=$jamoviHome" >> $env:GITHUB_ENV
-          "R_HOME=$(Join-Path $jamoviHome 'Frameworks/R')" >> $env:GITHUB_ENV
-          "PATHJ_RSCRIPT=$($rscript.FullName)" >> $env:GITHUB_ENV
+          "PATHJ_MATCHED_R=true" >> $env:GITHUB_ENV
+          "R_HOME=$rHome" >> $env:GITHUB_ENV
+          "PATHJ_RSCRIPT=$rscript" >> $env:GITHUB_ENV
           "R_LIBS_USER=$library" >> $env:GITHUB_ENV
 
-      - name: Install build tools using bundled R
+      - name: Install build tools and matching runtime dependencies
         shell: pwsh
         run: |
-          & $env:PATHJ_RSCRIPT -e 'install.packages(c("jmvtools", "remotes"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+          & $env:PATHJ_RSCRIPT -e 'install.packages(c("jmvtools", "remotes", "semPlot"), repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
           if ($LASTEXITCODE -ne 0) { throw 'Installing jmvtools failed' }
 
       - name: Build and verify Windows module
