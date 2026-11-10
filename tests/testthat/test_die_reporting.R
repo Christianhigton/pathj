@@ -132,3 +132,12 @@ testthat::test_that("DIE item 10: constrained comparisons are hidden and tiny di
   testthat::expect_equal(displayed$pvalue,raw$pvalue)
   testthat::expect_equal(raw$z[1],8.43e-8)
 })
+
+testthat::test_that("DIE item 11: constrained narrative refers to score test", {
+  m <- die_result(equal=TRUE)
+  expected <- "Regression paths were constrained equal across groups; see the Constraints Score Test for whether this constraint is supported."
+  testthat::expect_equal(compare_groups(m$model)$text,expected)
+  text <- m$intelligent$apaText$asDF
+  testthat::expect_equal(text$text[text$section=="Multigroup"],expected)
+  testthat::expect_false(any(grepl("No statistically significant multigroup differences",text$text)))
+})
