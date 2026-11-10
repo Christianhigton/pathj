@@ -1,0 +1,78 @@
+name: Build Windows jamovi module
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "codex/windows-build-*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      JAMOVI_VERSION: "2.7.26.0"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Rtools for R 4.5
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.5.0"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download and unpack Windows jamovi
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'jamovi.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'jamovi'
+          curl.exe --fail --location --retry 3 --output $archive "https://dl.jamovi.org/jamovi-${env:JAMOVI_VERSION}-win-x64.zip"
+          if ($LASTEXITCODE -ne 0) { throw 'Downloading jamovi failed' }
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $rscript = Get-ChildItem $destination -Recurse -Filter Rscript.exe |
+            Where-Object { $_.FullName -match '[\\/]Frameworks[\\/]R[\\/]bin[\\/](x64[\\/])?Rscript.exe$' } |
+            Select-Object -First 1
+          if (!$rscript) { throw 'The downloaded archive contains no bundled Rscript.exe' }
+          $jamoviHome = $rscript.FullName -replace '[\\/]Frameworks[\\/]R[\\/]bin[\\/](x64[\\/])?Rscript.exe$', ''
+          $library = Join-Path $env:RUNNER_TEMP 'pathj-build-library'
+          New-Item -ItemType Directory -Force $library | Out-Null
+          "JAMOVI_HOME=$jamoviHome" >> $env:GITHUB_ENV
+          "R_HOME=$(Join-Path $jamoviHome 'Frameworks/R')" >> $env:GITHUB_ENV
+          "PATHJ_RSCRIPT=$($rscript.FullName)" >> $env:GITHUB_ENV
+          "R_LIBS_USER=$library" >> $env:GITHUB_ENV
+
+      - name: Install build tools using bundled R
+        shell: pwsh
+        run: |
+          & $env:PATHJ_RSCRIPT -e 'install.packages("jmvtools", repos=c("https://repo.jamovi.org", "https://cloud.r-project.org"))'
+          if ($LASTEXITCODE -ne 0) { throw 'Installing jmvtools failed' }
+
+      - name: Build and verify Windows module
+        shell: pwsh
+        run: |
+          & $env:PATHJ_RSCRIPT scripts/build_windows_jmo.R
+          if ($LASTEXITCODE -ne 0) { throw 'Building PATHj failed' }
+
+      - name: Smoke-test the packaged module
+        shell: pwsh
+        run: |
+          $env:PATHJ_RUNTIME_LIBS = (Join-Path $env:JAMOVI_HOME 'Resources/modules/base/R') + ';' + (Join-Path $env:JAMOVI_HOME 'Resources/modules/jmv/R')
+          $module = Get-ChildItem 'pathj_*_windows.jmo' | Select-Object -First 1
+          & $env:PATHJ_RSCRIPT scripts/smoke_module.R $module.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'The packaged module failed its smoke test' }
+
+      - name: Upload Windows module
+        uses: actions/upload-artifact@v4
+        with:
+          name: pathj-windows
+          path: pathj_*_windows.jmo
+          if-no-files-found: error
