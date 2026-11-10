@@ -87,7 +87,9 @@ preferred_fit_measures <- function(fit) {
 report_parameters <- function(fit, parameter_estimates = NULL) {
   if (is.data.frame(parameter_estimates))
     return(parameter_estimates)
-  lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE)
+  lavaan::parameterestimates(fit, standardized = TRUE, ci = TRUE,
+    boot.ci.type = attr(fit, "pathj_bootci") %||% "perc",
+    level = attr(fit, "pathj_ci_level") %||% .95)
 }
 
 classify_model_identification <- function(df, converged, information_ok = NA,
@@ -1419,7 +1421,7 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
     saturated_model_warning() else character(0)
   topology <- detect_mediation_topology(fit)
   conditional_effects <- conditional_process_table(fit, topology, data = data)
-  moderated_index <- conditional_process_index(fit, topology)
+  moderated_index <- conditional_process_index(fit, topology, parameter_estimates)
   paths <- report_paths(fit, include_nonsignificant = teaching_mode == "advanced",
                         parameter_estimates = parameter_estimates)
   measurement <- report_loadings(fit, parameter_estimates = parameter_estimates)

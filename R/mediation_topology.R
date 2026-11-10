@@ -199,7 +199,7 @@ conditional_process_table <- function(fit, topology, data = NULL) {
 
 # Use the same defined-parameter estimates as the main output.
 multigroup_effect_differences <- function(fit, parameter_estimates = NULL, prefix = "DIE") {
-  pe <- if (is.null(parameter_estimates)) lavaan::parameterEstimates(fit, ci = TRUE) else parameter_estimates
+  pe <- report_parameters(fit, parameter_estimates)
   rows <- pe[pe$op == ":=" & grepl(paste0("^", prefix, "[0-9]+$"), pe$lhs), , drop = FALSE]
   descriptions <- attr(fit, "pathj_defined_descriptions")
   rows$route <- rows$rhs
@@ -273,9 +273,14 @@ conditional_process_index <- function(fit, topology, parameter_estimates = NULL)
 }
 
 
-effect_difference_note <- function() {
+effect_difference_note <- function(se = "standard", bootci = "perc", level = .95) {
   paste("DIE = indirect effect in the first group minus the same indirect effect in the second group.",
         "A negative value means the effect is more negative (or less positive) in the first group.",
-        "A 95% CI that excludes zero indicates moderated mediation for that route.",
-        "β not reported for differences.")
+        paste0("A ", 100*level, "% CI that excludes zero indicates moderated mediation for that route."),
+        "β not reported for differences.",
+        if (se %in% c("boot", "bootstrap"))
+          paste0("DIE/DTE confidence intervals use bootstrap (", bootci, ") at ", 100*level, "%.")
+        else paste0("DIE/DTE confidence intervals use the delta method at ", 100*level, "%."),
+        if (se == "standard")
+          "Differences of indirect effects are often non-normal; bootstrap CIs are recommended.")
 }

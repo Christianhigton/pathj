@@ -56,3 +56,25 @@ testthat::test_that("DIE item 5: differences omit beta while IE beta is unchange
   testthat::expect_equal(tab$std.all[tab$lhs=="IE7"],pe$std.all[pe$lhs=="IE7"])
   testthat::expect_match(effect_difference_note(),"β not reported for differences",fixed=TRUE)
 })
+
+testthat::test_that("DIE item 6: bootstrap selections propagate to the index", {
+  set.seed(914)
+  d <- data.frame(x=rnorm(160),g=rep(c("A","B"),each=80))
+  d$m <- .5*d$x+rnorm(160); d$y <- .6*d$m+rnorm(160)
+  fit <- suppressWarnings(lavaan::sem(
+    "m ~ c(a1,a2)*x; y ~ c(b1,b2)*m; IE1 := a1*b1; IE2 := a2*b2; DIE1 := IE1-IE2; TE1 := IE1; TE2 := IE2; DTE1 := TE1-TE2",
+    data=d,group="g",se="bootstrap",bootstrap=80))
+  for (type in c("perc","bca.simple","norm","basic")) {
+    attr(fit,"pathj_bootci") <- type
+    attr(fit,"pathj_ci_level") <- .90
+    expected <- suppressWarnings(lavaan::parameterEstimates(fit,boot.ci.type=type,level=.90))
+    actual <- suppressWarnings(conditional_process_index(fit,detect_mediation_topology(fit)))
+    testthat::expect_equal(actual$ci.lower,expected$ci.lower[expected$lhs=="DIE1"])
+    testthat::expect_equal(actual$ci.upper,expected$ci.upper[expected$lhs=="DIE1"])
+    total <- suppressWarnings(multigroup_effect_differences(fit,prefix="DTE"))
+    testthat::expect_equal(total$ci.lower,expected$ci.lower[expected$lhs=="DTE1"])
+    testthat::expect_match(effect_difference_note("boot",type),paste0("bootstrap (",type,")"),fixed=TRUE)
+  }
+  testthat::expect_match(effect_difference_note(),"delta method")
+  testthat::expect_match(effect_difference_note(),"bootstrap CIs are recommended")
+})
