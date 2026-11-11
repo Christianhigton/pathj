@@ -1,0 +1,108 @@
+Synthetic Model 3 verification (seed 812, N = 420, 210 per group).
+This is NOT the unavailable students_phones_sleep_exams dataset.
+Before is from commit cbcc311220f851e12ac836b81c342682cc6a1d54
+All original fitted estimates, SEs, CIs and p values agree before/after to tolerance 1e-10.
+
+ITEM 1 — BEFORE
+Index: NA; SE: NA; CI: NA; Note: Not defined for this model topology.
+
+ITEM 1 — AFTER (all routes; statistics rounded for this transcript only)
+                                                                                                           route
+       Δ indirect (B): fomo ⇒ night_phone ⇒ sleep_quality ⇒ exam_anxiety ⇒ exam_score (Control − Digital curfew)
+                      Δ indirect (B): fomo ⇒ night_phone ⇒ sleep_quality ⇒ exam_score (Control − Digital curfew)
+ Δ indirect (B): loneliness ⇒ night_phone ⇒ sleep_quality ⇒ exam_anxiety ⇒ exam_score (Control − Digital curfew)
+                Δ indirect (B): loneliness ⇒ night_phone ⇒ sleep_quality ⇒ exam_score (Control − Digital curfew)
+                               Δ indirect (B): loneliness ⇒ exam_anxiety ⇒ exam_score (Control − Digital curfew)
+              Δ indirect (B): night_phone ⇒ sleep_quality ⇒ exam_anxiety ⇒ exam_score (Control − Digital curfew)
+                             Δ indirect (B): night_phone ⇒ sleep_quality ⇒ exam_score (Control − Digital curfew)
+                            Δ indirect (B): sleep_quality ⇒ exam_anxiety ⇒ exam_score (Control − Digital curfew)
+    index      se ci.lower ci.upper pvalue
+ -0.01788 0.00998  -0.0374  0.00169   .073
+ -0.11168 0.03584  -0.1819 -0.04143   .002
+ -0.01064 0.00475  -0.0200 -0.00132   .025
+ -0.06250 0.02117  -0.1040 -0.02100   .003
+ -0.01742 0.03125  -0.0787  0.04384   .577
+ -0.03640 0.01758  -0.0708 -0.00194   .038
+ -0.22488 0.05492  -0.3325 -0.11723 < .001
+ -0.00866 0.03919  -0.0855  0.06816   .825
+Index of moderated mediation for a two-group moderator = difference in indirect effects (first group minus second group); see DIE rows in Defined Parameters. 
+
+ITEM 2 — BEFORE
+No DTE rows. TE3 and TE7 were reported separately.
+
+ITEM 2 — AFTER
+  lhs
+ DTE1
+ DTE2
+ DTE3
+ DTE4
+                                                                               desc
+          Total effect difference (B): fomo ⇒ exam_score (Control - Digital curfew)
+    Total effect difference (B): loneliness ⇒ exam_score (Control - Digital curfew)
+   Total effect difference (B): night_phone ⇒ exam_score (Control - Digital curfew)
+ Total effect difference (B): sleep_quality ⇒ exam_score (Control - Digital curfew)
+     rhs     est     se ci.lower ci.upper pvalue
+ TE1-TE5 -0.1296 0.0405   -0.209  -0.0501   .001
+ TE2-TE6 -0.0906 0.0393   -0.168  -0.0135   .021
+ TE3-TE7 -0.2613 0.0607   -0.380  -0.1424 < .001
+ TE4-TE8  0.0214 0.0862   -0.148   0.1903   .804
+
+ITEM 9 — BEFORE (constrained model)
+  lhs est se  z pvalue
+ DIE1   0  0 NA     NA
+ DIE2   0 NA NA     NA
+ DIE3   0 NA NA     NA
+ DIE4   0 NA NA     NA
+ DIE5   0 NA NA     NA
+ DIE6   0  0 NA     NA
+ DIE7   0 NA NA     NA
+ DIE8   0  0 NA     NA
+
+ITEM 9 — AFTER
+DIE and DTE rows displayed: 0
+ route index se ci.lower ci.upper wald df pvalue
+    NA    NA NA       NA       NA   NA NA     NA
+                                                                                     note
+ Regression paths are constrained equal across groups, so differences are zero by design.
+
+ITEM 10 — BEFORE (constrained comparison rows, raw numeric text)
+                          path group_1 group_1_n        group_2 group_1_est
+1           night_phone ~ fomo Control       210 Digital curfew   0.5502910
+2     night_phone ~ loneliness Control       210 Digital curfew   0.1398772
+3  sleep_quality ~ night_phone Control       210 Digital curfew  -0.4045208
+4 exam_anxiety ~ sleep_quality Control       210 Digital curfew  -0.3275667
+5    exam_anxiety ~ loneliness Control       210 Digital curfew   0.1926905
+6    exam_score ~ exam_anxiety Control       210 Digital curfew  -0.2727513
+7   exam_score ~ sleep_quality Control       210 Digital curfew   0.4883797
+  group_2_est group_1_beta group_1_pvalue group_2_beta group_2_n group_2_pvalue
+1   0.5502910    0.5041218         < .001    0.4520339       210         < .001
+2   0.1398772    0.1356512           .003    0.1213594       210           .003
+3  -0.4045208   -0.4296529         < .001   -0.3862757       210         < .001
+4  -0.3275667   -0.3400499         < .001   -0.3443975       210         < .001
+5   0.1926905    0.2060424         < .001    0.1678430       210         < .001
+6  -0.2727513   -0.2500523         < .001   -0.2492216       210         < .001
+7   0.4883797    0.4647983         < .001    0.4691769       210         < .001
+     difference             z pvalue significant
+1 -1.110223e-16 -1.614356e-15  1.000       FALSE
+2 -2.775558e-17            NA  1.000       FALSE
+3  1.110223e-16            NA  1.000       FALSE
+4  5.551115e-17  9.041938e-16  1.000       FALSE
+5 -2.775558e-17            NA  1.000       FALSE
+6  5.551115e-17  8.429370e-08  1.000       FALSE
+7 -1.110223e-16 -1.790115e-15  1.000       FALSE
+                                                                                interpretation
+1 The formal comparison did not indicate a statistically significant between-group difference.
+2 The formal comparison did not indicate a statistically significant between-group difference.
+3 The formal comparison did not indicate a statistically significant between-group difference.
+4 The formal comparison did not indicate a statistically significant between-group difference.
+5 The formal comparison did not indicate a statistically significant between-group difference.
+6 The formal comparison did not indicate a statistically significant between-group difference.
+7 The formal comparison did not indicate a statistically significant between-group difference. 
+
+ITEM 10 — AFTER
+Multigroup Path Comparison hidden; 0 rows.
+Formatting check: 1e-16 => 0.000; z = 8.43e-8 => 0.000
+
+ITEMS 11/12 — AFTER
+Regression paths were constrained equal across groups; see the Constraints Score Test for whether this constraint is supported.
+Synthetic constrained model raw parameter slots: 30; independent free parameters: 23; N/parameter: 18.3

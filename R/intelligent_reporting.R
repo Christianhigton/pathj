@@ -910,7 +910,7 @@ check_assumptions <- function(fit, data = NULL, cluster = NULL) {
   )
 
   n <- tryCatch(lavaan::lavInspect(fit, "ntotal"), error = function(e) NA_integer_)
-  npar <- tryCatch(fit@Fit@npar, error = function(e) NA_integer_)
+  npar <- free_parameter_count(fit)
   ratio <- n / npar
   rows[[length(rows) + 1]] <- diagnostic_row(
     "Sample size",
@@ -1502,4 +1502,11 @@ generate_report <- function(fit, data = NULL, teaching_mode = c("apa", "basic", 
     modification_indices = mi,
     p_curve = pcurve
   )
+}
+
+
+# fitMeasures adjusts the raw parameter count for the rank of equality
+# constraints, including the explicit constraints produced by lavaanify.
+free_parameter_count <- function(fit) {
+  tryCatch(as.numeric(lavaan::fitMeasures(fit, "npar")), error = function(e) NA_real_)
 }

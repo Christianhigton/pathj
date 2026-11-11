@@ -422,7 +422,7 @@ Estimate <- R6::R6Class("Estimate",
                             alist[[length(alist)+1]]<-c(info="Number of observations",value=self$missing_info$n_used)
                             alist[[length(alist)+1]]<-c(info="Recognised missing values",value=self$missing_info$total_missing)
                             alist[[length(alist)+1]]<-c(info="Cases removed",value=self$missing_info$n_removed)
-                            alist[[length(alist)+1]]<-c(info="Free parameters",value=self$model@Fit@npar)
+                            alist[[length(alist)+1]]<-c(info="Free parameters",value=free_parameter_count(self$model))
                             alist[[length(alist)+1]]<-c(info="Converged",value=self$model@Fit@converged) 
                             alist[[length(alist)+1]]<-c(info="",value="")
                             if (is.something(ff) && "logl" %in% names(ff))

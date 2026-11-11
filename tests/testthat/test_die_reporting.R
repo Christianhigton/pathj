@@ -141,3 +141,24 @@ testthat::test_that("DIE item 11: constrained narrative refers to score test", {
   testthat::expect_equal(text$text[text$section=="Multigroup"],expected)
   testthat::expect_false(any(grepl("No statistically significant multigroup differences",text$text)))
 })
+
+testthat::test_that("DIE item 12: free count and N/parameter account for constraints", {
+  free <- die_result()
+  constrained <- die_result(equal=TRUE)
+  nfree <- free_parameter_count(free$model)
+  ncon <- free_parameter_count(constrained$model)
+  testthat::expect_equal(nfree-ncon,7)
+  testthat::expect_equal(ncon,as.numeric(lavaan::fitMeasures(constrained$model,"npar")))
+  info <- constrained$info$asDF
+  testthat::expect_equal(as.numeric(info$value[which(info$info=="Free parameters")]),ncon)
+  assumptions <- check_assumptions(constrained$model)
+  row <- assumptions[assumptions$check=="Sample size",]
+  text <- paste(unlist(row),collapse=" ")
+  testthat::expect_match(text,paste0("free parameters = ",ncon),fixed=TRUE)
+  testthat::expect_match(text,paste0("N/parameter = ",apa_num(420/ncon,1)),fixed=TRUE)
+  # Redundant equalities must not be subtracted twice.
+  set.seed(31)
+  d <- data.frame(x=rnorm(120), y=rnorm(120), g=rep(c("a","b"),each=60))
+  fit <- suppressWarnings(lavaan::sem("y ~ c(a,b)*x; a == b; 2*a == 2*b",data=d,group="g"))
+  testthat::expect_equal(free_parameter_count(fit),as.numeric(lavaan::fitMeasures(fit,"npar")))
+})
